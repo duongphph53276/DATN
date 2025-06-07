@@ -13,6 +13,14 @@ function App() {
         { path:"", element:<Home/>}
       ]
     },
+    // Đây là route cho admin - middleware sẽ phân chia tiếp
+    // {
+    //   path:"/admin",
+    //   element:<AdminLayout/>,
+    //   children:[
+    //     {path:"", element:<Dashboard/>}
+    //   ]
+    // },
     {
       path:"*", element:<NotFound/>
     }
