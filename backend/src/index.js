@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/db.js';
 import routerProduct from './routes/product.routes.js';
+import routerProductVariant from './routes/productVariant.routes.js';
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use(express.json());
 
 //app.use('/admin', adminRouter); - định hướng admin của middleware
 app.use('', routerProduct);
+app.use('/product-variants', routerProductVariant)
 // Khởi động server
 const startServer = async () => {
   await connectDB();
