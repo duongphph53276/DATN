@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/db.js';
+import { AddCategory, DeleteCategory, EditCategory, GetCategoryById, ListCategory } from './controllers/category.js';
 
 dotenv.config();
 
@@ -16,6 +17,11 @@ app.use(express.json());
 // app.post('/login', Login);
 // app.get('/products', ListProduct);
 // app.get('/products/:id', GetProductById);
+app.get('/category', ListCategory)
+app.post('/category/add', AddCategory)
+app.put('/category/edit/:id', EditCategory)
+app.delete('/category/:id', DeleteCategory)
+app.get('/category/:id', GetCategoryById);
 
 // Protected routes cho client (đã đăng nhập) - Phải có authMiddleware là đã đăng nhập - middleware
 
