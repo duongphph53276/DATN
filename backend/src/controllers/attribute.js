@@ -1,11 +1,11 @@
-import Attribute from "../models/attribute";
-import AttributeValue from "../models/attributeValue";
+import Attribute from "../models/attribute.js";
+import AttributeValue from "../models/attributeValue.js";
 
 // Tạo Attribute
 export const createAttribute = async (req, res) => {
     try {
-        const { name, display_name, type } = req.body;
-        const attribute = await Attribute.create({ name, display_name, type });
+        const { attribute_id, name, display_name, type } = req.body;
+        const attribute = await Attribute.create({ attribute_id, name, display_name, type });
         res.status(201).json(attribute).json({
             message: "Thêm attribute thành công",
             status: true,
@@ -17,7 +17,7 @@ export const createAttribute = async (req, res) => {
 };
 
 // Lấy tất cả attributes
-export const getAllAttributes = async (_req, res) => {
+export const getAllAttributes = async (req, res) => {
     try {
         const attributes = await Attribute.find();
         res.status(200).json(attributes).json({
@@ -33,17 +33,15 @@ export const getAllAttributes = async (_req, res) => {
 // Tạo giá trị cho một Attribute cụ thể
 export const createAttributeValue = async (req, res) => {
     try {
-        const { attributeId } = req.params;
-        const { value } = req.body;
-
-        const attrValue = await AttributeValue.create({
-            attribute: attributeId,
-            value,
+        const { attributeValue_id, attribute_id, value } = req.body;
+        const attributeValue = await AttributeValue.create({ attributeValue_id, attribute_id, value });
+        return res.status(201).json(attributeValue).json({
+            message: "Thêm AttributeValue thành công",
+            status: true,
+            data: attributeValue
         });
-
-        res.status(201).json(attrValue);
     } catch (err) {
-        res.status(500).json({ error: "Tạo attribute value thất bại", details: err });
+        return res.status(500).json({ error: "Tạo AttributeValue thất bại", details: err });
     }
 };
 
@@ -51,10 +49,9 @@ export const createAttributeValue = async (req, res) => {
 export const getAttributeValues = async (req, res) => {
     try {
         const { attributeId } = req.params;
-
         const values = await AttributeValue.find({ attribute: attributeId });
-        res.status(200).json(values);
+        return res.status(200).json(values);
     } catch (err) {
-        res.status(500).json({ error: "Lỗi khi lấy danh sách value", details: err });
+        return res.status(500).json({ error: "Lỗi khi lấy danh sách value", details: err });
     }
 };

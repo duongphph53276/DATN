@@ -1,9 +1,9 @@
-import express from "express";
-import { createVariant, getVariantsByProduct } from "../controllers/productVariant.js";
+// import express from "express";
+// import { createVariant, getVariantsByProduct } from "../controllers/productVariant.js";
 
-const router = express.Router();
+// const router = express.Router();
 
-router.post("/", createVariant);
-router.get("/product/:productId", getVariantsByProduct);
+// router.post("/variant", createVariant);
+// router.get("/product/:productId", getVariantsByProduct);
 
-export default router;
+// export default router;

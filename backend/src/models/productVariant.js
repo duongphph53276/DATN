@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const productVariantSchema = new mongoose.Schema({
-    variant_id:{
+    variant_id: {
         type: Number,
     },
     product_id: {
@@ -22,8 +22,24 @@ const productVariantSchema = new mongoose.Schema({
     },
     sold_quantity: {
         type: Number,
-        default: 0,
+        default: 0
     },
+
+    attributes: [
+        {
+            attribute_id: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Attribute",
+                required: true,
+            },
+            value_id: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "AttributeValue",
+                required: true,
+            }
+        }
+    ]
+
 }, { timestamps: true, versionKey: false });
 
 export default mongoose.model("ProductVariant", productVariantSchema);

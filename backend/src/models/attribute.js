@@ -23,41 +23,23 @@ const attributeSchema = new mongoose.Schema({
 
 export default mongoose.model("Attribute", attributeSchema);
 
-const attributeValueSchema = new mongoose.Schema({
-    value_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Attribute",
-        required: true,
-    },
-    attribute_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Attribute",
-        required: true,
-    },
-    value: {
-        type: String,
-        required: true,
-    },
-}, { timestamps: true, versionKey: false });
 
-export const AttributeValueModel = mongoose.model("AttributeValue", attributeValueSchema);
+// const variantAttributeValueSchema = new mongoose.Schema({
+//     variant_id: {
+//         type: mongoose.Schema.Types.ObjectId,
+//         ref: "ProductVariant",
+//         required: true,
+//     },
+//     attribute_id: {
+//         type: mongoose.Schema.Types.ObjectId,
+//         ref: "Attribute",
+//         required: true,
+//     },
+//     value_id: {
+//         type: mongoose.Schema.Types.ObjectId,
+//         ref: "AttributeValue",
+//         required: true,
+//     },
+// });
 
-const variantAttributeValueSchema = new mongoose.Schema({
-    variant_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "ProductVariant",
-        required: true,
-    },
-    attribute_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Attribute",
-        required: true,
-    },
-    value_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "AttributeValue",
-        required: true,
-    },
-});
-
-export const VariantAttributeValue = mongoose.model("VariantAttributeValue", variantAttributeValueSchema);
+// export const VariantAttributeValue = mongoose.model("VariantAttributeValue", variantAttributeValueSchema);

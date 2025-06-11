@@ -9,21 +9,21 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    category_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Category",
+        required: true
+    },
+    description: {
+        type: String,
+    },
     images: {
         type: String,
 
     },
-    // category: {
-    //     type: mongoose.Schema.Types.ObjectId,
-    //     ref: "Category",
-    //     required: true
-    // },
-    description: {
-        type: String,
-    },
     status: {
         type: String,
-        enum: ["active", "disabled", "draft", "new","bestseller"],
+        enum: ["active", "disabled", "draft", "new", "bestseller"],
         default: "active",
     },
     attributes: [
@@ -37,14 +37,16 @@ const productSchema = new mongoose.Schema({
         type: [String],
         default: []
     },
-    sku:{
+    sku: {
         type: String
     },
     average_rating: {
-        type: Number
+        type: Number,
+        default: 0
     },
     sold_quantity: {
-        type: Number
+        type: Number,
+        default: 0
     }
 
 }, {

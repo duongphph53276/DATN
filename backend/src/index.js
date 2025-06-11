@@ -2,8 +2,10 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/db.js';
-import routerProduct from './routes/product.routes.js';
-import routerProductVariant from './routes/productVariant.routes.js';
+import { AddCategory, DeleteCategory, EditCategory, GetCategoryById, ListCategory } from './controllers/category.js';
+import { createProduct, deleteProduct, getAllProducts, getProductById, updateProduct } from './controllers/product.js';
+import { createAttribute, createAttributeValue, getAllAttributes, getAttributeValues } from "./controllers/attribute.js";
+import { createVariant, getVariantsByProduct } from './controllers/productVariant.js';
 
 dotenv.config();
 
@@ -19,6 +21,27 @@ app.use(express.json());
 // app.get('/products', ListProduct);
 // app.get('/products/:id', GetProductById);
 
+app.get('/category', ListCategory)
+app.post('/category/add', AddCategory)
+app.put('/category/edit/:id', EditCategory)
+app.delete('/category/:id', DeleteCategory)
+app.get('/category/:id', GetCategoryById);
+// product routes
+app.post('/product', createProduct);
+app.get('/product', getAllProducts);
+app.get('/product/:id', getProductById);
+app.put('/product/:id', updateProduct);
+app.delete('/product/:id', deleteProduct);
+// Attribute routes
+app.post("/attribute",createAttribute);
+app.get("/attribute", getAllAttributes);
+
+// AttributeValue routes (gắn theo attributeId)
+app.post("/value/:attributeId", createAttributeValue);
+app.get("/:attributeId/value", getAttributeValues);
+// Variant routes
+app.post("/variant", createVariant);
+app.get("/product/:productId", getVariantsByProduct);
 // Protected routes cho client (đã đăng nhập) - Phải có authMiddleware là đã đăng nhập - middleware
 
 //app.get('/profile', authMiddleware, Profile);
@@ -32,8 +55,9 @@ app.use(express.json());
 //adminRouter.get('/products', ListProduct);
 
 //app.use('/admin', adminRouter); - định hướng admin của middleware
-app.use('', routerProduct);
-app.use('/product-variants', routerProductVariant)
+
+
+
 // Khởi động server
 const startServer = async () => {
   await connectDB();
