@@ -2,7 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/db.js';
-
+import { CreateVoucher, ListVoucher, UpdateVoucher, DeleteVoucher } from './controllers/voucher.js';
 dotenv.config();
 
 const app = express();
@@ -16,6 +16,10 @@ app.use(express.json());
 // app.post('/login', Login);
 // app.get('/products', ListProduct);
 // app.get('/products/:id', GetProductById);
+app.get('/vouchers', ListVoucher);
+app.post('/vouchers', CreateVoucher);
+app.put('/vouchers/:id', UpdateVoucher);
+app.delete('/vouchers/:id', DeleteVoucher);
 
 // Protected routes cho client (đã đăng nhập) - Phải có authMiddleware là đã đăng nhập - middleware
 
@@ -33,7 +37,7 @@ app.use(express.json());
 
 // Khởi động server
 const startServer = async () => {
-  await connectDB();
+  await connectDB();  
   app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
   });
