@@ -9,6 +9,8 @@ import AddCategory from './components/Admin/category/AddCategory';
 import EditCategory from './components/Admin/category/EditCategory';
 import AdminLayout from './layout/Admin/Admin.layout';
 import AddProduct from './components/Admin/product/AddProduct';
+import ProductList from './components/Admin/product/ListProduct';
+import EditProduct from './components/Admin/product/EditProduct';
 
 function App() {
   const routes = useRoutes([
@@ -27,7 +29,9 @@ function App() {
         {path:"category", element:<ListCategory/>},
         {path:"category/add", element:<AddCategory/>},
         {path:"category/edit/:id", element:<EditCategory/>},
+        {path:"product", element:<ProductList/>},
         {path:"product/add", element:<AddProduct/>},
+        {path:"product/edit/:id", element:<EditProduct/>},
       ]
     },
     {

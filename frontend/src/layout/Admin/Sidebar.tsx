@@ -7,7 +7,7 @@ const Sidebar = () => {
       <nav className="p-4 space-y-3">
         <Link to="/admin" className="block text-gray-700 hover:text-blue-500">🏠 Dashboard</Link>
         <Link to="/admin/category" className="block text-gray-700 hover:text-blue-500">📂 Danh mục</Link>
-        <Link to="/admin/category/add" className="block text-gray-700 hover:text-blue-500">➕ Thêm danh mục</Link>
+        <Link to="/admin/product" className="block text-gray-700 hover:text-blue-500"> Danh sách sản phẩm</Link>
       </nav>
     </aside>
   )

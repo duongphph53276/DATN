@@ -13,7 +13,7 @@ export const getProductById = (id: string | number) => {
 
 // Thêm mới sản phẩm
 export const postProduct = (data: IProduct) => {
-  return instance.post("product/", data);
+  return instance.post('/product/add', data);
 };
 
 // Cập nhật sản phẩm theo ID
@@ -22,6 +22,6 @@ export const putProduct = (id: string | number, data: IProduct) => {
 };
 
 // Xóa sản phẩm theo ID
-export const deleteProduct = (id: string | number) => {
+export const deleteProduct = (id: string | number ) => {
   return instance.delete(`/product/${id}`);
 };

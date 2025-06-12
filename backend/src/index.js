@@ -27,10 +27,10 @@ app.put('/category/edit/:id', EditCategory)
 app.delete('/category/:id', DeleteCategory)
 app.get('/category/:id', GetCategoryById);
 // product routes
-app.post('/product', createProduct);
+app.post('/product/add', createProduct);
 app.get('/product', getAllProducts);
 app.get('/product/:id', getProductById);
-app.put('/product/:id', updateProduct);
+app.put('/product/edit/:id', updateProduct);
 app.delete('/product/:id', deleteProduct);
 // Attribute routes
 app.post("/attribute",createAttribute);
@@ -38,10 +38,11 @@ app.get("/attribute", getAllAttributes);
 
 // AttributeValue routes (gắn theo attributeId)
 app.post("/value/:attributeId", createAttributeValue);
-app.get("/:attributeId/value", getAttributeValues);
+app.get("/value/:attributeId", getAttributeValues);
 // Variant routes
 app.post("/variant", createVariant);
-app.get("/product/:productId", getVariantsByProduct);
+app.get("/product/:productId/variants", getVariantsByProduct);
+
 // Protected routes cho client (đã đăng nhập) - Phải có authMiddleware là đã đăng nhập - middleware
 
 //app.get('/profile', authMiddleware, Profile);

@@ -18,6 +18,7 @@ export const createVariant = async (req, res) => {
 export const getVariantsByProduct = async (req, res) => {
     try {
         const { productId } = req.params;
+
         const variants = await ProductVariant.find({ product: productId });
 
         return res.status(200).json({

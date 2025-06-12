@@ -1,5 +1,5 @@
 export interface IProduct {
-//   _id?: string; // ID MongoDB
+  _id?: string; // ID MongoDB
   product_id?: number;
   name: string;
   images?: string;

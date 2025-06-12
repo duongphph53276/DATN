@@ -1,9 +1,9 @@
 import { useForm, SubmitHandler } from "react-hook-form";
-import { postProduct } from "../../../api/product.api";
-import { useNavigate } from "react-router-dom";
+import { getAllProducts, postProduct } from "../../../api/product.api";
+// import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getCategories } from "../../../api/category.api";
-// import { getAllAttributes } from "../api/attribute.api"; // bạn cần có API này
+import { getAllAttributes } from "../../../api/attribute.api"; // bạn cần có API này
 
 type AddProductForm = {
   name: string;
@@ -19,16 +19,24 @@ type AddProductForm = {
 };
 
 const AddProduct = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
+  const [productId, setProductId] = useState<number>(0);
   const [categories, setCategories] = useState([]);
-//   const [attributes, setAttributes] = useState([]);
+  const [attributes, setAttributes] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       const catRes = await getCategories();
-    //   const attRes = await getAllAttributes();
+      const attRes = await getAllAttributes();
+      const res = await getAllProducts();
+      const data = res.data.data;
       setCategories(catRes.data.data);
-    //   setAttributes(attRes.data.data);
+      setAttributes(attRes.data.data);
+      const maxId = data.reduce((max: number, pro: any) => (
+        pro.product_id > max ? pro.product_id : max
+      ), 0);
+
+      setProductId(maxId + 1);
     };
     fetchData();
   }, []);
@@ -43,10 +51,12 @@ const AddProduct = () => {
     try {
       const payload = {
         ...data,
+        product_id: productId,
         album: data.album?.split(',').map(item => item.trim()) || [],
       };
       await postProduct(payload);
-    //   navigate("/admin");
+      alert('Thêm thành công!');
+      //   navigate("/admin");
     } catch {
       alert("Thêm mới thất bại");
     }
@@ -55,6 +65,15 @@ const AddProduct = () => {
   return (
     <div className="w-[80%] mx-auto rounded-lg bg-white p-8 shadow-lg">
       <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+        <div>
+          <label className="block text-sm font-medium text-gray-600 mb-1">Mã sản phẩm (product_id)</label>
+          <input
+            type="number"
+            className="w-full p-2 border rounded bg-gray-100 text-gray-500"
+            value={productId}
+            readOnly
+          />
+        </div>
         {/* Name */}
         <input {...register("name", { required: "Tên sản phẩm là bắt buộc" })} placeholder="Tên sản phẩm" className="input" />
         <div className="text-red-500">{errors.name?.message}</div>
@@ -83,9 +102,8 @@ const AddProduct = () => {
           <option value="bestseller">Bán chạy</option>
         </select>
 
-        {/* Thuộc tính */}
         <div className="space-y-2">
-          {/* <label className="block">Thuộc tính</label>
+          <label className="block">Thuộc tính</label>
           {attributes.map((att: any) => (
             <div key={att._id}>
               <input
@@ -96,10 +114,9 @@ const AddProduct = () => {
               />
               {att.name}
             </div>
-          ))} */}
+          ))}
         </div>
 
-        {/* Album */}
         <input
           {...register("album")}
           placeholder="Link ảnh phụ (cách nhau bởi dấu phẩy)"
