@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const connectDB = async () => {
   try {
-  await mongoose.connect('mongodb://localhost:27017/FuzzyBear', {
+  await mongoose.connect(process.env.MONGOS_GOOGLE_CLOUD_URI, {
     // family: 4
 });    console.log('Kết nối DB thành công');
   } catch (error) {

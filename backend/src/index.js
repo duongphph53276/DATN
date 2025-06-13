@@ -4,6 +4,8 @@ import cors from 'cors';
 import connectDB from './config/db.js';
 import { CreateVoucher, ListVoucher, UpdateVoucher, DeleteVoucher } from './controllers/voucher.js';
 import { AddCategory, DeleteCategory, EditCategory, GetCategoryById, ListCategory } from './controllers/category.js';
+import orderRoutes from './routes/order.routes.js';
+
 dotenv.config();
 
 const app = express();
@@ -28,6 +30,9 @@ app.post('/category/add', AddCategory)
 app.put('/category/edit/:id', EditCategory)
 app.delete('/category/:id', DeleteCategory)
 app.get('/category/:id', GetCategoryById);
+//order
+app.use('/api/orders',orderRoutes);
+
 
 
 // Protected routes cho client (đã đăng nhập) - Phải có authMiddleware là đã đăng nhập - middleware
