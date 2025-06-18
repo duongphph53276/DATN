@@ -1,113 +1,100 @@
-import { useEffect, useState } from 'react';
-import { getCategories, deleteCategory } from '../../../api/category.api';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { Link } from 'react-router-dom';
+import { ICategory, ICategoryResponse } from '../../../../interfaces/category';
 
-const ListCategory = () => {
-  const [categories, setCategories] = useState([]);
-  const navigate = useNavigate();
-
-  const fetchData = async () => {
-    try {
-      const res = await getCategories();
-      setCategories(res.data.data);
-    } catch (error) {
-      alert('Lỗi tải danh sách');
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Bạn có chắc muốn xóa?')) {
-      await deleteCategory(id);
-      fetchData();
-    }
-  };
+const ListCategory: React.FC = () => {
+  const [categories, setCategories] = useState<ICategory[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchData();
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get<ICategoryResponse>('http://localhost:5000/category');
+        if (response.data.status) {
+          // Sắp xếp danh mục: danh mục con (có parent_id) ở trên, danh mục cha (parent_id null) ở dưới
+          const sortedCategories = response.data.data.sort((a, b) => {
+            if (a.parent_id && !b.parent_id) return -1; // Ưu tiên danh mục con
+            if (!a.parent_id && b.parent_id) return 1; // Đưa danh mục cha xuống dưới
+            return a.name.localeCompare(b.name); // Sắp xếp theo tên nếu cùng cấp
+          });
+          setCategories(sortedCategories || []);
+        } else {
+          setError(response.data.message);
+        }
+      } catch (err) {
+        setError('Không thể tải danh mục');
+      }
+    };
+    fetchCategories();
   }, []);
 
-  const renderCategories = () => {
-    const parentCategories = categories.filter((cat: any) => !cat.parent_id);
-    const childCategories = categories.filter((cat: any) => cat.parent_id);
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Bạn có chắc muốn xóa danh mục này?')) {
+      try {
+        const response = await axios.delete(`http://localhost:5000/category/${id}`);
+        if (response.data.status) {
+          setCategories(categories.filter((category) => category._id !== id));
+        } else {
+          setError(response.data.message);
+        }
+      } catch (err) {
+        setError('Xóa danh mục thất bại');
+      }
+    }
+  };
 
-    const getChildCategories = (parentId: string) =>
-      childCategories.filter((cat: any) => cat.parent_id === parentId);
-
-    return parentCategories.map((parent: any) => (
-      <div key={parent._id} className="rounded-md overflow-hidden shadow-sm border border-gray-200 bg-white mb-4">
-        {/* Danh mục cha */}
-        <div className="flex justify-between items-center px-4 py-3 bg-gray-100">
-          <div className="font-semibold text-gray-800">
-            📁 {parent.name}
-            <span className="text-gray-400 text-sm ml-2">Slug: {parent.slug}</span>
-            <span className="text-gray-400 text-sm ml-4">ID: {parent.category_id}</span>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => navigate(`/admin/category/edit/${parent._id}`)}
-              className="text-sm text-blue-600 hover:underline"
-            >
-              Sửa
-            </button>
-            <button
-              onClick={() => handleDelete(parent._id)}
-              className="text-sm text-red-600 hover:underline"
-            >
-              Xóa
-            </button>
-          </div>
-        </div>
-
-        {/* Danh mục con */}
-        {getChildCategories(parent._id).map((child: any) => (
-          <div
-            key={child._id}
-            className="flex justify-between items-center px-6 py-2 border-t border-gray-100 bg-white hover:bg-gray-50 transition"
-          >
-            <div className="text-gray-700">
-                └─ {child.name}
-                <span className="text-gray-400 text-sm ml-2">Slug: {child.slug}</span>
-                <span className="text-gray-400 text-sm ml-4">ID: {child.category_id}</span>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => navigate(`/admin/category/edit/${child._id}`)}
-                className="text-sm text-blue-500 hover:underline"
-              >
-                Sửa
-              </button>
-              <button
-                onClick={() => handleDelete(child._id)}
-                className="text-sm text-red-500 hover:underline"
-              >
-                Xóa
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    ));
+  // Hàm để hiển thị tên danh mục với thụt đầu dòng cho danh mục con
+  const renderCategoryName = (category: ICategory) => {
+    const indent = category.parent_id ? '— ' : ''; // Thụt đầu dòng cho danh mục con
+    return `${indent}${category.name}`;
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">📚 Danh sách danh mục</h1>
-        <button
-          onClick={() => navigate('/admin/category/add')}
-          className="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition"
-        >
-          + Thêm danh mục
-        </button>
-      </div>
-
-      {categories.length > 0 ? (
-        renderCategories()
-      ) : (
-        <div className="text-gray-500 text-center py-10">
-          Không có danh mục nào.
-        </div>
-      )}
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Danh sách danh mục</h1>
+      <Link
+        to="/admin/category/add"
+        className="mb-4 inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+      >
+        Thêm danh mục
+      </Link>
+      {error && <p className="text-red-500">{error}</p>}
+      <table className="min-w-full bg-white border">
+        <thead>
+          <tr>
+            <th className="py-2 px-4 border">Danh mục cha</th>
+            <th className="py-2 px-4 border">Tên</th>
+            <th className="py-2 px-4 border">Slug</th>
+            <th className="py-2 px-4 border">Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          {categories.map((category) => (
+            <tr key={category._id}>
+              <td className="py-2 px-4 border">
+                {typeof category.parent_id === 'object' && category.parent_id ? category.parent_id.name : 'Không có'}
+              </td>
+              <td className="py-2 px-4 border">{renderCategoryName(category)}</td>
+              <td className="py-2 px-4 border">{category.slug}</td>
+              <td className="py-2 px-4 border">
+                <Link
+                  to={`/admin/category/edit/${category._id}`}
+                  className="text-blue-500 hover:underline mr-2"
+                >
+                  Sửa
+                </Link>
+                <button
+                  onClick={() => handleDelete(category._id!)}
+                  className="text-red-500 hover:underline"
+                >
+                  Xóa
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };
