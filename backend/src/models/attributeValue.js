@@ -1,10 +1,6 @@
 import mongoose from "mongoose";
 
 const attributeValueSchema = new mongoose.Schema({
-    attributeValue_id: {
-        type: Number,
-        unique: true,
-    },
     attribute_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Attribute",

@@ -1,5 +1,5 @@
 import Product from "../models/product.js";
-
+import ProductVariant from "../models/productVariant.js"
 export const createProduct = async (req, res) => {
   try {
     const product = await Product.create(req.body);
@@ -26,11 +26,11 @@ export const getAllProducts = async (req, res) => {
 export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
-      .populate("category")
+      .populate("category_id")
       .populate("attributes");
     const variants = await ProductVariant.find({ product: req.params.id });
     if (!product) return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
-    return res.json({ product, variants });
+    return res.json({ data: { product, variants } });
   } catch (err) {
     console.error("Lỗi getProductById:", err); // 👈 rất quan trọng
     return res.status(500).json({ message: "Lỗi lấy sản phẩm", error: err });
@@ -39,12 +39,13 @@ export const getProductById = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
   try {
-    const updated = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!updated) return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
+    const product = await Product.findByIdAndUpdate(req.params.id, req.body);
+    if (!product) return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
+    const updateProduct = await Product.findById(req.params.id);
     return res.status(201).json({
       message: "Cập nhật sản phẩm thành công",
       status: true,
-      data: updated
+      data: updateProduct
     });
   } catch (err) {
     return res.status(500).json({ message: "Lỗi cập nhật sản phẩm", error: err });

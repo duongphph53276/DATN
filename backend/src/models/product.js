@@ -1,15 +1,11 @@
 import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema({
-    product_id: {
-        type: Number,
-        unique: true, // Đảm bảo mỗi sản phẩm chỉ có một bản chi tiết
-    },
     name: {
         type: String,
         required: true
     },
-    category: {
+    category_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Category",
         required: true
@@ -23,7 +19,7 @@ const productSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ["active", "disabled", "draft", "new", "bestseller"],
+        enum: ["active", "disabled", "new", "bestseller"],
         default: "active",
     },
     attributes: [

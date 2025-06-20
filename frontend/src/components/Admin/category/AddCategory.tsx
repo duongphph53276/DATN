@@ -13,16 +13,12 @@ const AddCategory = () => {
     const fetchCategories = async () => {
       const res = await getCategories();
       const data = res.data.data;
-
       setCategories(data);
-
       const maxId = data.reduce((max: number, cat: any) => (
         cat.category_id > max ? cat.category_id : max
       ), 0);
-
       setCategoryId(maxId + 1);
     };
-
     fetchCategories();
   }, []);
 
@@ -54,7 +50,6 @@ const AddCategory = () => {
             readOnly
           />
         </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">Tên danh mục</label>
           <input
@@ -66,7 +61,6 @@ const AddCategory = () => {
             required
           />
         </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">Danh mục cha (nếu có)</label>
           <select
@@ -80,7 +74,6 @@ const AddCategory = () => {
             ))}
           </select>
         </div>
-
         <button
           type="submit"
           className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"

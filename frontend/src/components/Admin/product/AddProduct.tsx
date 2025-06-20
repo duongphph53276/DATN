@@ -1,16 +1,16 @@
-import { useForm, SubmitHandler } from "react-hook-form";
-import { getAllProducts, postProduct } from "../../../api/product.api";
-// import { useNavigate } from "react-router-dom";
+import { useForm, SubmitHandler, WatchObserver } from "react-hook-form";
+import { useNavigate, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { getAllProducts, postProduct } from "../../../api/product.api";
 import { getCategories } from "../../../api/category.api";
-import { getAllAttributes } from "../../../api/attribute.api"; // bạn cần có API này
+import { getAllAttributes } from "../../../api/attribute.api";
 
 type AddProductForm = {
   name: string;
   images?: string;
   category_id: string;
   description?: string;
-  status?: "active" | "disabled" | "draft" | "new" | "bestseller";
+  status?: "active" | "disabled" | "new" | "bestseller";
   attributes?: string[];
   album?: string;
   sku?: string;
@@ -19,117 +19,180 @@ type AddProductForm = {
 };
 
 const AddProduct = () => {
-  // const navigate = useNavigate();
-  const [productId, setProductId] = useState<number>(0);
+  const navigate = useNavigate();
+  const [productId] = useState<number>(0);
   const [categories, setCategories] = useState([]);
   const [attributes, setAttributes] = useState([]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const catRes = await getCategories();
-      const attRes = await getAllAttributes();
-      const res = await getAllProducts();
-      const data = res.data.data;
-      setCategories(catRes.data.data);
-      setAttributes(attRes.data.data);
-      const maxId = data.reduce((max: number, pro: any) => (
-        pro.product_id > max ? pro.product_id : max
-      ), 0);
-
-      setProductId(maxId + 1);
-    };
-    fetchData();
-  }, []);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    watch,
   } = useForm<AddProductForm>();
+
+  const imageUrl = watch("images");
+  const albumString = watch("album");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const catRes = await getCategories();
+      const attRes = await getAllAttributes();
+      await getAllProducts();
+      setCategories(catRes.data.data);
+      setAttributes(attRes.data.data);
+    };
+    fetchData();
+  }, []);
 
   const onSubmit: SubmitHandler<AddProductForm> = async (data) => {
     try {
       const payload = {
         ...data,
         product_id: productId,
-        album: data.album?.split(',').map(item => item.trim()) || [],
+        album: data.album?.split(",").map((item) => item.trim()) || [],
       };
       await postProduct(payload);
-      alert('Thêm thành công!');
-      //   navigate("/admin");
-    } catch {
+      alert("Thêm sản phẩm thành công!");
+      navigate("/admin/product");
+    } catch (error) {
       alert("Thêm mới thất bại");
     }
   };
 
-  return (
-    <div className="w-[80%] mx-auto rounded-lg bg-white p-8 shadow-lg">
-      <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">Mã sản phẩm (product_id)</label>
-          <input
-            type="number"
-            className="w-full p-2 border rounded bg-gray-100 text-gray-500"
-            value={productId}
-            readOnly
+  const renderAlbumImages = () => {
+    if (!albumString) return null;
+    const urls = albumString.split(",").map((item) => item.trim());
+    return (
+      <div className="grid grid-cols-3 gap-2 mt-2">
+        {urls.map((url, index) => (
+          <img
+            key={index}
+            src={url}
+            alt={`Ảnh phụ ${index + 1}`}
+            className="w-full h-24 object-cover border rounded"
+            onError={(e) => (e.currentTarget.style.display = "none")}
           />
-        </div>
-        {/* Name */}
-        <input {...register("name", { required: "Tên sản phẩm là bắt buộc" })} placeholder="Tên sản phẩm" className="input" />
-        <div className="text-red-500">{errors.name?.message}</div>
+        ))}
+      </div>
+    );
+  };
 
-        {/* Ảnh đại diện */}
-        <input {...register("images")} placeholder="Link ảnh chính" className="input" />
+  return (
+    <section className="section main-section">
+      <div className="card">
+        <header className="card-header">
+          <p className="card-header-title">
+            <span className="icon"><i className="mdi mdi-plus-box" /></span>
+            Thêm sản phẩm
+          </p>
+        </header>
 
-        {/* Mô tả */}
-        <textarea {...register("description")} placeholder="Mô tả" className="input" rows={3} />
-
-        {/* Danh mục */}
-        <select {...register("category_id", { required: "Chọn danh mục" })} className="input">
-          <option value="">-- Chọn danh mục --</option>
-          {categories.map((cat: any) => (
-            <option key={cat._id} value={cat._id}>{cat.name}</option>
-          ))}
-        </select>
-        <div className="text-red-500">{errors.category_id?.message}</div>
-
-        {/* Trạng thái */}
-        <select {...register("status")} className="input">
-          <option value="active">Kích hoạt</option>
-          <option value="disabled">Tạm tắt</option>
-          <option value="draft">Bản nháp</option>
-          <option value="new">Mới</option>
-          <option value="bestseller">Bán chạy</option>
-        </select>
-
-        <div className="space-y-2">
-          <label className="block">Thuộc tính</label>
-          {attributes.map((att: any) => (
-            <div key={att._id}>
-              <input
-                type="checkbox"
-                value={att._id}
-                {...register("attributes")}
-                className="mr-2"
-              />
-              {att.name}
+        <div className="card-content">
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="field">
+              <label className="label">Tên sản phẩm</label>
+              <div className="control">
+                <input
+                  {...register("name", { required: "Tên sản phẩm là bắt buộc" })}
+                  className="input"
+                  type="text"
+                  placeholder="Tên sản phẩm"
+                />
+                {errors.name && <p className="help is-danger">{errors.name.message}</p>}
+              </div>
             </div>
-          ))}
+
+            <div className="field">
+              <label className="label">Ảnh chính</label>
+              <div className="control">
+                <input {...register("images")} className="input" placeholder="Link ảnh chính" />
+              </div>
+              {imageUrl && (
+                <div className="mt-2">
+                  <img src={imageUrl} alt="Ảnh chính preview" className="h-32 object-cover border rounded" />
+                </div>
+              )}
+            </div>
+
+            <div className="field">
+              <label className="label">Mô tả</label>
+              <div className="control">
+                <textarea {...register("description")} className="textarea" placeholder="Mô tả chi tiết" />
+              </div>
+            </div>
+
+            <div className="field">
+              <label className="label">Danh mục</label>
+              <div className="control">
+                <div className="select">
+                  <select {...register("category_id", { required: "Bắt buộc chọn danh mục" })}>
+                    <option value="">-- Chọn danh mục --</option>
+                    {categories.map((cat: any) => (
+                      <option key={cat._id} value={cat._id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {errors.category_id && <p className="help is-danger">{errors.category_id.message}</p>}
+            </div>
+
+            <div className="field">
+              <label className="label">Trạng thái</label>
+              <div className="control">
+                <div className="select">
+                  <select {...register("status")}>
+                    <option value="active">Đang bán</option>
+                    <option value="disabled">Tạm tắt</option>
+                    <option value="new">Mới</option>
+                    <option value="bestseller">Bán chạy</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="field">
+              <label className="label">Thuộc tính</label>
+              <div className="field-body">
+                <div className="field grouped multiline">
+                  <div className="control">
+                    {attributes.map((att: any) => (
+                    <label className="checkbox mr-4" key={att._id}>
+                      <input type="checkbox" value={att._id} {...register("attributes")} />
+                      <span className="check" />
+                      <span className="control-label">{att.name}</span>
+                    </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="field">
+              <label className="label">Album (ảnh phụ, cách nhau bằng dấu phẩy)</label>
+              <div className="control">
+                <input {...register("album")} className="input" placeholder="https://... , https://..." />
+              </div>
+              {renderAlbumImages()}
+            </div>
+
+            <div className="field">
+              <label className="label">SKU</label>
+              <div className="control">
+                <input {...register("sku")} className="input" placeholder="SKU" />
+              </div>
+            </div>
+
+            <div className="field is-grouped mt-6">
+              <div className="control">
+                <button type="submit" className="button is-primary">Thêm sản phẩm</button>
+              </div>
+              <div className="control">
+                <Link to="/admin/product" className="button is-light">Quay lại</Link>
+              </div>
+            </div>
+          </form>
         </div>
-
-        <input
-          {...register("album")}
-          placeholder="Link ảnh phụ (cách nhau bởi dấu phẩy)"
-          className="input"
-        />
-
-        {/* SKU */}
-        <input {...register("sku")} placeholder="SKU" className="input" />
-
-        {/* Submit */}
-        <button type="submit" className="bg-green-500 text-white py-2 px-6 rounded">Thêm sản phẩm</button>
-      </form>
-    </div>
+      </div>
+    </section>
   );
 };
 

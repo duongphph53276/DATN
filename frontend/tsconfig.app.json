@@ -22,5 +22,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "src/layout/Admin/.tsx"]
+  "include": ["src", "src/layout/Admin/.tsx", "src/interfaces/product.ts"]
 }

@@ -4,7 +4,7 @@ import cors from 'cors';
 import connectDB from './config/db.js';
 import { AddCategory, DeleteCategory, EditCategory, GetCategoryById, ListCategory } from './controllers/category.js';
 import { createProduct, deleteProduct, getAllProducts, getProductById, updateProduct } from './controllers/product.js';
-import { createAttribute, createAttributeValue, getAllAttributes, getAttributeValues } from "./controllers/attribute.js";
+import { createAttribute,getAttributeById, createAttributeValue, deleteAttribute, getAllAttributes, getAttributeValueById, getAttributeValues, updateAttribute, updateAttributeValue, deleteAttributeValue } from "./controllers/attribute.js";
 import { createVariant, getVariantsByProduct } from './controllers/productVariant.js';
 
 dotenv.config();
@@ -33,12 +33,17 @@ app.get('/product/:id', getProductById);
 app.put('/product/edit/:id', updateProduct);
 app.delete('/product/:id', deleteProduct);
 // Attribute routes
-app.post("/attribute",createAttribute);
+app.post("/attribute/add", createAttribute);
 app.get("/attribute", getAllAttributes);
-
+app.get("/attribute/:id", getAttributeById);
+app.delete('/attribute/:id', deleteAttribute);
+app.put('/attribute/edit/:id', updateAttribute);
 // AttributeValue routes (gắn theo attributeId)
-app.post("/value/:attributeId", createAttributeValue);
-app.get("/value/:attributeId", getAttributeValues);
+app.post("/attribute-value/add", createAttributeValue);
+app.get("/attribute-value/list/:attributeId", getAttributeValues);
+app.get("/attribute-value/:id", getAttributeValueById);
+app.put("/attribute-value/edit/:id", updateAttributeValue);
+app.delete("/attribute-value/:id", deleteAttributeValue)
 // Variant routes
 app.post("/variant", createVariant);
 app.get("/product/:productId/variants", getVariantsByProduct);

@@ -1,9 +1,17 @@
 const Header = () => {
   return (
-    <header className="bg-white shadow p-4 flex items-center justify-between">
-      <h1 className="text-xl font-semibold">Admin Dashboard</h1>
-      <div className="text-sm text-gray-600">Xin chào, Admin</div>
+    <header>
+      <meta charSet="utf-8" />
+      <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>Dashboard - Admin One Tailwind CSS Admin Dashboard</title>
+      {/* Tailwind is included */}
+      <link rel="stylesheet" href="css/main.css" />
+      {/* Global site tag (gtag.js) - Google Analytics */}
+      {/*  */}
+      
     </header>
+
   )
 }
 

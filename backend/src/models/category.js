@@ -1,11 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 
 const CategorySchema = new Schema({
-    category_id:{
-        type: Number,
-        required:true,
-        unique:true
-    },
     name: {
         type: String,
         required: true,
@@ -24,8 +19,8 @@ const CategorySchema = new Schema({
         default: null,   // Nếu null thì là danh mục cha
     }
 },
-{
-    timestamps:true
-});
+    {
+        timestamps: true
+    });
 
 export const CategoryModel = mongoose.model('Category', CategorySchema);

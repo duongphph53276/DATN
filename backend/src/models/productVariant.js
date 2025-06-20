@@ -1,9 +1,6 @@
 import mongoose from "mongoose";
 
 const productVariantSchema = new mongoose.Schema({
-    variant_id: {
-        type: Number,
-    },
     product_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Product",

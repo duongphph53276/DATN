@@ -1,15 +1,11 @@
 import mongoose from "mongoose";
 
 const attributeSchema = new mongoose.Schema({
-    attribute_id: {
-        type: Number,
-        unique: true,
-    },
-    name: {
+    name: { //size, color
         type: String,
         required: true,
     },
-    display_name: {
+    display_name: { // size: kích thước
         type: String,
         required: true,
     },
