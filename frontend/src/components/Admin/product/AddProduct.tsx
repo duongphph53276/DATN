@@ -1,4 +1,4 @@
-import { useForm, SubmitHandler, WatchObserver } from "react-hook-form";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { useNavigate, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getAllProducts, postProduct } from "../../../api/product.api";

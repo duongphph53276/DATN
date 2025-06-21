@@ -14,34 +14,36 @@ import EditProduct from './components/Admin/product/EditProduct';
 import AddAttribute from './components/Admin/attribute/AddAttribute';
 import AttributeList from './components/Admin/attribute/ListAttribute';
 import EditAttribute from './components/Admin/attribute/EditAttribute';
+import ProductDetailAdmin from './components/Admin/product/ProductDetailAdmin';
 
 function App() {
   const routes = useRoutes([
     {
-      path:"/",
-      element:<ClientLayout/>,
-      children:[
-        { path:"", element:<Home/>}
+      path: "/",
+      element: <ClientLayout />,
+      children: [
+        { path: "", element: <Home /> }
       ]
     },
     {
-      path:"/admin",
-      element:<AdminLayout/>,
-      children:[
-        {path:"", element:<Dashboard/>},
-        {path:"category", element:<ListCategory/>},
-        {path:"category/add", element:<AddCategory/>},
-        {path:"category/edit/:id", element:<EditCategory/>},
-        {path:"product", element:<ProductList/>},
-        {path:"product/add", element:<AddProduct/>},
-        {path:"product/edit/:id", element:<EditProduct/>},
-        {path:"attribute", element:<AttributeList/>},
-        {path:"attribute/add", element:<AddAttribute/>},
-        {path:"attribute/edit/:id", element:<EditAttribute/>},
+      path: "/admin",
+      element: <AdminLayout />,
+      children: [
+        { path: "", element: <Dashboard /> },
+        { path: "category", element: <ListCategory /> },
+        { path: "category/add", element: <AddCategory /> },
+        { path: "category/edit/:id", element: <EditCategory /> },
+        { path: "product", element: <ProductList /> },
+        { path: "product/add", element: <AddProduct /> },
+        { path: "product/edit/:id", element: <EditProduct /> },
+        { path: "product/:id", element: <ProductDetailAdmin /> },
+        { path: "attribute", element: <AttributeList /> },
+        { path: "attribute/add", element: <AddAttribute /> },
+        { path: "attribute/edit/:id", element: <EditAttribute /> },
       ]
     },
     {
-      path:"*", element:<NotFound/>
+      path: "*", element: <NotFound />
     }
   ])
   return routes;

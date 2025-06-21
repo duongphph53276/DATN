@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getAllProducts, deleteProduct } from "../../../api/product.api";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { getCategories } from "../../../api/category.api"; // Giả định API lấy danh mục
 
 const ListProduct: React.FC = () => {
@@ -84,7 +84,9 @@ const ListProduct: React.FC = () => {
               <td className="border p-2">{product.status}</td>
               <td className="actions-cell">
                 <div className="buttons right nowrap">
-                  <button className="button small green --jb-modal" data-target="sample-modal-2" type="button">
+                  <button className="button small green --jb-modal" data-target="sample-modal-2" type="button"
+                    onClick={() => navigate(`/admin/product/${product._id}`)}
+                  >
                     <span className="icon"><i className="mdi mdi-eye" /></span>
                   </button>
                   <button

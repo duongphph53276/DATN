@@ -3,7 +3,7 @@ export interface IProduct {
   name: string;
   images?: string;
   album?: string[];
-  category_id: string; // là ObjectId, nhưng bạn dùng string ở frontend
+  category_id: string | { _id: string; name: string }; // là ObjectId, nhưng bạn dùng string ở frontend
   description?: string;
   status?: 'active' | 'disabled' | 'new' | 'bestseller';
   attributes?: string[]; // danh sách ObjectId của Attribute

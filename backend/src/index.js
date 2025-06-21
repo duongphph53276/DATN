@@ -47,7 +47,9 @@ app.delete("/attribute-value/:id", deleteAttributeValue)
 // Variant routes
 app.post("/variant", createVariant);
 app.get("/product/:productId/variants", getVariantsByProduct);
-
+// app.get("/variant/:id", getVariantById);
+// app.put("/variant/edit/:id", updateVariant);
+// app.delete("/variant/:id", deleteVariant);
 // Protected routes cho client (đã đăng nhập) - Phải có authMiddleware là đã đăng nhập - middleware
 
 //app.get('/profile', authMiddleware, Profile);

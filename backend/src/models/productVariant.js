@@ -21,7 +21,6 @@ const productVariantSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-
     attributes: [
         {
             attribute_id: {
