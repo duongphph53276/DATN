@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
      import axios from 'axios';
      import { useNavigate } from 'react-router-dom';
-     import { ICategory, ICategoryResponse, IAddCategoryRequest } from '../../../../interfaces/category';
+     import { ICategory, ICategoryResponse, IAddCategoryRequest } from '../../../interfaces/category';
 
      const AddCategory: React.FC = () => {
        const [name, setName] = useState<string>('');
