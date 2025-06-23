@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { ICategory, ICategoryResponse } from '../../../../interfaces/category';
+import { ICategory, ICategoryResponse } from '../../../interfaces/category';
 
 const ListCategory: React.FC = () => {
   const [categories, setCategories] = useState<ICategory[]>([]);
