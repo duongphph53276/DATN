@@ -8,10 +8,16 @@ import ListCategory from './components/Admin/category/ListCategory';
 import AddCategory from './components/Admin/category/AddCategory';
 import EditCategory from './components/Admin/category/EditCategory';
 import AdminLayout from './layout/Admin/Admin.layout';
+import Login from './components/Auth/Login';
+import Register from './components/Auth/Register';
+import ForgotPassword from './components/Auth/ForgotPassword';
 import ListVoucher from './components/Admin/voucher/ListVoucher';
 
 function App() {
   const routes = useRoutes([
+    {path:"/login", element:<Login/>},
+    {path:"/register", element:<Register/>},
+    {path:"/forgotpassword", element:<ForgotPassword/>},
     {
       path:"/",
       element:<ClientLayout/>,
