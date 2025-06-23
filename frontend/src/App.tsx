@@ -8,6 +8,7 @@ import ListCategory from './components/Admin/category/ListCategory';
 import AddCategory from './components/Admin/category/AddCategory';
 import EditCategory from './components/Admin/category/EditCategory';
 import AdminLayout from './layout/Admin/Admin.layout';
+import ListVoucher from './components/Admin/voucher/ListVoucher';
 
 function App() {
   const routes = useRoutes([
@@ -26,6 +27,10 @@ function App() {
         {path:"category", element:<ListCategory/>},
         {path:"category/add", element:<AddCategory/>},
         {path:"category/edit/:id", element:<EditCategory/>},
+        {path:"voucher", element:<ListVoucher/>},
+        // {path:"voucher/add", element:<AddVoucher/>},
+        // {path:"voucher/edit/:id", element:<EditVoucher/>},
+        
       ]
     },
     {
