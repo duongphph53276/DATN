@@ -12,6 +12,8 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import ForgotPassword from './components/Auth/ForgotPassword';
 import ListVoucher from './components/Admin/voucher/ListVoucher';
+import AddVoucher from './components/Admin/voucher/AddVoucher';
+import EditVoucher from './components/Admin/voucher/EditVoucher';
 
 function App() {
   const routes = useRoutes([
@@ -34,8 +36,9 @@ function App() {
         {path:"category/add", element:<AddCategory/>},
         {path:"category/edit/:id", element:<EditCategory/>},
         {path:"voucher", element:<ListVoucher/>},
-        // {path:"voucher/add", element:<AddVoucher/>},
-        // {path:"voucher/edit/:id", element:<EditVoucher/>},
+        {path:"voucher/add", element:<AddVoucher/>},
+        {path:"voucher/edit/:id", element:<EditVoucher/>},
+        
         
       ]
     },
