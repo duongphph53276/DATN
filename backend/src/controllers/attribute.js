@@ -1,6 +1,6 @@
 import Attribute from "../models/attribute.js";
 import AttributeValue from "../models/attributeValue.js";
-
+import mongoose from "mongoose";
 // Tạo Attribute
 export const createAttribute = async (req, res) => {
     try {
@@ -81,16 +81,24 @@ export const createAttributeValue = async (req, res) => {
 // Lấy một AttributeValue theo ID
 export const getAttributeValueById = async (req, res) => {
     try {
-        const value = await AttributeValue.findById(req.params.id);
-        if (!value) {
-            console.log("Giá trị không tồn tại:", attr.value_id);
+        const { id } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "ID không hợp lệ" });
         }
+
+        const value = await AttributeValue.findById(id);
+        if (!value) {
+            return res.status(404).json({ message: "Giá trị không tồn tại" });
+        }
+
         return res.status(200).json({
             message: "Lấy giá trị thành công",
             status: true,
             data: value,
         });
     } catch (error) {
+        console.error("Lỗi khi lấy AttributeValue:", error);
         return res.status(500).json({ message: "Lỗi server", error });
     }
 };

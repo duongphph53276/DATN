@@ -13,6 +13,7 @@ interface IVariantForm {
   price: number;
   quantity: number;
   image?: string;
+  sold_quantity?: number;
   attributes: IVariantAttribute[];
 }
 
