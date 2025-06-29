@@ -22,8 +22,8 @@ const ListCategory: React.FC = () => {
         } else {
           setError(response.data.message);
         }
-      } catch (err) {
-        setError('Không thể tải danh mục');
+      } catch (err:any) {
+        setError(err.response?.data?.message || 'Không thể tải danh mục');
       }
     };
     fetchCategories();
@@ -38,8 +38,8 @@ const ListCategory: React.FC = () => {
         } else {
           setError(response.data.message);
         }
-      } catch (err) {
-        setError('Xóa danh mục thất bại');
+      } catch (err:any) {
+        setError(err.response?.data?.message || 'Xóa danh mục thất bại');
       }
     }
   };

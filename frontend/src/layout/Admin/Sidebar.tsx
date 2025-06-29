@@ -11,6 +11,7 @@ const Sidebar = () => {
         <Link to="/admin/users" className="block text-gray-700 hover:text-blue-500">👤 Quản lý User</Link>
         <Link to="/admin/roles" className="block text-gray-700 hover:text-blue-500">👤 Quản lý Role</Link>
         <Link to="/admin/roles/create" className="block text-gray-700 hover:text-blue-500">➕ Thêm Role</Link>
+        <Link to="/admin/voucher" className="block text-gray-700 hover:text-blue-500">📂 mã giảm giá</Link>
       </nav>
     </aside>
   );

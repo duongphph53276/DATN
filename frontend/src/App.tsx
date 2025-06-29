@@ -17,6 +17,10 @@ import ListRole from './components/Admin/role/ListRole';
 import AddRole from './components/Admin/role/AddRole';
 import EditRole from './components/Admin/role/EditRole';
 
+import ListVoucher from './components/Admin/voucher/ListVoucher';
+import AddVoucher from './components/Admin/voucher/AddVoucher';
+import EditVoucher from './components/Admin/voucher/EditVoucher';
+
 function App() {
   const routes = useRoutes([
     { path: "/login", element: <Login /> },
@@ -28,6 +32,7 @@ function App() {
       children: [{ path: "", element: <Home /> }]
     },
     {
+
       path: "/admin",
       element: <AdminLayout />,
       children: [
@@ -35,6 +40,9 @@ function App() {
         { path: "category", element: <ListCategory /> },
         { path: "category/add", element: <AddCategory /> },
         { path: "category/edit/:id", element: <EditCategory /> },
+        { path: "voucher", element:<ListVoucher/>},
+        { path: "voucher/add", element:<AddVoucher/>},
+        { path: "voucher/edit/:id", element:<EditVoucher/>},
         { path: "users", element: <ListUser /> },
         { path: "users/edit/:id", element: <EditUser /> },
         { path: "roles", element:<ListRole/>},
