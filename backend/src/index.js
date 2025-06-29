@@ -5,6 +5,9 @@ import cors from 'cors';
 import connectDB from './config/db.js';
 import { CreateVoucher, ListVoucher, UpdateVoucher, DeleteVoucher } from './controllers/voucher.js';
 import { AddCategory, DeleteCategory, EditCategory, GetCategoryById, ListCategory } from './controllers/category.js';
+import { createProduct, deleteProduct, getAllProducts, getProductById, updateProduct } from './controllers/product.js';
+import { createAttribute,getAttributeById, createAttributeValue, deleteAttribute, getAllAttributes, getAttributeValueById, getAttributeValues, updateAttribute, updateAttributeValue, deleteAttributeValue } from "./controllers/attribute.js";
+import { createVariant, getVariantsByProduct } from './controllers/productVariant.js';
 import orderRoutes from './routes/order.routes.js';
 import { checkEmail, login, register } from './controllers/auth.js';
 import authMiddleware from './middleware/auth.js';
@@ -41,6 +44,27 @@ app.put('/category/edit/:id', EditCategory);
 app.delete('/category/:id', DeleteCategory);
 app.get('/category/:id', GetCategoryById);
 
+// product routes
+app.post('/product/add', createProduct);
+app.get('/product', getAllProducts);
+app.get('/product/:id', getProductById);
+app.put('/product/edit/:id', updateProduct);
+app.delete('/product/:id', deleteProduct);
+// Attribute routes
+app.post("/attribute/add", createAttribute);
+app.get("/attribute", getAllAttributes);
+app.get("/attribute/:id", getAttributeById);
+app.delete('/attribute/:id', deleteAttribute);
+app.put('/attribute/edit/:id', updateAttribute);
+// AttributeValue routes (gắn theo attributeId)
+app.post("/attribute-value/add", createAttributeValue);
+app.get("/attribute-value/list/:attributeId", getAttributeValues);
+app.get("/attribute-value/:id", getAttributeValueById);
+app.put("/attribute-value/edit/:id", updateAttributeValue);
+app.delete("/attribute-value/:id", deleteAttributeValue)
+// Variant routes
+app.post("/variant/add", createVariant);
+app.get("/product/:productId/variants", getVariantsByProduct);
 app.use('/api/orders', orderRoutes);
 
 // Admin routes
