@@ -1,6 +1,51 @@
-import React from 'react';
+import React, { useState } from 'react';
+import api from '../../middleware/axios';
 
 const Login: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await api.post('/login', { email, password });
+      const data = response.data;
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        // Giải mã token để lấy role
+        const tokenPayload = JSON.parse(atob(data.token.split('.')[1]));
+        const role = tokenPayload.role;
+
+        // Chuyển hướng dựa trên role
+        if (role === 'admin') {
+          window.location.href = '/admin';
+        } else if (role === 'client') {
+          window.location.href = '/';
+        } else {
+          setError('Unknown role. Please contact support.');
+        }
+      } else {
+        setError(data.message || 'Login failed');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'An error occurred. Please try again.';
+      // Phân tích lỗi từ backend
+      if (errorMessage === 'Invalid credentials') {
+        // Kiểm tra xem email có tồn tại không (giả định backend trả về lỗi cụ thể)
+        const userExists = await api.get(`/check-email?email=${email}`); // Cần endpoint check-email
+        if (!userExists.data.exists) {
+          setError('Email không tồn tại, tài khoản chưa được đăng ký');
+        } else {
+          setError('Bạn đã nhập sai mật khẩu, xin vui lòng nhập lại');
+          setPassword('');
+        }
+      } else {
+        setError(errorMessage);
+      }
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 bg-cover bg-center bg-no-repeat flex justify-center items-center"
@@ -10,13 +55,17 @@ const Login: React.FC = () => {
       }}
     >
       <div className="w-[420px] bg-white/10 border border-white/20 backdrop-blur-xl shadow-lg text-white rounded-xl p-10">
-        <form>
+        <form onSubmit={handleSubmit}>
           <h1 className="text-3xl font-semibold text-center mb-8">Login</h1>
+
+          {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
           <div className="relative w-full h-[50px] mb-6">
             <input
-              type="text"
-              placeholder="Username"
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full h-full bg-transparent border border-white/20 rounded-full text-white px-5 pr-12 outline-none placeholder-white"
             />
@@ -27,6 +76,8 @@ const Login: React.FC = () => {
             <input
               type="password"
               placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full h-full bg-transparent border border-white/20 rounded-full text-white px-5 pr-12 outline-none placeholder-white"
             />
@@ -50,7 +101,10 @@ const Login: React.FC = () => {
 
           <div className="text-center text-sm mt-6">
             <p>
-              Don't have an account? <a href="/register" className="font-semibold hover:underline">Register</a>
+              Don't have an account?{' '}
+              <a href="/register" className="font-semibold hover:underline">
+                Register
+              </a>
             </p>
           </div>
         </form>
