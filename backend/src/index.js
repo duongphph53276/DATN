@@ -1,3 +1,4 @@
+// index.js
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -5,6 +6,11 @@ import connectDB from './config/db.js';
 import { CreateVoucher, ListVoucher, UpdateVoucher, DeleteVoucher } from './controllers/voucher.js';
 import { AddCategory, DeleteCategory, EditCategory, GetCategoryById, ListCategory } from './controllers/category.js';
 import orderRoutes from './routes/order.routes.js';
+import { checkEmail, login, register } from './controllers/auth.js';
+import authMiddleware from './middleware/auth.js';
+import restrictTo from './middleware/restrictTo.js';
+import { getUserById, getUsers, updateUser } from './controllers/user/user.js';
+import { createRole, getRoleById, getRoles, updateRole } from './controllers/user/role.js';
 
 dotenv.config();
 
@@ -14,40 +20,37 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Public routes - Tạm thời dùng full routes vào đây, sau khi middleware sẽ chia sau
-// app.post('/register', Register);
-// app.post('/login', Login);
-// app.get('/products', ListProduct);
-// app.get('/products/:id', GetProductById);
+// Public routes
+app.post('/register', register);
+app.post('/login', login);
+app.get('/check-email', checkEmail);
+
+app.post('/roles/create', createRole);
+app.get('/roles', getRoles);
+app.get('/roles/:id', getRoleById);
+app.put('/roles/:id', updateRole);
 
 app.get('/vouchers', ListVoucher);
 app.post('/vouchers', CreateVoucher);
 app.put('/vouchers/:id', UpdateVoucher);
 app.delete('/vouchers/:id', DeleteVoucher);
 
-app.get('/category', ListCategory)
-app.post('/category/add', AddCategory)
-app.put('/category/edit/:id', EditCategory)
-app.delete('/category/:id', DeleteCategory)
+app.get('/category', ListCategory);
+app.post('/category/add', AddCategory);
+app.put('/category/edit/:id', EditCategory);
+app.delete('/category/:id', DeleteCategory);
 app.get('/category/:id', GetCategoryById);
-//order
-app.use('/api/orders',orderRoutes);
 
+app.use('/api/orders', orderRoutes);
 
+// Admin routes
+const adminRouter = express.Router();
+adminRouter.use(authMiddleware, restrictTo('admin'));
+adminRouter.get('/users', getUsers);
+adminRouter.get('/users/:id', getUserById);
+adminRouter.put('/users/:id', updateUser);
 
-// Protected routes cho client (đã đăng nhập) - Phải có authMiddleware là đã đăng nhập - middleware
-
-//app.get('/profile', authMiddleware, Profile);
-//app.put('/profile', authMiddleware, UpdateProfile);
-
-// Admin routes (chỉ admin)
-// các file admin sẽ có định dạng như sau :
-
-//const adminRouter = express.Router(); - kích hoạt quyền admin cho mỗi routes - middleware
-//adminRouter.use(authMiddleware, restrictTo('admin')); - đây để xác nhận chỉ đăng nhập - middleware
-//adminRouter.get('/products', ListProduct);
-
-//app.use('/admin', adminRouter); - định hướng admin của middleware
+app.use('/admin', adminRouter);
 
 // Khởi động server
 const startServer = async () => {
