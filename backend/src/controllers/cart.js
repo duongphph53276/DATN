@@ -15,7 +15,7 @@ export const GetCartByUser = async (req, res) => {
   }
 };
 
-// Thêm sản phẩm vào giỏ hàng
+// Thêm sản phẩm vào giỏ hàng - NHNgoan 02.07.2025
 export const AddToCart = async (req, res) => {
   try {
     const { userId, productId, quantity } = req.body;
