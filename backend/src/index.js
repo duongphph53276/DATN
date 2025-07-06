@@ -14,7 +14,11 @@ import authMiddleware from './middleware/auth.js';
 import restrictTo from './middleware/restrictTo.js';
 import { getUserById, getUsers, updateUser } from './controllers/user/user.js';
 import { createRole, getRoleById, getRoles, updateRole } from './controllers/user/role.js';
+
 import { createPermission, deletePermission, getPermissionById, getPermissions, updatePermission } from './controllers/user/permission.js';
+
+import { AddToCart, ClearCart, GetCartByUser, RemoveFromCart } from './controllers/cart.js';
+
 
 dotenv.config();
 
@@ -74,6 +78,11 @@ app.delete("/attribute-value/:id", deleteAttributeValue)
 app.post("/variant/add", createVariant);
 app.get("/product/:productId/variants", getVariantsByProduct);
 app.use('/api/orders', orderRoutes);
+
+app.get('/cart/:userId', GetCartByUser);          
+app.post('/cart/add', AddToCart);                  
+app.put('/cart/remove', RemoveFromCart);           
+app.delete('/cart/clear/:userId', ClearCart);    
 
 // Admin routes
 const adminRouter = express.Router();
