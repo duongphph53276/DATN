@@ -14,6 +14,7 @@ import authMiddleware from './middleware/auth.js';
 import restrictTo from './middleware/restrictTo.js';
 import { getUserById, getUsers, updateUser } from './controllers/user/user.js';
 import { createRole, getRoleById, getRoles, updateRole } from './controllers/user/role.js';
+import { createPermission, deletePermission, getPermissionById, getPermissions, updatePermission } from './controllers/user/permission.js';
 
 dotenv.config();
 
@@ -32,6 +33,13 @@ app.post('/roles/create', createRole);
 app.get('/roles', getRoles);
 app.get('/roles/:id', getRoleById);
 app.put('/roles/:id', updateRole);
+
+// Permission routes
+app.post('/permissions/create', createPermission);
+app.get('/permissions', getPermissions);
+app.get('/permissions/:id', getPermissionById);
+app.put('/permissions/:id', updatePermission);
+app.delete('/permissions/:id', deletePermission);
 
 app.get('/vouchers', ListVoucher);
 app.post('/vouchers', CreateVoucher);

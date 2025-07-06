@@ -28,6 +28,7 @@ import EditRole from './components/Admin/role/EditRole';
 import ListVoucher from './components/Admin/voucher/ListVoucher';
 import AddVoucher from './components/Admin/voucher/AddVoucher';
 import EditVoucher from './components/Admin/voucher/EditVoucher';
+import PermissionManagement from './components/Admin/permisson/Permission';
 
 function App() {
   const routes = useRoutes([
@@ -63,7 +64,8 @@ function App() {
         { path: "users/edit/:id", element: <EditUser /> },
         { path: "roles", element: <ListRole /> },
         { path: "roles/create", element: <AddRole /> },
-        { path: "roles/edit/:id", element: <EditRole /> }
+        { path: "roles/edit/:id", element: <EditRole /> },
+        { path: "permissions", element: <PermissionManagement /> }, // Thêm route cho Permission
       ]
     },
     { path: "*", element: <NotFound /> }
