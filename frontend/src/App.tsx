@@ -29,6 +29,10 @@ import ListVoucher from './components/Admin/voucher/ListVoucher';
 import AddVoucher from './components/Admin/voucher/AddVoucher';
 import EditVoucher from './components/Admin/voucher/EditVoucher';
 import PermissionManagement from './components/Admin/permisson/Permission';
+import DetailsPage from './components/Client/HomePage/Detail';
+import Cart from './components/Client/Account/Cart';
+import Checkout from './components/Client/Account/Checkout';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   const routes = useRoutes([
@@ -38,8 +42,15 @@ function App() {
     {
       path: "/",
       element: <ClientLayout />,
-      children: [{ path: "", element: <Home /> }]
+      children: [{ path: "", element: <Home /> },
+        { path: "product/:id", element: <DetailsPage /> },
+           {path : "/cart", element :<Cart/>},
+           {path : "/checkout", element :<Checkout/>},
+         
+      ]
+      
     },
+    
     {
 
       path: "/admin",
@@ -70,7 +81,15 @@ function App() {
     },
     { path: "*", element: <NotFound /> }
   ]);
+   return (
+    <>
+      <ScrollToTop/>
+      {routes}
+    </>
+  );
   return routes;
+  
 }
+
 
 export default App;
