@@ -1,0 +1,33 @@
+import { Sale } from "../components/file/Sale"
+
+ const saleProduct : Sale[]=[
+ { id: '25',
+        img: "https://gaubongonline.vn/wp-content/uploads/2024/10/Gau-Bong-Raisca-Khung-Long-6.jpg",
+        name: "Gấu Bông Raisca cosplay Khủng long ",
+        price: "142.500₫",
+        oldPrice: "285.000₫",
+        size: ["30cm ", "40cm"],
+      },
+      { id: '26',
+        img: "https://gaubongonline.vn/wp-content/uploads/2025/02/Blindbox-Baby-Three-Tho-Macaron-V2-9.jpg",
+        name: "Blindbox Baby Three Macaron Ver 2 ",
+        price: "245.000₫",
+        oldPrice: "350.000₫",
+        size: [],
+      },
+      { id: '27',
+        img: "https://gaubongonline.vn/wp-content/uploads/2024/05/Capybara-doi-vit-deo-tui-2.jpg",
+        name: "Chuột Capybara Đội Vịt Đeo Túi ",
+        price: "206.000₫",
+        oldPrice: "295.000₫",
+        size: ["35cm","45cm "],
+      },
+      { id: '28',
+        img: "https://gaubongonline.vn/wp-content/uploads/2025/01/Baby-Three-Tho-Long-Min-3.jpg",
+        name: "Gấu Bông Baby Three Thỏ Đứng Đội Nơ ",
+        price: "92.500₫",
+        oldPrice: "105.000₫",
+        size: ["30cm","40cm","55cm","75cm"],
+      },
+ ]
+ export default saleProduct
