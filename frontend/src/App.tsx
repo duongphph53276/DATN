@@ -33,6 +33,7 @@ import DetailsPage from './components/Client/HomePage/Detail';
 import Cart from './components/Client/Account/Cart';
 import Checkout from './components/Client/Account/Checkout';
 import ScrollToTop from './components/ScrollToTop';
+import AllProducts from './components/Client/HomePage/AllProduct';
 
 function App() {
   const routes = useRoutes([
@@ -46,6 +47,7 @@ function App() {
         { path: "product/:id", element: <DetailsPage /> },
            {path : "/cart", element :<Cart/>},
            {path : "/checkout", element :<Checkout/>},
+           {path :"/all-products", element : <AllProducts />}
          
       ]
       
