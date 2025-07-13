@@ -1,16 +1,24 @@
 import Product from "../models/product.js";
 import ProductVariant from "../models/productVariant.js"
+import { generateSku } from "../utils/generateSku.js";
+
 export const createProduct = async (req, res) => {
   try {
-    const product = await Product.create(req.body);
-    return res.status(201).json({
-      message: "Thêm sản phẩm thành công",
-      status: true,
-      data: product
+    // Nếu không truyền SKU thì generate tự động
+    if (!req.body.sku || req.body.sku.trim() === "") {
+      req.body.sku = await generateSku();
+    }
+
+    const newProduct = await Product.create({
+      ...req.body,
+      images: req.body.images || "", // đã là URL từ Cloudinary
+      album: req.body.album || [],   // đã là mảng URL từ Cloudinary
     });
+
+    return res.status(201).json({ message: "Thêm sản phẩm thành công", data: newProduct });
   } catch (err) {
-    console.error("Lỗi khi thêm sản phẩm:", err); // thêm dòng này để debug
-    return res.status(500).json({ message: "Lỗi tạo sản phẩm", err });
+    console.error("Lỗi createProduct:", err); // Ghi log cụ thể
+    return res.status(500).json({ message: "Lỗi server", error: err });
   }
 };
 // Lấy danh sách tất cả sản phẩm
@@ -27,7 +35,6 @@ export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
       .populate("category_id")
-      .populate("attributes");
     const variants = await ProductVariant.find({ product: req.params.id });
     if (!product) return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
     return res.json({ data: { product, variants } });
