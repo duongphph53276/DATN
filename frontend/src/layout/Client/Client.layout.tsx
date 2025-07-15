@@ -1,21 +1,17 @@
-import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
-import Banner from './Banner';
+import { Outlet } from 'react-router-dom';
 
-const ClientLayout = () => {
-  return (
-    <div className="flex flex-col min-h-screen bg-gray-50 w-full">
-      <Header />
-        <Banner/>
-        <hr />
-      <main className="flex-grow container mx-auto p-4">
-        <Outlet />
-      </main>
+const ClientLayout = () => (
+  <div className="flex flex-col min-h-screen">
+    <Header />
 
-      <Footer />
-    </div>
-  );
-};
+    <main className="flex-1">
+      <Outlet />
+    </main>
+
+    <Footer />
+  </div>
+);
 
 export default ClientLayout;
