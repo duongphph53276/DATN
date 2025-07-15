@@ -29,11 +29,13 @@ import ListVoucher from './components/Admin/voucher/ListVoucher';
 import AddVoucher from './components/Admin/voucher/AddVoucher';
 import EditVoucher from './components/Admin/voucher/EditVoucher';
 import PermissionManagement from './components/Admin/permisson/Permission';
+import ListOrderModule from './components/Admin/order/@ListOrderModule/ListOrderModule';
+import OrderDetail from './components/Admin/order/@OrderDetail/OrderDetail';
 import DetailsPage from './components/Client/HomePage/Detail';
 import Cart from './components/Client/Account/Cart';
 import Checkout from './components/Client/Account/Checkout';
-import ScrollToTop from './components/ScrollToTop';
 import AllProducts from './components/Client/HomePage/AllProduct';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   const routes = useRoutes([
@@ -68,7 +70,7 @@ function App() {
         { path: "product/:id", element: <ProductDetailAdmin /> },
         { path: "attribute", element: <AttributeList /> },
         { path: "attribute/add", element: <AddAttribute /> },
-        { path: "attribute/edit/:id", element: <EditAttribute /> },
+{ path: "attribute/edit/:id", element: <EditAttribute /> },
         { path: "product/:id/add-variant", element: <AddVariant /> },
         { path: "voucher", element: <ListVoucher /> },
         { path: "voucher/add", element: <AddVoucher /> },
@@ -79,6 +81,8 @@ function App() {
         { path: "roles/create", element: <AddRole /> },
         { path: "roles/edit/:id", element: <EditRole /> },
         { path: "permissions", element: <PermissionManagement /> }, // Thêm route cho Permission
+        { path: "order-list", element: <ListOrderModule /> }, 
+        { path: "order-detail/:id", element: <OrderDetail /> }, 
       ]
     },
     { path: "*", element: <NotFound /> }

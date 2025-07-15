@@ -1,4 +1,3 @@
-
 import React from 'react'
 import { NavLink } from 'react-router-dom'
 import {
@@ -10,6 +9,8 @@ import {
   User,
   ShieldCheck,
   PercentCircle,
+  Truck
+  
 } from 'lucide-react'
 
 const Sidebar = () => {
@@ -20,6 +21,7 @@ const Sidebar = () => {
     { name: 'Sản phẩm', path: '/admin/product', icon: <Package size={18} /> },
     { name: 'Thuộc tính', path: '/admin/attribute', icon: <Settings size={18} /> },
     { name: 'Quản lý User', path: '/admin/users', icon: <User size={18} /> },
+    { name: 'Quản lý đơn hàng', path: '/admin/order-list', icon: <Truck size={18} /> },
     { name: 'Quản lý Role', path: '/admin/roles', icon: <ShieldCheck size={18} /> },
     { name: 'Thêm Role', path: '/admin/roles/create', icon: <Plus size={18} /> },
     { name: 'Quản lý Permission', path: '/admin/permissions', icon: <ShieldCheck size={18} /> }, // Thêm mục mới
@@ -54,4 +56,3 @@ const Sidebar = () => {
 
 
 export default Sidebar
-
