@@ -1,4 +1,5 @@
 import Banner from "../../../layout/Client/Banner";
+// import ProductFilters from "../../../layout/Client/ProductFilters";
 import BlindboxSection from "./sections/BlindboxSection";
 import CategorySection from "./sections/CategorySection";
 import CoupleSection from "./sections/CoupleSection";
@@ -13,7 +14,7 @@ const Home = () => {
   return (
     <>
       <Banner />
-      
+      {/* <ProductFilters onFilter={() => {}} /> */}
     <CategorySection/>
     <CoupleSection />
     <HottrendSection/>
