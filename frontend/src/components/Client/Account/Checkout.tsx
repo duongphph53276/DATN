@@ -35,90 +35,95 @@ const Checkout: React.FC = () => {
       return;
     }
 
-    // Bạn có thể gửi đơn hàng tới server tại đây (API)
-
-    alert('Đặt hàng thành công!');
+    // Gửi đơn hàng tới server ở đây (nếu cần)
+    alert('🎉 Đặt hàng thành công!');
     localStorage.removeItem('cart');
-    window.location.href = '/'; // chuyển về trang chủ hoặc trang cảm ơn
+    window.location.href = '/';
   };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
-      <h2 className="text-3xl font-bold mb-6">🧾 Thông tin thanh toán</h2>
+      <h2 className="text-3xl font-bold text-center mb-10">🧾 Thông tin thanh toán</h2>
 
-      {/* Thông tin giỏ hàng */}
+      {/* Giỏ hàng */}
       {cartItems.length === 0 ? (
-        <p className="text-gray-600">Không có sản phẩm trong giỏ hàng.</p>
+        <p className="text-gray-500 text-center">Không có sản phẩm trong giỏ hàng.</p>
       ) : (
-        <div className="mb-8">
+        <div className="mb-10 space-y-4">
           {cartItems.map((item, index) => (
             <div
               key={`${item.id}-${item.size}-${index}`}
-              className="flex items-center justify-between py-4 border-b"
+              className="flex items-center justify-between bg-white shadow rounded-xl p-4"
             >
               <div className="flex gap-4 items-center">
                 <img
                   src={item.image}
                   alt={item.name}
-                  className="w-14 h-14 object-cover rounded"
+                  className="w-16 h-16 object-cover rounded-lg"
                 />
                 <div>
-                  <p className="font-medium">{item.name}</p>
+                  <h3 className="font-semibold text-lg">{item.name}</h3>
                   <p className="text-sm text-gray-500">Size: {item.size}</p>
-                  <p className="text-sm text-gray-500">x{item.quantity}</p>
+                  <p className="text-sm text-gray-500">Số lượng: x{item.quantity}</p>
                 </div>
               </div>
-              <div className="text-right text-pink-600 font-semibold">
+              <div className="text-right text-pink-600 font-semibold text-lg">
                 {(item.price * item.quantity).toLocaleString()}₫
               </div>
             </div>
           ))}
-          <div className="text-right text-xl font-bold mt-4">
+          <div className="text-right text-2xl font-bold mt-4">
             Tổng cộng: <span className="text-pink-600">{totalPrice.toLocaleString()}₫</span>
           </div>
         </div>
       )}
 
-      {/* Form đặt hàng */}
-      <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Form thanh toán */}
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-6 rounded-xl shadow space-y-6"
+      >
         <div>
-          <label className="block font-semibold mb-1">Họ và tên</label>
+          <label className="block font-semibold text-gray-700 mb-2">👤 Họ và tên</label>
           <input
             type="text"
-            className="w-full border rounded px-4 py-2"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-400"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            placeholder="Nhập họ tên "
             required
           />
         </div>
 
         <div>
-          <label className="block font-semibold mb-1">Số điện thoại</label>
+          <label className="block font-semibold text-gray-700 mb-2">📞 Số điện thoại</label>
           <input
             type="tel"
-            className="w-full border rounded px-4 py-2"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-400"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
+            placeholder="Nhập số điện thoại "
             required
           />
         </div>
 
         <div>
-          <label className="block font-semibold mb-1">Địa chỉ nhận hàng</label>
+          <label className="block font-semibold text-gray-700 mb-2">🏠 Địa chỉ nhận hàng</label>
           <textarea
-            className="w-full border rounded px-4 py-2"
             rows={3}
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-400"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
+            placeholder="Nhập địa chỉ "
             required
           ></textarea>
         </div>
 
         <button
           type="submit"
-          className="w-full sm:w-auto bg-pink-500 text-white px-6 py-3 rounded-xl font-semibold shadow hover:bg-pink-600 transition"
+          className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 rounded-xl transition duration-300"
         >
-          Đặt hàng ngay
+          🛒 Đặt hàng ngay
         </button>
       </form>
     </div>
