@@ -1,0 +1,170 @@
+.wrapper {
+  padding: 40px;
+  background-color: #f9fafb;
+  min-height: 100vh;
+  font-family: Quicksand, sans-serif;
+}
+.loading-page{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 50vh;
+}
+
+.banner {
+  background: #e9efff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  img{
+    width: 100px;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  p {
+    margin-top: 4px;
+    color: #6b7280;
+    font-size: 14px;
+
+    span {
+      font-weight: 500;
+    }
+  }
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+  }
+}
+
+.buttons {
+  display: flex;
+  gap: 12px;
+  select{
+    border: 1px solid #3b82f6;
+    border-radius: 5px;
+    color: #3b82f6;
+    width: 120px;
+  }
+}
+
+.btnPrimary {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+
+  &:hover {
+    background: #2563eb;
+  }
+}
+
+.btnOutline {
+  background: transparent;
+  border: 1px solid #3b82f6;
+  color: #3b82f6;
+  padding: 8px 14px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+
+  &:hover {
+    background: #eff6ff;
+  }
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+
+  .label {
+    font-weight: 500;
+    color: #6b7280;
+    font-size: 14px;
+  }
+
+  p {
+    margin: 4px 0;
+  }
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 32px;
+
+  th {
+    background-color: #f3f4f6;
+    text-align: left;
+    padding: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #374151;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  td {
+    padding: 12px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 14px;
+  }
+}
+
+.totalBox {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+
+  .line {
+    display: flex;
+    justify-content: space-between;
+    width: 300px;
+    font-size: 14px;
+    color: #374151;
+
+    &.grand {
+      font-weight: 700;
+      font-size: 16px;
+      color: #111827;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .totalBox .line {
+    width: 100%;
+  }
+}

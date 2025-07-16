@@ -29,6 +29,14 @@ import ListVoucher from './components/Admin/voucher/ListVoucher';
 import AddVoucher from './components/Admin/voucher/AddVoucher';
 import EditVoucher from './components/Admin/voucher/EditVoucher';
 import EditVariant from './components/Admin/variant/EditVariant';
+import PermissionManagement from './components/Admin/permisson/Permission';
+import ListOrderModule from './components/Admin/order/@ListOrderModule/ListOrderModule';
+import OrderDetail from './components/Admin/order/@OrderDetail/OrderDetail';
+import DetailsPage from './components/Client/HomePage/Detail';
+import Cart from './components/Client/Account/Cart';
+import Checkout from './components/Client/Account/Checkout';
+import AllProducts from './components/Client/HomePage/AllProduct';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   const routes = useRoutes([
@@ -38,8 +46,16 @@ function App() {
     {
       path: "/",
       element: <ClientLayout />,
-      children: [{ path: "", element: <Home /> }]
+      children: [{ path: "", element: <Home /> },
+        { path: "product/:id", element: <DetailsPage /> },
+           {path : "/cart", element :<Cart/>},
+           {path : "/checkout", element :<Checkout/>},
+           {path :"/all-products", element : <AllProducts />}
+         
+      ]
+      
     },
+    
     {
 
       path: "/admin",
@@ -58,6 +74,8 @@ function App() {
         { path: "attribute/edit/:id", element: <EditAttribute /> },
         { path: "product/:productId/add-variant", element: <AddVariant /> },
         { path: "product/:productId/edit-variant/:variantId", element: <EditVariant/> },
+        { path: "attribute/edit/:id", element: <EditAttribute /> },
+        { path: "product/:id/add-variant", element: <AddVariant /> },
         { path: "voucher", element: <ListVoucher /> },
         { path: "voucher/add", element: <AddVoucher /> },
         { path: "voucher/edit/:id", element: <EditVoucher /> },
@@ -65,12 +83,23 @@ function App() {
         { path: "users/edit/:id", element: <EditUser /> },
         { path: "roles", element: <ListRole /> },
         { path: "roles/create", element: <AddRole /> },
-        { path: "roles/edit/:id", element: <EditRole /> }
+        { path: "roles/edit/:id", element: <EditRole /> },
+        { path: "permissions", element: <PermissionManagement /> }, // Thêm route cho Permission
+        { path: "order-list", element: <ListOrderModule /> }, 
+        { path: "order-detail/:id", element: <OrderDetail /> }, 
       ]
     },
     { path: "*", element: <NotFound /> }
   ]);
+   return (
+    <>
+      <ScrollToTop/>
+      {routes}
+    </>
+  );
   return routes;
+  
 }
+
 
 export default App;

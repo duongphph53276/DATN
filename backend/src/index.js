@@ -19,6 +19,10 @@ import { createRole, getRoleById, getRoles, updateRole } from './controllers/use
 import path from "path";
 import { fileURLToPath } from "url";
 import upload from './middleware/upload.js';
+import { createPermission, deletePermission, getPermissionById, getPermissions, updatePermission } from './controllers/user/permission.js';
+
+import { AddToCart, ClearCart, GetCartByUser, RemoveFromCart } from './controllers/cart.js';
+
 
 dotenv.config();
 
@@ -40,6 +44,13 @@ app.post('/roles/create', createRole);
 app.get('/roles', getRoles);
 app.get('/roles/:id', getRoleById);
 app.put('/roles/:id', updateRole);
+
+// Permission routes
+app.post('/permissions/create', createPermission);
+app.get('/permissions', getPermissions);
+app.get('/permissions/:id', getPermissionById);
+app.put('/permissions/:id', updatePermission);
+app.delete('/permissions/:id', deletePermission);
 
 app.get('/vouchers', ListVoucher);
 app.post('/vouchers', CreateVoucher);
@@ -81,6 +92,11 @@ app.delete('/variant/:id', deleteVariant);
 app.put('/variant/edit/:id', updateVariant);
 // oder
 app.use('/api/orders', orderRoutes);
+
+app.get('/cart/:userId', GetCartByUser);          
+app.post('/cart/add', AddToCart);                  
+app.put('/cart/remove', RemoveFromCart);           
+app.delete('/cart/clear/:userId', ClearCart);    
 
 // Admin routes
 const adminRouter = express.Router();
