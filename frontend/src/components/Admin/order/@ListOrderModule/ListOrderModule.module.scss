@@ -1,0 +1,234 @@
+.wrapper {
+  padding: 24px;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.searchBox {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+
+  input {
+    width: 100%;
+    max-width: 400px;
+    padding: 12px 16px;
+    font-size: 15px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    outline: none;
+    transition: 0.3s;
+
+    &:focus {
+      border-color: #36d7b7;
+      box-shadow: 0 0 5px rgba(54, 215, 183, 0.3);
+    }
+  }
+}
+
+.filterBox {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+
+  .inputSearch {
+    flex: 1 1 250px;
+
+    input {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      transition: 0.3s ease;
+      outline: none;
+
+      &:focus {
+        border-color: #36d7b7;
+        box-shadow: 0 0 5px rgba(54, 215, 183, 0.3);
+      }
+    }
+  }
+
+  .selectFilter,
+  .dateFilter {
+    flex: 1 1 180px;
+
+    select,
+    input[type="date"] {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      outline: none;
+      transition: 0.3s;
+
+      &:focus {
+        border-color: #36d7b7;
+        box-shadow: 0 0 5px rgba(54, 215, 183, 0.3);
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+
+    .inputSearch,
+    .selectFilter,
+    .dateFilter {
+      width: 100%;
+    }
+  }
+}
+
+.loadingCenter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 0;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.05);
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+  font-size: 14px;
+
+  th {
+    padding: 12px 10px;
+    text-align: left;
+    background-color: #f4f4f4;
+    font-weight: 600;
+    border-bottom: 1px solid #e5e5e5;
+    white-space: nowrap;
+  }
+
+  td {
+    background-color: #fff;
+    padding: 12px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: top;
+  }
+
+  td:first-child {
+    width: 60px;
+    text-align: center;
+    font-weight: bold;
+    color: #555;
+    border-radius: 8px 0 0 8px;
+  }
+
+  td:last-child {
+    border-radius: 0 8px 8px 0;
+  }
+
+  .button-navigate{
+    background-color: #36d7b7;
+    padding: 8px 10px;
+    font-size: 10px;
+    border-radius: 5px;
+  }
+  .button-navigate:hover {
+    background-color: #79d1bf;
+  }
+  .status {
+    padding: 5px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: capitalize;
+
+    &.pending {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+
+    &.processing,
+    &.preparing {
+      background-color: #d1ecf1;
+      color: #0c5460;
+    }
+
+    &.shipping {
+      background-color: #cce5ff;
+      color: #004085;
+    }
+
+    &.delivered {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    &.cancelled {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+  }
+
+  .productList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 10px;
+
+    div {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.4;
+    }
+  }
+}
+
+.noData {
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+  color: #777;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+  list-style: none;
+  gap: 8px;
+
+  li {
+    a {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #333;
+      font-weight: 500;
+      transition: 0.2s;
+
+      &:hover {
+        background-color: #f0f0f0;
+      }
+    }
+  }
+
+  .active {
+    a {
+      background-color: #36d7b7;
+      color: white;
+      border-color: #36d7b7;
+    }
+  }
+}
