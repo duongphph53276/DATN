@@ -16,6 +16,7 @@
     "axios": "^1.8.4",
     "bootstrap": "^5.3.7",
     "jquery": "^3.7.1",
+    "lucide-react": "^0.525.0",
     "perfect-scrollbar": "^1.5.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
