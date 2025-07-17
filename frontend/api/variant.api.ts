@@ -1,4 +1,4 @@
-import { IVariant } from "../interfaces/variant";
+import { IVariant } from "../src/interfaces/variant";
 import instance from "./instance";
 
 // Lấy danh sách tất cả biến thể của một sản phẩm
@@ -12,7 +12,7 @@ export const getVariantById = (id: string | number) => {
 };
 
 // Thêm mới biến thể cho sản phẩm
-export const addVariant = async (data: IVariant) => {
+export const postVariant = async (data: IVariant) => {
   try {
     const res = await instance.post("/variant/add", data);
     return res.data;

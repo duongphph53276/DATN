@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { getProductById } from "../../../../api/product.api";
-import { getVariantsByProduct } from "../../../../api/variant.api";
+import { getVariantsByProduct, deleteVariant } from "../../../../api/variant.api"; // Thêm deleteVariant
 import { IProduct } from "../../../interfaces/product";
 import { IVariant, IVariantAttribute } from "../../../interfaces/variant";
 
@@ -9,7 +9,7 @@ const ProductDetailAdmin = () => {
   const { id } = useParams();
   const [product, setProduct] = useState<IProduct | null>(null);
   const [variants, setVariants] = useState<IVariant[]>([]);
-
+  const navigate = useNavigate()
   useEffect(() => {
     if (!id) return;
 
@@ -29,6 +29,26 @@ const ProductDetailAdmin = () => {
   }, [id]);
 
   if (!product) return <div className="text-center py-10">Đang tải sản phẩm...</div>;
+
+  // Handler xóa biến thể
+  const handleDeleteVariant = async (variantId: string | number) => {
+    if (!window.confirm("Bạn có chắc muốn xóa biến thể này?")) return;
+
+    try {
+      await deleteVariant(variantId);
+      setVariants(variants.filter((variant) => variant._id !== variantId));
+      alert("Xóa biến thể thành công");
+    } catch (error) {
+      console.error("Lỗi xóa biến thể:", error);
+      alert("Không thể xóa biến thể. Vui lòng thử lại.");
+    }
+  };
+
+  // Handler sửa biến thể (gợi ý, cần form riêng)
+  const handleEditVariant = (variantId: string) => {
+    // Điều hướng đến trang sửa biến thể hoặc mở form sửa
+    navigate(`/admin/product/${id}/edit-variant/${variantId}`); // Ví dụ
+  };
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -77,6 +97,7 @@ const ProductDetailAdmin = () => {
               <th className="px-4 py-2 border">Giá</th>
               <th className="px-4 py-2 border">Số lượng</th>
               <th className="px-4 py-2 border">Thuộc tính</th>
+              <th className="px-4 py-2 border">Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -100,11 +121,27 @@ const ProductDetailAdmin = () => {
                     </div>
                   ))}
                 </td>
+                <td className="px-4 py-2 border">
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleEditVariant(variant._id)}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      onClick={() => handleDeleteVariant(variant._id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
             {variants.length === 0 && (
               <tr>
-                <td colSpan={4} className="text-center py-4 text-gray-500 italic border">
+                <td colSpan={5} className="text-center py-4 text-gray-500 italic border">
                   Chưa có biến thể nào cho sản phẩm này.
                 </td>
               </tr>

@@ -29,50 +29,47 @@ const AddAttribute = () => {
   };
 
   return (
-    <div className="max-w-xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Thêm thuộc tính</h1>
+    <div className="p-6 max-w-2xl mx-auto">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Thêm thuộc tính mới</h1>
         <button
           onClick={() => navigate("/admin/attribute")}
-          className="text-sm text-blue-600 hover:underline"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          ← Quay lại
+          Quay lại
         </button>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow-md rounded-lg p-6 space-y-5">
-        {/* Tên thuộc tính */}
+      {/* Form */}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 bg-white shadow-md p-6 rounded-lg">
         <div>
-          <label className="block font-medium mb-1">Tên thuộc tính (vd: size, color)</label>
+          <label className="block font-medium mb-1">Tên thuộc tính</label>
           <input
             {...register("name", { required: "Không được để trống" })}
             type="text"
-            className="w-full border px-3 py-2 rounded"
-            placeholder="Nhập tên thuộc tính"
+            placeholder="VD: color, size"
+            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
         </div>
 
-        {/* Tên hiển thị */}
         <div>
-          <label className="block font-medium mb-1">Tên hiển thị (vd: Kích thước)</label>
+          <label className="block font-medium mb-1">Tên hiển thị</label>
           <input
             {...register("display_name", { required: "Không được để trống" })}
             type="text"
-            className="w-full border px-3 py-2 rounded"
-            placeholder="Nhập tên hiển thị"
+            placeholder="Tên hiển thị"
+            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {errors.display_name && (
-            <p className="text-red-500 text-sm mt-1">{errors.display_name.message}</p>
-          )}
+          {errors.display_name && <p className="text-red-500 text-sm mt-1">{errors.display_name.message}</p>}
         </div>
 
-        {/* Loại thuộc tính */}
         <div>
           <label className="block font-medium mb-1">Loại thuộc tính</label>
           <select
             {...register("type")}
-            className="w-full border px-3 py-2 rounded bg-white"
+            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="text">Text</option>
             <option value="number">Number</option>
@@ -81,18 +78,17 @@ const AddAttribute = () => {
           </select>
         </div>
 
-        {/* Button actions */}
-        <div className="flex gap-3 pt-2">
+        <div className="flex gap-4 mt-6">
           <button
             type="submit"
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
           >
             Thêm mới
           </button>
           <button
             type="button"
             onClick={() => reset()}
-            className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400 transition"
+            className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
           >
             Reset
           </button>

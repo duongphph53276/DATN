@@ -21,13 +21,6 @@ const productSchema = new mongoose.Schema({
         enum: ["active", "disabled", "new", "bestseller"],
         default: "active",
     },
-    attributes: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Attribute",
-            required: true,
-        },
-    ],
     album: {
         type: [String],
         default: []
