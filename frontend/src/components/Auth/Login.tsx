@@ -11,13 +11,19 @@ const Login: React.FC = () => {
     try {
       const response = await api.post('/login', { email, password });
       const data = response.data;
+
       if (data.token) {
         localStorage.setItem('token', data.token);
-        // Giải mã token để lấy role
+
+
         const tokenPayload = JSON.parse(atob(data.token.split('.')[1]));
         const role = tokenPayload.role;
 
-        // Chuyển hướng dựa trên role
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
+
+       
         if (role === 'admin') {
           window.location.href = '/admin';
         } else if (role === 'client') {
@@ -30,15 +36,18 @@ const Login: React.FC = () => {
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'An error occurred. Please try again.';
-      // Phân tích lỗi từ backend
+
       if (errorMessage === 'Invalid credentials') {
-        // Kiểm tra xem email có tồn tại không (giả định backend trả về lỗi cụ thể)
-        const userExists = await api.get(`/check-email?email=${email}`); // Cần endpoint check-email
-        if (!userExists.data.exists) {
-          setError('Email không tồn tại, tài khoản chưa được đăng ký');
-        } else {
-          setError('Bạn đã nhập sai mật khẩu, xin vui lòng nhập lại');
-          setPassword('');
+        try {
+          const userExists = await api.get(`/check-email?email=${email}`);
+          if (!userExists.data.exists) {
+            setError('Email không tồn tại, tài khoản chưa được đăng ký');
+          } else {
+            setError('Bạn đã nhập sai mật khẩu, xin vui lòng nhập lại');
+            setPassword('');
+          }
+        } catch {
+          setError('Không thể xác minh email. Vui lòng thử lại sau.');
         }
       } else {
         setError(errorMessage);
@@ -48,66 +57,69 @@ const Login: React.FC = () => {
 
   return (
     <div
-      className="fixed inset-0 bg-cover bg-center bg-no-repeat flex justify-center items-center"
+      className="min-h-screen flex items-center justify-center bg-cover bg-center px-4"
       style={{
         backgroundImage:
-          'url(https://img.playbook.com/IZSaaisbuPYRUSQYBZckzA61Px-1dJx2_5pGRp3N4dk/Z3M6Ly9wbGF5Ym9v/ay1hc3NldHMtcHVi/bGljLzRkZmUwYjQ2/LWRhNjAtNDQ2Yy1h/Y2UxLWM0ZTZkMGI3/NTdlMA)',
+          "url('https://img.lovepik.com/bg/20240224/Captivating-3D-Rendered-Illustration-with-Charming-Teddy-Bears-and-Fluffy_3695349_wh300.jpg')",
       }}
     >
-      <div className="w-[420px] bg-white/10 border border-white/20 backdrop-blur-xl shadow-lg text-white rounded-xl p-10">
-        <form onSubmit={handleSubmit}>
-          <h1 className="text-3xl font-semibold text-center mb-8">Login</h1>
+      <div className="w-full max-w-md bg-white/80 backdrop-blur-lg shadow-2xl rounded-2xl p-8">
+        <h2 className="text-3xl font-bold text-center text-rose-600 mb-6">Đăng nhập</h2>
 
-          {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+        {error && <p className="text-center text-red-500 mb-4">{error}</p>}
 
-          <div className="relative w-full h-[50px] mb-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               type="email"
-              placeholder="Email"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-rose-400"
+              placeholder="example@gmail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full h-full bg-transparent border border-white/20 rounded-full text-white px-5 pr-12 outline-none placeholder-white"
             />
-            <i className="bx bxs-user absolute right-5 top-1/2 transform -translate-y-1/2 text-xl"></i>
           </div>
 
-          <div className="relative w-full h-[50px] mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
             <input
               type="password"
-              placeholder="Password"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-rose-400"
+              placeholder="********"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full h-full bg-transparent border border-white/20 rounded-full text-white px-5 pr-12 outline-none placeholder-white"
             />
-            <i className="bx bxs-lock-alt absolute right-5 top-1/2 transform -translate-y-1/2 text-xl"></i>
           </div>
 
-          <div className="flex justify-between text-sm mb-4">
-            <label className="flex items-center gap-1">
-              <input type="checkbox" className="accent-white" />
-              Remember me
+          <div className="flex justify-between text-sm text-gray-600">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" className="accent-rose-500" />
+              Ghi nhớ đăng nhập
             </label>
-            <a href="#" className="hover:underline">Forgot password?</a>
+            <a href="#" className="hover:underline text-rose-500">
+              Quên mật khẩu?
+            </a>
           </div>
 
           <button
             type="submit"
-            className="w-full h-[45px] rounded-full bg-white text-gray-800 font-semibold shadow-md hover:bg-gray-100 transition"
+            className="w-full bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2 rounded-lg shadow-lg transition duration-300"
           >
-            Login
+            Đăng nhập
           </button>
-
-          <div className="text-center text-sm mt-6">
-            <p>
-              Don't have an account?{' '}
-              <a href="/register" className="font-semibold hover:underline">
-                Register
-              </a>
-            </p>
-          </div>
         </form>
+
+        <p className="mt-6 text-sm text-center text-gray-600">
+          Chưa có tài khoản?{' '}
+          <a
+            href="/register"
+            className="text-rose-600 font-semibold hover:underline"
+          >
+            Đăng ký ngay
+          </a>
+        </p>
       </div>
     </div>
   );

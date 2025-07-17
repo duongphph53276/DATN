@@ -35,6 +35,7 @@ import Cart from './components/Client/Account/Cart';
 import Checkout from './components/Client/Account/Checkout';
 import AllProducts from './components/Client/HomePage/AllProduct';
 import ScrollToTop from './components/ScrollToTop';
+import Profile from './components/Client/Account/Profile';
 
 
 function App() {
@@ -49,7 +50,9 @@ function App() {
         { path: "product/:id", element: <DetailsPage /> },
            {path : "/cart", element :<Cart/>},
            {path : "/checkout", element :<Checkout/>},
-           {path :"/all-products", element : <AllProducts />}
+           {path :"/all-products", element : <AllProducts />},
+           {path :"/profile", element : <Profile />},
+           
          
       ]
       
