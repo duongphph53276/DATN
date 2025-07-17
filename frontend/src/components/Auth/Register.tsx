@@ -24,13 +24,14 @@ const Register: React.FC = () => {
       setError('Passwords do not match');
       return;
     }
+
     setError(null);
     try {
-      const response = await api.post('/register', {name, email, password });
+      const response = await api.post('/register', { name, email, password });
       const data = response.data;
       if (data.token) {
         localStorage.setItem('token', data.token);
-        alert("Đăng ký thành công");
+        alert('Đăng ký thành công');
         navigate('/login');
       } else {
         setError(data.message || 'Registration failed');
@@ -42,83 +43,85 @@ const Register: React.FC = () => {
 
   return (
     <div
-      className="fixed inset-0 bg-cover bg-center bg-no-repeat flex justify-center items-center"
+      className="min-h-screen flex items-center justify-center bg-cover bg-center px-4"
       style={{
-        backgroundImage:
-          'url(https://img.playbook.com/IZSaaisbuPYRUSQYBZckzA61Px-1dJx2_5pGRp3N4dk/Z3M6Ly9wbGF5Ym9v/ay1hc3NldHMtcHVi/bGljLzRkZmUwYjQ2/LWRhNjAtNDQ2Yy1h/Y2UxLWM0ZTZkMGI3/NTdlMA)',
+        backgroundImage: `url('https://img.lovepik.com/bg/20240224/Captivating-3D-Rendered-Illustration-with-Charming-Teddy-Bears-and-Fluffy_3695349_wh300.jpg')`,
       }}
     >
-      <div className="w-[420px] bg-white/10 border border-white/20 backdrop-blur-xl shadow-lg text-white rounded-xl p-10">
-        <form onSubmit={handleSubmit}>
-          <h1 className="text-3xl font-semibold text-center mb-8">Register</h1>
+      <div className="w-full max-w-md bg-white/80 backdrop-blur-lg shadow-2xl rounded-2xl p-8">
+        <h2 className="text-3xl font-bold text-center text-rose-600 mb-6">Đăng ký tài khoản</h2>
 
-          {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+        {error && <p className="text-center text-red-500 mb-4">{error}</p>}
 
-          <div className="relative w-full h-[50px] mb-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
             <input
               type="text"
-              placeholder="Name"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-rose-400"
+              placeholder="Nhập họ tên"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full h-full bg-transparent border border-white/20 rounded-full text-white px-5 pr-12 outline-none placeholder-white"
             />
-            <i className="bx bxs-user absolute right-5 top-1/2 transform -translate-y-1/2 text-xl"></i>
           </div>
 
-          <div className="relative w-full h-[50px] mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               type="email"
-              placeholder="Email"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-rose-400"
+              placeholder="example@gmail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full h-full bg-transparent border border-white/20 rounded-full text-white px-5 pr-12 outline-none placeholder-white"
             />
-            <i className="bx bxs-envelope absolute right-5 top-1/2 transform -translate-y-1/2 text-xl"></i>
           </div>
 
-          <div className="relative w-full h-[50px] mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
             <input
               type="password"
-              placeholder="Password"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-rose-400"
+              placeholder="********"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full h-full bg-transparent border border-white/20 rounded-full text-white px-5 pr-12 outline-none placeholder-white"
             />
-            <i className="bx bxs-lock-alt absolute right-5 top-1/2 transform -translate-y-1/2 text-xl"></i>
           </div>
 
-          <div className="relative w-full h-[50px] mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Xác nhận mật khẩu</label>
             <input
               type="password"
-              placeholder="Confirm Password"
+              className={`w-full border ${
+                error === 'Passwords do not match' ? 'border-red-500' : 'border-gray-300'
+              } rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-rose-400`}
+              placeholder="********"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              className={`w-full h-full bg-transparent border border-white/20 rounded-full text-white px-5 pr-12 outline-none placeholder-white ${error === 'Passwords do not match' ? 'border-red-500' : ''}`}
             />
-            <i className="bx bxs-lock-open-alt absolute right-5 top-1/2 transform -translate-y-1/2 text-xl"></i>
           </div>
 
           <button
             type="submit"
-            className="w-full h-[45px] rounded-full bg-white text-gray-800 font-semibold shadow-md hover:bg-gray-100 transition"
-            disabled={!!error} // Vô hiệu hóa nút nếu có lỗi
+            className="w-full bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2 rounded-lg shadow-lg transition duration-300 disabled:opacity-50"
+            disabled={!!error}
           >
-            Register
+            Đăng ký
           </button>
-
-          <div className="text-center text-sm mt-6">
-            <p>
-              Already have an account?{' '}
-              <a href="/login" className="font-semibold hover:underline">
-                Login
-              </a>
-            </p>
-          </div>
         </form>
+
+        <p className="mt-6 text-sm text-center text-gray-600">
+          Đã có tài khoản?{' '}
+          <a
+            href="/login"
+            className="text-rose-600 font-semibold hover:underline"
+          >
+            Đăng nhập
+          </a>
+        </p>
       </div>
     </div>
   );

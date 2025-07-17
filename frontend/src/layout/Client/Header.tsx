@@ -1,19 +1,24 @@
-import { FaPhoneAlt, FaSearch } from "react-icons/fa";
+import { FaPhoneAlt, FaSearch, FaUser } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import CartCountBadge from "./CartCountBadge";
 
 const Header = () => {
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const isLoggedIn = !!localStorage.getItem("token");
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    window.location.reload();
+  };
+
   return (
-    <header className="shadow z-50 bg-white">
+    <header className="shadow z-50 bg-white relative">
       {/* Top bar: Logo – Search – Hotline */}
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 h-20">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
-          <img
-            src="/logo.png"
-            alt="Logo Bemori"
-            className="h-10 w-auto"
-          />
+          <img src="/logo.png" alt="Logo Bemori" className="h-10 w-auto" />
           <span className="text-2xl font-bold text-pink-500">FUZZYBEAR</span>
         </Link>
 
@@ -31,13 +36,59 @@ const Header = () => {
           </div>
         </div>
 
-        {/* Hotline + Cart */}
-        <div className="flex items-center space-x-6">
+        {/* Hotline + Cart + User */}
+        <div className="flex items-center space-x-6 relative">
           <div className="flex items-center text-rose-300 font-medium space-x-2">
             <FaPhoneAlt size={18} />
             <span>097.989.6616</span>
           </div>
           <CartCountBadge />
+
+          {/* User Icon */}
+          <div className="relative">
+            <button
+              className="text-rose-400 hover:text-rose-600"
+              onClick={() => setShowUserMenu(!showUserMenu)}
+            >
+              <FaUser size={20} />
+            </button>
+
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-40 bg-white border rounded-md shadow-md z-50 text-sm">
+                {isLoggedIn ? (
+                  <>
+                    <Link
+                      to="/profile"
+                      className="block px-4 py-2 hover:bg-rose-50"
+                    >
+                      Hồ sơ
+                    </Link>
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-rose-50"
+                      onClick={handleLogout}
+                    >
+                      Đăng xuất
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      className="block px-4 py-2 hover:bg-rose-50"
+                    >
+                      Đăng nhập
+                    </Link>
+                    <Link
+                      to="/register"
+                      className="block px-4 py-2 hover:bg-rose-50"
+                    >
+                      Đăng ký
+                    </Link>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
