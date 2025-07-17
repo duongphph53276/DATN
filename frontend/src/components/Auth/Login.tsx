@@ -11,11 +11,19 @@ const Login: React.FC = () => {
     try {
       const response = await api.post('/login', { email, password });
       const data = response.data;
+
       if (data.token) {
         localStorage.setItem('token', data.token);
+
+
         const tokenPayload = JSON.parse(atob(data.token.split('.')[1]));
         const role = tokenPayload.role;
 
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
+
+       
         if (role === 'admin') {
           window.location.href = '/admin';
         } else if (role === 'client') {
@@ -28,13 +36,18 @@ const Login: React.FC = () => {
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'An error occurred. Please try again.';
+
       if (errorMessage === 'Invalid credentials') {
-        const userExists = await api.get(`/check-email?email=${email}`);
-        if (!userExists.data.exists) {
-          setError('Email không tồn tại, tài khoản chưa được đăng ký');
-        } else {
-          setError('Bạn đã nhập sai mật khẩu, xin vui lòng nhập lại');
-          setPassword('');
+        try {
+          const userExists = await api.get(`/check-email?email=${email}`);
+          if (!userExists.data.exists) {
+            setError('Email không tồn tại, tài khoản chưa được đăng ký');
+          } else {
+            setError('Bạn đã nhập sai mật khẩu, xin vui lòng nhập lại');
+            setPassword('');
+          }
+        } catch {
+          setError('Không thể xác minh email. Vui lòng thử lại sau.');
         }
       } else {
         setError(errorMessage);
