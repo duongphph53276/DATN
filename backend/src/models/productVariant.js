@@ -21,7 +21,7 @@ const productVariantSchema = new mongoose.Schema({
         type: Number,
         default: 0
     }
-    
+
 }, { timestamps: true, versionKey: false });
 
 export default mongoose.model("ProductVariant", productVariantSchema);

@@ -9,6 +9,9 @@ import {
 } from "../../../../api/attribute.api";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import { BsThreeDotsVertical } from "react-icons/bs";
+import { FaEdit, FaEye } from "react-icons/fa";
+import { MdDelete } from "react-icons/md";
 
 interface AttributeValue {
   _id: string;
@@ -97,28 +100,37 @@ const AttributeList = () => {
   };
 
   return (
-    <div className="card">
-      <div className="card-header border-bottom">
-        <h5 className="card-title">Filter</h5>
-        <div className="d-flex justify-content-between align-items-center row pt-4 gap-6 gap-md-0 g-md-6">
-          <div className="col-md-4 product_status">
-            <select id="AttributeStatus" className="form-select text-capitalize">
-              <option value="">Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+    <div className="bg-white shadow-md rounded-lg">
+      <div className="p-4 border-b">
+        <h5 className="text-lg font-semibold text-gray-800">Bộ lọc</h5>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div>
+            <select
+              id="AttributeStatus"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Trạng thái</option>
+              <option value="active">Hoạt động</option>
+              <option value="inactive">Không hoạt động</option>
             </select>
           </div>
-          <div className="col-md-4 product_category">
-            <select id="AttributeType" className="form-select text-capitalize">
-              <option value="">Type</option>
-              <option value="text">Text</option>
-              <option value="number">Number</option>
-              <option value="select">Select</option>
+          <div>
+            <select
+              id="AttributeType"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Loại</option>
+              <option value="text">Văn bản</option>
+              <option value="number">Số</option>
+              <option value="select">Lựa chọn</option>
             </select>
           </div>
-          <div className="col-md-4 product_stock">
-            <select id="AttributeValueCount" className="form-select text-capitalize">
-              <option value="">Value Count</option>
+          <div>
+            <select
+              id="AttributeValueCount"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Số lượng giá trị</option>
               <option value="0">0</option>
               <option value="1-5">1-5</option>
               <option value="6+">6+</option>
@@ -126,190 +138,166 @@ const AttributeList = () => {
           </div>
         </div>
       </div>
-      <div className="card-datatable">
-        <div id="DataTables_Table_0_wrapper" className="dt-container dt-bootstrap5 dt-empty-footer">
-          <div className="row m-3 my-0 justify-content-between">
-            <div className="d-md-flex justify-content-between align-items-center dt-layout-start col-md-auto me-auto mt-3">
-              <div className="dt-search mb-0 mb-md-6">
-                <input
-                  type="search"
-                  className="form-control ms-0"
-                  id="dt-search-0"
-                  placeholder="Search Attribute"
-                  aria-controls="DataTables_Table_0"
-                />
-                <label htmlFor="dt-search-0" />
-              </div>
-            </div>
-            <div className="d-md-flex align-items-center dt-layout-end col-md-auto ms-auto justify-content-md-between justify-content-center d-flex flex-wrap gap-2 mb-md-0 mb-4 mt-0">
-              <div className="dt-buttons btn-group flex-wrap">
-                <button
-                  className="btn add-new btn-primary"
-                  onClick={() => navigate("/admin/attribute/add")}
-                >
-                  <span>
-                    <i className="icon-base bx bx-plus me-0 me-sm-1 icon-xs" />
-                    <span className="d-none d-sm-inline-block">Add Attribute</span>
-                  </span>
-                </button>
-              </div>
-            </div>
+
+      <div className="p-4">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-4">
+          <div className="w-full md:w-1/3 mb-4 md:mb-0">
+            <input
+              type="search"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              id="dt-search-0"
+              placeholder="Tìm kiếm thuộc tính"
+            />
           </div>
-          <div className="justify-content-between dt-layout-table">
-            <div className="d-md-flex justify-content-between align-items-center dt-layout-full table-responsive">
-              <table className="datatables-products table table-hover table-bordered" id="DataTables_Table_0" aria-describedby="DataTables_Table_0_info">
-                <thead className="border-top">
-                  <tr>
-                    <th className="dt-orderable-asc dt-orderable-desc dt-ordering-asc" aria-sort="ascending" aria-label="Tên: Activate to invert sorting" tabIndex={0}>
-                      <span className="dt-column-title" role="button">Attribute Name</span>
-                    </th>
-                    <th className="dt-orderable-asc dt-orderable-desc" aria-label="Loại: Activate to sort" tabIndex={0}>
-                      <span className="dt-column-title" role="button">Type</span>
-                    </th>
-                    <th className="dt-orderable-none" aria-label="Hành động">
-                      <span className="dt-column-title">Action</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {attributes.map((attr) => (
-                    <tr key={attr._id} className="align-middle">
-                      <td className="sorting_1">{attr.name}</td>
-                      <td>{attr.type}</td>
-                      <td>
-                        <div className="d-inline-block text-nowrap">
-                          <button
-                            className="btn btn-icon btn-primary"
-                            onClick={() => openModal(attr._id)}
-                          >
-                            <i className="bx bx-list-ul" />
-                          </button>
-                          <button
-                            className="btn btn-icon btn-warning dropdown-toggle hide-arrow ms-2"
-                            data-bs-toggle="dropdown"
-                          >
-                            <i className="bx bx-dots-vertical-rounded" />
-                          </button>
-                          <div className="dropdown-menu dropdown-menu-end">
-                            <a
-                              href="#"
-                              className="dropdown-item"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                navigate(`/admin/attribute/edit/${attr._id}`);
+          <button
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+            onClick={() => navigate("/admin/attribute/add")}
+          >
+            <i className="bx bx-plus text-lg" />
+            <span className="hidden sm:inline">Thêm thuộc tính</span>
+          </button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left text-gray-700">
+            <thead className="border-t bg-gray-50">
+              <tr>
+                <th className="p-3">Tên thuộc tính</th>
+                <th className="p-3">Loại</th>
+                <th className="p-3">Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {attributes.map((attr) => (
+                <tr key={attr._id} className="hover:bg-gray-50 border-b">
+                  <td className="p-3">{attr.name}</td>
+                  <td className="p-3">{attr.type}</td>
+                  <td className="p-3">
+                    <div className="flex gap-2">
+                      <button
+                        className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                        onClick={() => openModal(attr._id)}
+                      >
+                        <FaEye />
+                      </button>
+                      <button  
+                        className="p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          navigate(`/admin/attribute/edit/${attr._id}`);
+                        }}
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleDelete(attr._id);
+                        }}
+                      >
+                        <MdDelete />
+                      </button>             
+                    </div>
+
+                    {openModalId === attr._id && (
+                      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                        <div className="bg-white rounded-lg w-full max-w-lg">
+                          <div className="flex justify-between items-center p-4 border-b">
+                            <h5 className="text-lg font-semibold text-gray-800">
+                              Giá trị cho thuộc tính: <span className="text-blue-600">{attr.name}</span>
+                            </h5>
+                            <button
+                              className="text-gray-500 hover:text-gray-700"
+                              onClick={() => {
+                                setOpenModalId(null);
+                                setEditingValueId(null);
+                                reset();
                               }}
                             >
-                              Sửa
-                            </a>
-                            <a
-                              href="#"
-                              className="dropdown-item text-danger"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                handleDelete(attr._id);
-                              }}
-                            >
-                              Xóa
-                            </a>
+                              <i className="bx bx-x text-xl" />
+                            </button>
                           </div>
-                        </div>
+                          <div className="p-4">
+                            <form
+                              onSubmit={handleSubmit((data) => handleAddOrUpdateValue(attr._id, data))}
+                              className="mb-4"
+                            >
+                              <div className="mb-4">
+                                <input
+                                  {...register("value", { required: true })}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Nhập giá trị mới"
+                                />
+                              </div>
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                                  onClick={() => {
+                                    setOpenModalId(null);
+                                    setEditingValueId(null);
+                                    reset();
+                                  }}
+                                >
+                                  Đóng
+                                </button>
+                                <button
+                                  type="submit"
+                                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                >
+                                  {editingValueId ? "Cập nhật" : "Thêm"}
+                                </button>
+                              </div>
+                            </form>
 
-                        {/* Modal */}
-                        {openModalId === attr._id && (
-                          <div className="modal fade show" style={{ display: "block" }} tabIndex={-1}>
-                            <div className="modal-dialog modal-dialog-centered">
-                              <div className="modal-content">
-                                <div className="modal-header">
-                                  <h5 className="modal-title">
-                                    Giá trị cho thuộc tính: <span className="text-primary">{attr.name}</span>
-                                  </h5>
-                                  <button
-                                    type="button"
-                                    className="btn-close"
-                                    onClick={() => {
-                                      setOpenModalId(null);
-                                      setEditingValueId(null);
-                                      reset();
-                                    }}
-                                  />
-                                </div>
-                                <div className="modal-body">
-                                  <form
-                                    onSubmit={handleSubmit((data) => handleAddOrUpdateValue(attr._id, data))}
-                                    className="mb-3"
-                                  >
-                                    <div className="mb-3">
-                                      <input
-                                        {...register("value", { required: true })}
-                                        className="form-control"
-                                        placeholder="Nhập giá trị mới"
-                                      />
-                                    </div>
-                                    <div className="d-flex justify-content-end gap-2">
-                                      <button
-                                        type="button"
-                                        className="btn btn-secondary"
-                                        onClick={() => {
-                                          setOpenModalId(null);
-                                          setEditingValueId(null);
-                                          reset();
-                                        }}
-                                      >
-                                        Đóng
-                                      </button>
-                                      <button type="submit" className="btn btn-primary">
-                                        {editingValueId ? "Cập nhật" : "Thêm"}
-                                      </button>
-                                    </div>
-                                  </form>
-
-                                  <h6 className="mb-2">Danh sách giá trị:</h6>
-                                  <div className="list-group">
-                                    {attributeValues.map((val) => (
-                                      <div
-                                        key={val._id}
-                                        className="list-group-item d-flex justify-content-between align-items-center"
-                                      >
-                                        <span>{val.value}</span>
-                                        <div className="btn-group" role="group">
-                                          <button
-                                            className="btn btn-warning btn-sm"
-                                            onClick={() => startEditValue(val)}
-                                          >
-                                            Sửa
-                                          </button>
-                                          <button
-                                            className="btn btn-danger btn-sm"
-                                            onClick={() => handleDeleteValue(val._id, attr._id)}
-                                          >
-                                            Xóa
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ))}
+                            <h6 className="text-base font-medium mb-2">Danh sách giá trị:</h6>
+                            <div className="space-y-2">
+                              {attributeValues.map((val) => (
+                                <div
+                                  key={val._id}
+                                  className="flex justify-between items-center p-2 bg-gray-50 rounded-lg"
+                                >
+                                  <span>{val.value}</span>
+                                  <div className="flex gap-2">
+                                    <button
+                                      className="px-3 py-1 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+                                      onClick={() => startEditValue(val)}
+                                    >
+                                      Sửa
+                                    </button>
+                                    <button
+                                      className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
+                                      onClick={() => handleDeleteValue(val._id, attr._id)}
+                                    >
+                                      Xóa
+                                    </button>
                                   </div>
                                 </div>
-                              </div>
+                              ))}
+                              {attributeValues.length === 0 && (
+                                <p className="text-gray-500 italic">Không có giá trị nào</p>
+                              )}
                             </div>
                           </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  {attributes.length === 0 && (
-                    <tr>
-                      <td colSpan={3} className="text-center py-4 text-gray-500 italic">
-                        Không có thuộc tính nào
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                        </div>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {attributes.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="text-center py-4 text-gray-500 italic">
+                    Không có thuộc tính nào
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
-      </div>
+    </div>
   );
 };
 

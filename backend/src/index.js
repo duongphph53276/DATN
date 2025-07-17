@@ -15,7 +15,6 @@ import authMiddleware from './middleware/auth.js';
 import restrictTo from './middleware/restrictTo.js';
 import { getUserById, getUsers, updateUser } from './controllers/user/user.js';
 import { createRole, getRoleById, getRoles, updateRole } from './controllers/user/role.js';
-
 import path from "path";
 import { fileURLToPath } from "url";
 import upload from './middleware/upload.js';
