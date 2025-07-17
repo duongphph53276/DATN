@@ -24,7 +24,6 @@ import EditUser from './components/Admin/user/EditUser';
 import ListRole from './components/Admin/role/ListRole';
 import AddRole from './components/Admin/role/AddRole';
 import EditRole from './components/Admin/role/EditRole';
-
 import ListVoucher from './components/Admin/voucher/ListVoucher';
 import AddVoucher from './components/Admin/voucher/AddVoucher';
 import EditVoucher from './components/Admin/voucher/EditVoucher';
@@ -36,6 +35,7 @@ import Cart from './components/Client/Account/Cart';
 import Checkout from './components/Client/Account/Checkout';
 import AllProducts from './components/Client/HomePage/AllProduct';
 import ScrollToTop from './components/ScrollToTop';
+
 
 function App() {
   const routes = useRoutes([
@@ -56,9 +56,8 @@ function App() {
     },
     
     {
-
       path: "/admin",
-      element: <AdminLayout />,
+      element: ( <AdminLayout /> ),
       children: [
         { path: "", element: <Dashboard /> },
         { path: "category", element: <ListCategory /> },
@@ -70,7 +69,7 @@ function App() {
         { path: "product/:id", element: <ProductDetailAdmin /> },
         { path: "attribute", element: <AttributeList /> },
         { path: "attribute/add", element: <AddAttribute /> },
-{ path: "attribute/edit/:id", element: <EditAttribute /> },
+        { path: "attribute/edit/:id", element: <EditAttribute /> },
         { path: "product/:id/add-variant", element: <AddVariant /> },
         { path: "voucher", element: <ListVoucher /> },
         { path: "voucher/add", element: <AddVoucher /> },
