@@ -29,11 +29,12 @@ const Register: React.FC = () => {
     try {
       const response = await api.post('/register', { name, email, password });
       const data = response.data;
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        alert('Đăng ký thành công');
-        navigate('/login');
-      } else {
+if (data.token) {
+  localStorage.setItem('token', data.token);
+  localStorage.setItem('user', JSON.stringify(data.user));
+  alert('Đăng ký thành công');
+  navigate('/login');
+}else {
         setError(data.message || 'Registration failed');
       }
     } catch (err: any) {
