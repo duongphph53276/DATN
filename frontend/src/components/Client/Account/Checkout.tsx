@@ -14,11 +14,21 @@ const Checkout: React.FC = () => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem('cart');
     if (stored) {
       setCartItems(JSON.parse(stored));
+    }
+
+    // Kiểm tra đăng nhập
+    const user = localStorage.getItem('user');
+    if (!user) {
+      alert('Bạn cần đăng nhập để tiếp tục thanh toán.');
+      window.location.href = '/login'; // Chuyển đến trang đăng nhập
+    } else {
+      setIsLoggedIn(true);
     }
   }, []);
 
@@ -30,6 +40,11 @@ const Checkout: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!isLoggedIn) {
+      alert('Bạn chưa đăng nhập!');
+      return;
+    }
+
     if (!name || !phone || !address) {
       alert('Vui lòng điền đầy đủ thông tin.');
       return;
@@ -40,6 +55,15 @@ const Checkout: React.FC = () => {
     localStorage.removeItem('cart');
     window.location.href = '/';
   };
+
+  if (!isLoggedIn) {
+    // Nếu chưa đăng nhập thì không hiển thị form thanh toán
+    return (
+      <div className="text-center py-20 text-red-500 text-xl">
+        Vui lòng <a href="/login" className="underline text-blue-600">đăng nhập</a> để thanh toán.
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
