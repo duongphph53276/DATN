@@ -7,8 +7,10 @@ const Header = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem('token'); // hoặc sessionStorage tùy bạn dùng gì
-    navigate('/login');
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('user'); // hoặc sessionStorage tùy bạn dùng gì
+    navigate('/');
   };
 
   const handleClickOutside = (e: MouseEvent) => {
