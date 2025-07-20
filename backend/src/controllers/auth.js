@@ -15,7 +15,8 @@ export const login = async (req, res) => {
     }
     const role = user.role_id ? user.role_id.name : 'client';
     const token = jwt.sign({ id: user._id, role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.status(200).json({ token });
+    // Trả về cả token và user
+    res.status(200).json({ token, user: { role, id: user._id } });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

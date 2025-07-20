@@ -10,6 +10,7 @@ const Header = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem('role');
     localStorage.removeItem("user");
     setShowUserMenu(false); // 👈 ẩn menu
     navigate("/"); // 👈 chuyển về trang chủ
