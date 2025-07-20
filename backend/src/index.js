@@ -9,7 +9,7 @@ import { createProduct, deleteProduct, getAllProducts, getProductById, updatePro
 import { createAttribute,getAttributeById, createAttributeValue, deleteAttribute, getAllAttributes, getAttributeValueById, getAttributeValues, updateAttribute, updateAttributeValue, deleteAttributeValue } from "./controllers/attribute.js";
 import { createVariant, getVariantsByProduct } from './controllers/productVariant.js';
 import orderRoutes from './routes/order.routes.js';
-import { checkEmail, login, register } from './controllers/auth.js';
+import { checkEmail, login, Profile, register, UpdateProfile } from './controllers/auth.js';
 import { authMiddleware, restrictTo } from './middleware/auth.js';
 import { getUserById, getUsers, updateUser } from './controllers/user/user.js';
 import { createRole, getRoleById, getRoles, updateRole } from './controllers/user/role.js';
@@ -32,6 +32,9 @@ app.post('/register', register);
 app.post('/login', login);
 app.get('/check-email', checkEmail);
 app.get('/user', authMiddleware, getUserById);
+
+app.get('/profile', authMiddleware, Profile);
+app.put('/profile', authMiddleware, UpdateProfile);
 
 app.post('/roles/create', createRole);
 app.get('/roles', getRoles);
