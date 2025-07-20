@@ -11,6 +11,7 @@ const Login: React.FC = () => {
     try {
       const response = await api.post('/login', { email, password });
       const data = response.data;
+      console.log('Login response:', data);
 
       if (data.token) {
         localStorage.setItem('token', data.token);
