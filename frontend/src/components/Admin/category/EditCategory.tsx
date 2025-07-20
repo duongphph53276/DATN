@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../../middleware/axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ICategory, ICategoryResponse, ISingleCategoryResponse, IAddCategoryRequest } from '../../../interfaces/category';
 
@@ -14,7 +14,7 @@ const EditCategory: React.FC = () => {
   useEffect(() => {
     const fetchCategory = async () => {
       try {
-        const response = await axios.get<ISingleCategoryResponse>(`http://localhost:5000/category/${id}`);
+        const response = await api.get<ISingleCategoryResponse>(`admin/category/${id}`);
         if (response.data.status && response.data.data) {
           setName(response.data.data.name);
           setParentId(typeof response.data.data.parent_id === 'string' ? response.data.data.parent_id : response.data.data.parent_id?._id || null);
@@ -28,7 +28,7 @@ const EditCategory: React.FC = () => {
 
     const fetchCategories = async () => {
       try {
-        const response = await axios.get<ICategoryResponse>('http://localhost:5000/category');
+        const response = await api.get<ICategoryResponse>('admin/category');
         if (response.data.status) {
           // Lọc bỏ danh mục hiện tại để không cho phép chọn chính nó làm danh mục cha
           setCategories(response.data.data.filter(category => category._id !== id) || []);
@@ -52,8 +52,8 @@ const EditCategory: React.FC = () => {
     }
 
     try {
-      const response = await axios.put<ICategoryResponse>(
-        `http://localhost:5000/category/edit/${id}`,
+      const response = await api.put<ICategoryResponse>(
+        `admin/category/edit/${id}`,
         { name, parent_id: parentId || null } as IAddCategoryRequest,
         {
           headers: { 'Content-Type': 'application/json' },

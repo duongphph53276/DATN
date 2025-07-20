@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../../middleware/axios';
 import { Link } from 'react-router-dom';
 import { ICategory, ICategoryResponse } from '../../../interfaces/category';
 
@@ -11,7 +11,7 @@ const ListCategory: React.FC = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get<ICategoryResponse>('http://localhost:5000/category');
+        const response = await api.get<ICategoryResponse>('/admin/category');
         if (response.data.status) {
           setCategories(response.data.data || []);
         } else {
@@ -27,7 +27,7 @@ const ListCategory: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Bạn có chắc muốn xóa danh mục này?')) {
       try {
-        const response = await axios.delete(`http://localhost:5000/category/${id}`);
+        const response = await api.delete(`admin/category/${id}`);
         if (response.data.status) {
           setCategories((prev) => prev.filter((c) => c._id !== id));
         } else {

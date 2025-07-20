@@ -1,15 +1,19 @@
 import { FaPhoneAlt, FaSearch, FaUser } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // 👈 thêm useNavigate
 import { useState } from "react";
 import CartCountBadge from "./CartCountBadge";
 
 const Header = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const navigate = useNavigate(); // 👈 khởi tạo navigate
   const isLoggedIn = !!localStorage.getItem("token");
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    window.location.reload();
+    localStorage.removeItem('role');
+    localStorage.removeItem("user");
+    setShowUserMenu(false); // 👈 ẩn menu
+    navigate("/"); // 👈 chuyển về trang chủ
   };
 
   return (
