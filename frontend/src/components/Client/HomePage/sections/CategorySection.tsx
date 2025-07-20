@@ -68,7 +68,7 @@ const CategorySection: React.FC = () => {
 };
 {allProducts.map(product => (
  <Link to={`/product/${product.id}`}>
-  <img src={product.img} alt={product.name} className="rounded-lg w-full h-[250px] object-cover" />
+  <img src={product.image} alt={product.name} className="rounded-lg w-full h-[250px] object-cover" />
   <h3 className="mt-2 font-semibold text-base">{product.name}</h3>
 </Link>
 ))}
