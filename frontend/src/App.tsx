@@ -48,19 +48,14 @@ function App() {
       path: "/",
       element: <ClientLayout />,
       children: [{ path: "", element: <Home /> },
-        { path: "product/:id", element: <DetailsPage /> },
-           {path : "/cart", element :<Cart/>},
-           {path : "/checkout", element :<Checkout/>},
-           {path :"/all-products", element : <AllProducts />},
-           {path :"/profile", element : <Profile />},
-           
-         
+      { path: "product/:id", element: <DetailsPage /> },
+      { path: "/cart", element: <Cart /> },
+      { path: "/checkout", element: <Checkout /> },
+      { path: "/all-products", element: <AllProducts /> },
+      { path: "/profile", element: <Profile /> },
       ]
-      
     },
-    
     {
-
       path: "/admin",
       element: <AdminLayout />,
       children: [
@@ -76,7 +71,7 @@ function App() {
         { path: "attribute/add", element: <AddAttribute /> },
         { path: "attribute/edit/:id", element: <EditAttribute /> },
         { path: "product/:productId/add-variant", element: <AddVariant /> },
-        { path: "product/:productId/edit-variant/:variantId", element: <EditVariant/> },
+        { path: "product/:productId/edit-variant/:variantId", element: <EditVariant /> },
         { path: "attribute/edit/:id", element: <EditAttribute /> },
         { path: "product/:id/add-variant", element: <AddVariant /> },
         { path: "voucher", element: <ListVoucher /> },
@@ -88,20 +83,20 @@ function App() {
         { path: "roles/create", element: <AddRole /> },
         { path: "roles/edit/:id", element: <EditRole /> },
         { path: "permissions", element: <PermissionManagement /> }, // Thêm route cho Permission
-        { path: "order-list", element: <ListOrderModule /> }, 
-        { path: "order-detail/:id", element: <OrderDetail /> }, 
+        { path: "order-list", element: <ListOrderModule /> },
+        { path: "order-detail/:id", element: <OrderDetail /> },
       ]
     },
     { path: "*", element: <NotFound /> }
   ]);
-   return (
+  return (
     <>
-      <ScrollToTop/>
+      <ScrollToTop />
       {routes}
     </>
   );
   return routes;
-  
+
 }
 
 

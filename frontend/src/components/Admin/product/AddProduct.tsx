@@ -1,10 +1,12 @@
 import { useForm, SubmitHandler, useFieldArray } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { postProduct } from "../../../../api/product.api";
 import { getCategories } from "../../../../api/category.api.ts";
 import { uploadToCloudinary } from "../../../lib/cloudinary.ts";
 import { getAllAttributes, getAttributeValues } from "../../../../api/attribute.api.ts";
+import * as yup from "yup";
 
 type AddProductForm = {
   name: string;
@@ -35,6 +37,71 @@ const AddProduct = () => {
   const [loading, setLoading] = useState(true);
   const [formattedPrices, setFormattedPrices] = useState<string[]>([]);
 
+  // Trong phần định nghĩa validationSchema
+  const validationSchema = yup.object().shape({
+    name: yup
+      .string()
+      .required("Tên sản phẩm là bắt buộc")
+      .min(2, "Tên sản phẩm phải từ 2 đến 100 ký tự")
+      .max(100, "Tên sản phẩm phải từ 2 đến 100 ký tự"),
+    category_id: yup.string().required("Bắt buộc chọn danh mục"),
+    description: yup.string().max(1000, "Mô tả không được vượt quá 1000 ký tự"),
+    sku: yup.string().nullable().transform((value) => (value?.trim() === "" ? null : value)),
+    status: yup.string().oneOf(["active", "disabled", "new", "bestseller"]).nullable(),
+    variants: yup.array().of(
+      yup.object().shape({
+        price: yup
+          .number()
+          .transform((value) => (isNaN(value) || value === "" ? 0 : value)) // Xử lý rỗng thành 0
+          .required("Giá là bắt buộc")
+          .min(0, "Giá không được âm"),
+        quantity: yup
+          .number()
+          .transform((value) => (isNaN(value) || value === "" ? 0 : value)) // Xử lý rỗng thành 0
+          .required("Số lượng là bắt buộc")
+          .min(0, "Số lượng không được âm"),
+        image: yup.mixed().nullable(),
+        attributes: yup
+          .array()
+          .of(
+            yup.object().shape({
+              attribute_id: yup.string().required("Bắt buộc chọn thuộc tính"),
+              value_id: yup.string().required("Bắt buộc chọn giá trị"),
+            })
+          )
+          .min(1, "Phải có ít nhất một thuộc tính")
+          .test("unique-attributes", "Tổ hợp thuộc tính này đã tồn tại trong form", (attributes, context) => {
+            const currentKey = attributes
+              ?.map((attr) => `${attr.attribute_id}-${attr.value_id}`)
+              .sort()
+              .join("|") || "";
+            const variantKeys = new Set(
+              (context.from?.[0]?.value?.variants || []).map((v: any) =>
+                v.attributes
+                  .map((attr: any) => `${attr.attribute_id}-${attr.value_id}`)
+                  .sort()
+                  .join("|")
+              )
+            );
+            return !variantKeys.has(currentKey);
+          })
+          .test("no-duplicate-with-existing", "Biến thể này đã tồn tại trong hệ thống", (attributes, context) => {
+            const currentKey = attributes
+              ?.map((attr) => `${attr.attribute_id}-${attr.value_id}`)
+              .sort()
+              .join("|") || "";
+            return !existingVariants.some((existing) => {
+              const existingKey = existing.attributes
+                .map((attr: any) => `${attr.attribute_id}-${attr.value_id}`)
+                .sort()
+                .join("|");
+              return existingKey === currentKey;
+            });
+          }),
+      })
+    ).min(1, "Phải có ít nhất một biến thể"),
+  });
+
   const {
     register,
     handleSubmit,
@@ -44,104 +111,14 @@ const AddProduct = () => {
     watch,
     formState: { errors },
   } = useForm<AddProductForm>({
+    resolver: yupResolver(validationSchema),
+    context: {
+      getIndex: (attributesRef: any, variants: any[]) => {
+        return variants.findIndex((v) => v.attributes === attributesRef);
+      },
+    },
     defaultValues: {
       variants: [{ price: 0, quantity: 0, attributes: [{ attribute_id: "", value_id: "" }] }],
-    },
-    resolver: async (data) => {
-      const errors: any = {};
-
-      // Validate tên sản phẩm
-      if (!data.name) {
-        errors.name = { message: "Tên sản phẩm là bắt buộc" };
-      } else if (data.name.length < 2 || data.name.length > 100) {
-        errors.name = { message: "Tên sản phẩm phải từ 2 đến 100 ký tự" };
-      }
-
-      // Validate danh mục
-      if (!data.category_id) {
-        errors.category_id = { message: "Bắt buộc chọn danh mục" };
-      }
-
-      // Validate mô tả
-      if (data.description && data.description.length > 1000) {
-        errors.description = { message: "Mô tả không được vượt quá 1000 ký tự" };
-      }
-
-      // Validate SKU
-      if (data.sku && data.sku.trim() === "") {
-        errors.sku = { message: "SKU không được để trống nếu cung cấp" };
-      }
-
-      // Validate biến thể
-      if (!data.variants || data.variants.length === 0) {
-        errors.variants = { message: "Phải có ít nhất một biến thể" };
-      } else {
-        errors.variants = errors.variants || [];
-        data.variants.forEach((variant, index) => {
-          errors.variants[index] = errors.variants[index] || {};
-
-          if (!variant.price && variant.price !== 0) {
-            errors.variants[index].price = { message: "Giá là bắt buộc" };
-          } else if (variant.price < 0) {
-            errors.variants[index].price = { message: "Giá không được âm" };
-          }
-
-          if (!variant.quantity && variant.quantity !== 0) {
-            errors.variants[index].quantity = { message: "Số lượng là bắt buộc" };
-          } else if (variant.quantity < 0) {
-            errors.variants[index].quantity = { message: "Số lượng không được âm" };
-          }
-
-          if (!variant.attributes || variant.attributes.length === 0) {
-            errors.variants[index].attributes = { message: "Phải có ít nhất một thuộc tính" };
-          } else {
-            errors.variants[index].attributes = errors.variants[index].attributes || [];
-            variant.attributes.forEach((attr, attrIndex) => {
-              errors.variants[index].attributes[attrIndex] = errors.variants[index].attributes[attrIndex] || {};
-              if (!attr.attribute_id) {
-                errors.variants[index].attributes[attrIndex].attribute_id = { message: "Bắt buộc chọn thuộc tính" };
-              }
-              if (!attr.value_id) {
-                errors.variants[index].attributes[attrIndex].value_id = { message: "Bắt buộc chọn giá trị" };
-              }
-            });
-          }
-
-          // Kiểm tra trùng lặp với existingVariants
-          const currentKey = variant.attributes
-            .map((attr) => `${attr.attribute_id}-${attr.value_id}`)
-            .sort()
-            .join("|");
-          const isDuplicateWithExisting = existingVariants.some((existing) => {
-            const existingKey = existing.attributes
-              .map((attr: any) => `${attr.attribute_id}-${attr.value_id}`)
-              .sort()
-              .join("|");
-            return existingKey === currentKey;
-          });
-
-          if (isDuplicateWithExisting) {
-            errors.variants[index].attributes = errors.variants[index].attributes || {};
-            errors.variants[index].attributes.message = "Biến thể này đã tồn tại trong hệ thống";
-          }
-
-          // Kiểm tra trùng lặp trong các biến thể hiện tại
-          const variantKeys = new Set();
-          data.variants.forEach((v, i) => {
-            const key = v.attributes
-              .map((attr) => `${attr.attribute_id}-${attr.value_id}`)
-              .sort()
-              .join("|");
-            if (variantKeys.has(key) && i === index) {
-              errors.variants[index].attributes = errors.variants[index].attributes || {};
-              errors.variants[index].attributes.message = "Biến thể trùng lặp với tổ hợp thuộc tính này";
-            }
-            variantKeys.add(key);
-          });
-        });
-      }
-
-      return { values: data, errors };
     },
   });
 
@@ -223,8 +200,12 @@ const AddProduct = () => {
       alert("Thêm sản phẩm thành công!");
       navigate("/admin/product");
     } catch (error) {
-      console.error("Lỗi khi thêm sản phẩm:", error);
-      alert(error.response?.data?.message || "Thêm mới thất bại");
+      console.error("Lỗi khi tải dữ liệu:", error);
+      if (error instanceof Error) {
+        alert("Không thể tải dữ liệu sản phẩm: " + error.message);
+      } else {
+        alert("Không thể tải dữ liệu sản phẩm: Lỗi không xác định");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -388,8 +369,8 @@ const AddProduct = () => {
                             variantImages[index]
                               ? URL.createObjectURL(variantImages[index])
                               : typeof getValues(`variants.${index}.image`) === "string"
-                              ? getValues(`variants.${index}.image`)
-                              : ""
+                                ? getValues(`variants.${index}.image`)
+                                : ""
                           }
                           className="h-20 object-cover border rounded-lg"
                         />

@@ -4,15 +4,25 @@ import { getVariantsByProduct } from "../../../../api/variant.api";
 import { useNavigate } from "react-router-dom";
 import { getCategories } from "../../../../api/category.api";
 import { IProduct } from "../../../interfaces/product";
-import { AiOutlineDoubleLeft, AiOutlineDoubleRight  } from "react-icons/ai";
-import { FaEdit, FaEye  } from "react-icons/fa";
+import { AiOutlineDoubleLeft, AiOutlineDoubleRight } from "react-icons/ai";
+import { FaEdit, FaEye } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
+
 const ListProduct: React.FC = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState<IProduct[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<IProduct[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [openModalId, setOpenModalId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 10;
+
+  // States for filters and search
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [priceFilter, setPriceFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -31,6 +41,7 @@ const ListProduct: React.FC = () => {
         const categoriesData = categoryRes.data.data || [];
 
         setProducts(productsWithVariants);
+        setFilteredProducts(productsWithVariants);
         setCategories(categoriesData);
       } catch (error) {
         console.error("Lỗi lấy dữ liệu:", error);
@@ -39,6 +50,70 @@ const ListProduct: React.FC = () => {
     };
     fetchData();
   }, []);
+
+  // Filter and search logic
+  useEffect(() => {
+    let result = [...products];
+
+    // Apply category filter
+    if (categoryFilter) {
+      result = result.filter(
+        (product) =>
+          (typeof product.category_id === "object" && product.category_id !== null
+            ? product.category_id._id
+            : product.category_id) === categoryFilter
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter) {
+      result = result.filter((product) => {
+        if (statusFilter === "new") return product.status === "new";
+        if (statusFilter === "active") return product.status === "active";
+        if (statusFilter === "disabled") return product.status === "disabled";
+        if (statusFilter === "bestseller") return product.status === "bestseller";
+        return true;
+      });
+    }
+
+    // Apply price filter
+    if (priceFilter) {
+      result = result.filter((product) => {
+        if (!product.variants || product.variants.length === 0) return false;
+        const prices = product.variants.map((v) => v.price);
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        const [min, max] = priceFilter.split("-").map(Number);
+        // Check if the product's price range overlaps with the selected range
+        return minPrice <= max && (max === undefined || maxPrice >= min);
+      });
+    }
+
+    // Apply search by name or SKU
+    if (searchQuery) {
+      const lowerQuery = searchQuery.toLowerCase();
+      result = result.filter(
+        (product) =>
+          product.name.toLowerCase().includes(lowerQuery) ||
+          (product.sku && product.sku.toLowerCase().includes(lowerQuery))
+      );
+    }
+
+    setFilteredProducts(result);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [categoryFilter, statusFilter, priceFilter, searchQuery, products]);
+
+  // Pagination logic
+  const indexOfLastProduct = currentPage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+
+  const handlePageChange = (pageNumber: number) => {
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+    }
+  };
 
   const getCategoryName = (categoryId: any) => {
     const idToFind = typeof categoryId === "object" && categoryId !== null ? categoryId._id : categoryId;
@@ -59,7 +134,10 @@ const ListProduct: React.FC = () => {
     try {
       await deleteProduct(id);
       setProducts(products.filter((product) => product._id !== id));
-      alert("Xóa sản phẩm thành công");
+      setFilteredProducts(filteredProducts.filter((product) => product._id !== id));
+      if (currentProducts.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
     } catch (error) {
       console.error("Lỗi xóa sản phẩm:", error);
     }
@@ -87,15 +165,12 @@ const ListProduct: React.FC = () => {
         <h5 className="text-lg font-semibold text-gray-800">Bộ lọc</h5>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
           <div>
-            <select id="ProductStatus" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">Trạng thái</option>
-              <option value="Scheduled">Lên lịch</option>
-              <option value="Publish">Công khai</option>
-              <option value="Inactive">Không hoạt động</option>
-            </select>
-          </div>
-          <div>
-            <select id="ProductCategory" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select
+              id="ProductCategory"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
               <option value="">Danh mục</option>
               {categories.map((category) => (
                 <option key={category._id} value={category._id}>
@@ -105,10 +180,31 @@ const ListProduct: React.FC = () => {
             </select>
           </div>
           <div>
-            <select id="ProductStock" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">Tồn kho</option>
-              <option value="Out_of_Stock">Hết hàng</option>
-              <option value="In_Stock">Còn hàng</option>
+            <select
+              id="ProductStatus"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">Trạng thái</option>
+              <option value="new">Mới</option>
+              <option value="active">Hoạt động</option>
+              <option value="disabled">Tạm tắt</option>
+              <option value="bestseller">Bán chạy</option>
+            </select>
+          </div>
+          <div>
+            <select
+              id="ProductPrice"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={priceFilter}
+              onChange={(e) => setPriceFilter(e.target.value)}
+            >
+              <option value="">Giá</option>
+              <option value="0-100000">0 - 100,000đ</option>
+              <option value="100001-500000">100,001 - 500,000đ</option>
+              <option value="500001-1000000">500,001 - 1,000,000đ</option>
+              <option value="1000001">Trên 1,000,000đ</option>
             </select>
           </div>
         </div>
@@ -121,7 +217,9 @@ const ListProduct: React.FC = () => {
               type="search"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               id="dt-search-0"
-              placeholder="Tìm kiếm sản phẩm"
+              placeholder="Tìm kiếm sản phẩm theo tên hoặc SKU"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <div className="flex gap-2">
@@ -159,8 +257,8 @@ const ListProduct: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {products.length > 0 ? (
-                products.map((product) => (
+              {currentProducts.length > 0 ? (
+                currentProducts.map((product) => (
                   <tr key={product._id} className="hover:bg-gray-50 border-b">
                     <td className="p-3"></td>
                     <td className="p-3">
@@ -190,14 +288,15 @@ const ListProduct: React.FC = () => {
                     <td className="p-3">{product.sold_quantity || 0}</td>
                     <td className="p-3">
                       <span
-                        className={`inline-block px-2 py-1 rounded text-xs font-medium ${product.status === "active"
+                        className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                          product.status === "active"
                             ? "bg-green-100 text-green-700"
                             : product.status === "disabled"
-                              ? "bg-gray-100 text-gray-700"
-                              : product.status === "new"
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-yellow-100 text-yellow-700"
-                          }`}
+                            ? "bg-gray-100 text-gray-700"
+                            : product.status === "new"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}
                       >
                         {product.status === "active" && "Đang bán"}
                         {product.status === "disabled" && "Tạm tắt"}
@@ -217,7 +316,7 @@ const ListProduct: React.FC = () => {
                           className="p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
                           onClick={() => navigate(`/admin/product/edit/${product._id}`)}
                         >
-                        <FaEdit />
+                          <FaEdit />
                         </button>
                         <button
                           className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
@@ -242,15 +341,32 @@ const ListProduct: React.FC = () => {
 
         <div className="flex flex-col md:flex-row justify-between items-center mt-4">
           <div className="text-sm text-gray-600">
-            Hiển thị 1 đến {Math.min(10, products.length)} của {products.length} sản phẩm
+            Hiển thị {indexOfFirstProduct + 1} đến {Math.min(indexOfLastProduct, filteredProducts.length)} của {filteredProducts.length} sản phẩm
           </div>
           <div className="flex gap-2 mt-4 md:mt-0">
-            <button className="px-3 py-1 border border-gray-300 rounded-lg text-gray-600 disabled:opacity-50" disabled>
+            <button
+              className="px-3 py-1 border border-gray-300 rounded-lg text-gray-600 disabled:opacity-50"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
               <AiOutlineDoubleLeft />
             </button>
-            <button className="px-3 py-1 border border-gray-300 rounded-lg bg-blue-500 text-white">1</button>
-            <button className="px-3 py-1 border border-gray-300 rounded-lg text-gray-600">2</button>
-            <button className="px-3 py-1 border border-gray-300 rounded-lg text-gray-600">
+            {Array.from({ length: totalPages }, (_, index) => (
+              <button
+                key={index + 1}
+                className={`px-3 py-1 border border-gray-300 rounded-lg ${
+                  currentPage === index + 1 ? "bg-blue-500 text-white" : "text-gray-600"
+                }`}
+                onClick={() => handlePageChange(index + 1)}
+              >
+                {index + 1}
+              </button>
+            ))}
+            <button
+              className="px-3 py-1 border border-gray-300 rounded-lg text-gray-600 disabled:opacity-50"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
               <AiOutlineDoubleRight />
             </button>
           </div>
@@ -313,12 +429,14 @@ const ListProduct: React.FC = () => {
                           disabled
                         />
                         <span
-                          className={`relative w-10 h-6 bg-gray-200 rounded-full ${selectedProduct.stock === "In_Stock" ? "bg-green-500" : ""
-                            }`}
+                          className={`relative w-10 h-6 bg-gray-200 rounded-full ${
+                            selectedProduct.stock === "In_Stock" ? "bg-green-500" : ""
+                          }`}
                         >
                           <span
-                            className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${selectedProduct.stock === "In_Stock" ? "translate-x-4" : ""
-                              }`}
+                            className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                              selectedProduct.stock === "In_Stock" ? "translate-x-4" : ""
+                            }`}
                           />
                         </span>
                         <span className="ml-2">{selectedProduct.stock || "Hết hàng"}</span>
@@ -341,14 +459,15 @@ const ListProduct: React.FC = () => {
                     <td className="p-2 font-medium">Trạng thái:</td>
                     <td className="p-2">
                       <span
-                        className={`inline-block px-2 py-1 rounded text-xs font-medium ${selectedProduct.status === "active"
+                        className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                          selectedProduct.status === "active"
                             ? "bg-green-100 text-green-700"
                             : selectedProduct.status === "disabled"
-                              ? "bg-gray-100 text-gray-700"
-                              : selectedProduct.status === "new"
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-yellow-100 text-yellow-700"
-                          }`}
+                            ? "bg-gray-100 text-gray-700"
+                            : selectedProduct.status === "new"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}
                       >
                         {selectedProduct.status || "Lên lịch"}
                       </span>
