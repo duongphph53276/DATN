@@ -16,21 +16,32 @@ const Checkout: React.FC = () => {
   const [address, setAddress] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  useEffect(() => {
-    const stored = localStorage.getItem('cart');
-    if (stored) {
-      setCartItems(JSON.parse(stored));
-    }
+useEffect(() => {
+  const stored = localStorage.getItem('cart');
+  if (stored) {
+    setCartItems(JSON.parse(stored));
+  }
 
-    // Kiểm tra đăng nhập
-    const user = localStorage.getItem('user');
-    if (!user) {
-      alert('Bạn cần đăng nhập để tiếp tục thanh toán.');
-      window.location.href = '/login'; // Chuyển đến trang đăng nhập
-    } else {
-      setIsLoggedIn(true);
+  const token = localStorage.getItem('token');
+  const user = localStorage.getItem('user');
+
+  if (token && user) {
+    setIsLoggedIn(true);
+
+    try {
+      const userData = JSON.parse(user);
+      if (userData.name) setName(userData.name);
+      if (userData.phone) setPhone(userData.phone);
+      if (userData.address) setAddress(userData.address);
+    } catch (error) {
+      console.error('Lỗi khi parse user từ localStorage:', error);
     }
-  }, []);
+  } else {
+    alert('Bạn cần đăng nhập để tiếp tục thanh toán.');
+    window.location.href = '/login';
+  }
+}, []);
+
 
   const totalPrice = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -155,3 +166,4 @@ const Checkout: React.FC = () => {
 };
 
 export default Checkout;
+  

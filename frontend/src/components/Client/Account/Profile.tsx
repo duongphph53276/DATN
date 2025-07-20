@@ -17,8 +17,12 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
+    try {
       setUser(JSON.parse(storedUser));
+    } catch (e) {
+      console.error('Lỗi khi parse user:', e);
     }
+  }
     setLoading(false);
   }, []);
 
