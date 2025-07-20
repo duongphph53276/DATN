@@ -76,3 +76,42 @@ export const checkEmail = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+export const Profile = async (req, res) => {
+  try {
+    // req.user đã được gắn bởi authMiddleware
+    const user = await UserModel.findById(req.user.id).select('-password'); // Lấy thông tin user, bỏ password
+    if (!user) {
+      return res.status(404).send({ message: "Người dùng không tồn tại", status: false });
+    }
+
+    res.status(200).send({ message: "Lấy thông tin hồ sơ thành công", status: true, user });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "Lấy thông tin hồ sơ thất bại", status: false });
+  }
+};
+
+export const UpdateProfile = async (req, res) => {
+  try {
+    const { name, phoneNumber, avatar } = req.body; // Chỉ cho phép cập nhật các trường này
+    const userId = req.user.id; // Lấy id từ token qua authMiddleware
+
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return res.status(404).send({ message: "Người dùng không tồn tại", status: false });
+    }
+
+    // Cập nhật các trường nếu có trong request body
+    if (name) user.name = name;
+    if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (avatar) user.avatar = avatar;
+
+    await user.save();
+    const updatedUser = await UserModel.findById(userId).select('-password');
+
+    res.status(200).send({ message: "Cập nhật hồ sơ thành công", status: true, user: updatedUser });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "Cập nhật hồ sơ thất bại", status: false });
+  }
+};

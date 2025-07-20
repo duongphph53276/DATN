@@ -9,9 +9,8 @@ import { createProduct, deleteProduct, getAllProducts, getProductById, updatePro
 import { createAttribute,getAttributeById, createAttributeValue, deleteAttribute, getAllAttributes, getAttributeValueById, getAttributeValues, updateAttribute, updateAttributeValue, deleteAttributeValue } from "./controllers/attribute.js";
 import { createVariant, getVariantsByProduct } from './controllers/productVariant.js';
 import orderRoutes from './routes/order.routes.js';
-import { checkEmail, login, register } from './controllers/auth.js';
-import authMiddleware from './middleware/auth.js';
-import restrictTo from './middleware/restrictTo.js';
+import { checkEmail, login, Profile, register, UpdateProfile } from './controllers/auth.js';
+import { authMiddleware, restrictTo } from './middleware/auth.js';
 import { getUserById, getUsers, updateUser } from './controllers/user/user.js';
 import { createRole, getRoleById, getRoles, updateRole } from './controllers/user/role.js';
 
@@ -32,6 +31,10 @@ app.use(express.json());
 app.post('/register', register);
 app.post('/login', login);
 app.get('/check-email', checkEmail);
+app.get('/user', authMiddleware, getUserById);
+
+app.get('/profile', authMiddleware, Profile);
+app.put('/profile', authMiddleware, UpdateProfile);
 
 app.post('/roles/create', createRole);
 app.get('/roles', getRoles);
@@ -49,12 +52,6 @@ app.get('/vouchers', ListVoucher);
 app.post('/vouchers', CreateVoucher);
 app.put('/vouchers/:id', UpdateVoucher);
 app.delete('/vouchers/:id', DeleteVoucher);
-
-app.get('/category', ListCategory);
-app.post('/category/add', AddCategory);
-app.put('/category/edit/:id', EditCategory);
-app.delete('/category/:id', DeleteCategory);
-app.get('/category/:id', GetCategoryById);
 
 // product routes
 app.post('/product/add', createProduct);
@@ -90,6 +87,14 @@ adminRouter.use(authMiddleware, restrictTo('admin'));
 adminRouter.get('/users', getUsers);
 adminRouter.get('/users/:id', getUserById);
 adminRouter.put('/users/:id', updateUser);
+
+adminRouter.get('/category', ListCategory);
+adminRouter.post('/category/add', AddCategory);
+adminRouter.put('/category/edit/:id', EditCategory);
+adminRouter.delete('/category/:id', DeleteCategory);
+adminRouter.get('/category/:id', GetCategoryById);
+
+// adminRouter.
 
 app.use('/admin', adminRouter);
 
