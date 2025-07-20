@@ -1,4 +1,4 @@
-import { useRoutes } from 'react-router-dom';
+import { useRoutes, Navigate } from 'react-router-dom';
 import './App.css';
 import NotFound from './components/404/NotFound';
 import Home from './components/Client/HomePage/Home';
@@ -36,31 +36,58 @@ import Checkout from './components/Client/Account/Checkout';
 import AllProducts from './components/Client/HomePage/AllProduct';
 import ScrollToTop from './components/ScrollToTop';
 import Profile from './components/Client/Account/Profile';
+import UpdateProfile from './components/Client/Account/UpdateProfile';
 
+const ProtectedRoute = ({ children, requiresAdmin = false }: { children: JSX.Element; requiresAdmin?: boolean }) => {
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (requiresAdmin && role !== "admin") {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
+const AuthGuard = ({ children }: { children: JSX.Element }) => {
+  const token = localStorage.getItem("token");
+  return token ? <Navigate to="/" replace /> : children;
+};
 
 function App() {
   const routes = useRoutes([
-    { path: "/login", element: <Login /> },
-    { path: "/register", element: <Register /> },
-    { path: "/forgotpassword", element: <ForgotPassword /> },
+    {
+      path: "/login",
+      element: <AuthGuard><Login /></AuthGuard>,
+    },
+    {
+      path: "/register",
+      element: <AuthGuard><Register /></AuthGuard>,
+    },
+    {
+      path: "/forgotpassword",
+      element: <AuthGuard><ForgotPassword /></AuthGuard>,
+    },
     {
       path: "/",
       element: <ClientLayout />,
-      children: [{ path: "", element: <Home /> },
+      children: [
+        { path: "", element: <Home /> },
         { path: "product/:id", element: <DetailsPage /> },
-           {path : "/cart", element :<Cart/>},
-           {path : "/checkout", element :<Checkout/>},
-           {path :"/all-products", element : <AllProducts />},
-           {path :"/profile", element : <Profile />},
-           
-         
-      ]
-      
+        { path: "cart", element: <ProtectedRoute><Cart /></ProtectedRoute> },
+        { path: "checkout", element: <ProtectedRoute><Checkout /></ProtectedRoute> },
+        { path: "all-products", element: <AllProducts /> },
+        { path: "profile", element: <ProtectedRoute><Profile /></ProtectedRoute> },
+        { path: "profile/edit", element: <ProtectedRoute><UpdateProfile /></ProtectedRoute> }, // Bỏ :id
+      ],
     },
-    
     {
       path: "/admin",
-      element: ( <AdminLayout /> ),
+      element: <ProtectedRoute requiresAdmin={true}><AdminLayout /></ProtectedRoute>,
       children: [
         { path: "", element: <Dashboard /> },
         { path: "category", element: <ListCategory /> },
@@ -82,22 +109,20 @@ function App() {
         { path: "roles", element: <ListRole /> },
         { path: "roles/create", element: <AddRole /> },
         { path: "roles/edit/:id", element: <EditRole /> },
-        { path: "permissions", element: <PermissionManagement /> }, // Thêm route cho Permission
-        { path: "order-list", element: <ListOrderModule /> }, 
-        { path: "order-detail/:id", element: <OrderDetail /> }, 
-      ]
+        { path: "permissions", element: <PermissionManagement /> },
+        { path: "order-list", element: <ListOrderModule /> },
+        { path: "order-detail/:id", element: <OrderDetail /> },
+      ],
     },
-    { path: "*", element: <NotFound /> }
+    { path: "*", element: <NotFound /> },
   ]);
-   return (
+
+  return (
     <>
-      <ScrollToTop/>
+      <ScrollToTop />
       {routes}
     </>
   );
-  return routes;
-  
 }
-
 
 export default App;
