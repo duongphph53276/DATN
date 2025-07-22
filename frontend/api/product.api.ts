@@ -1,4 +1,4 @@
-import { IProduct } from "../interfaces/product";
+import { IProduct } from "../src/interfaces/product";
 import instance from "./instance";
 
 // Lấy danh sách tất cả sản phẩm

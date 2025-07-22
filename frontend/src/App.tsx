@@ -14,7 +14,7 @@ import AddAttribute from './components/Admin/attribute/AddAttribute';
 import AttributeList from './components/Admin/attribute/ListAttribute';
 import EditAttribute from './components/Admin/attribute/EditAttribute';
 import ProductDetailAdmin from './components/Admin/product/ProductDetailAdmin';
-import AddVariant from './components/Admin/product/AddVariant';
+import AddVariant from './components/Admin/variant/AddVariant';
 import AdminLayout from './layout/Admin/Admin.layout';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
@@ -27,6 +27,7 @@ import EditRole from './components/Admin/role/EditRole';
 import ListVoucher from './components/Admin/voucher/ListVoucher';
 import AddVoucher from './components/Admin/voucher/AddVoucher';
 import EditVoucher from './components/Admin/voucher/EditVoucher';
+import EditVariant from './components/Admin/variant/EditVariant';
 import PermissionManagement from './components/Admin/permisson/Permission';
 import ListOrderModule from './components/Admin/order/@ListOrderModule/ListOrderModule';
 import OrderDetail from './components/Admin/order/@OrderDetail/OrderDetail';
@@ -75,6 +76,7 @@ function App() {
     {
       path: "/",
       element: <ClientLayout />,
+
       children: [
         { path: "", element: <Home /> },
         { path: "product/:id", element: <DetailsPage /> },
@@ -84,6 +86,7 @@ function App() {
         { path: "profile", element: <ProtectedRoute><Profile /></ProtectedRoute> },
         { path: "profile/edit", element: <ProtectedRoute><UpdateProfile /></ProtectedRoute> }, // Bỏ :id
       ],
+
     },
     {
       path: "/admin",
@@ -109,6 +112,7 @@ function App() {
         { path: "roles", element: <ListRole /> },
         { path: "roles/create", element: <AddRole /> },
         { path: "roles/edit/:id", element: <EditRole /> },
+
         { path: "permissions", element: <PermissionManagement /> },
         { path: "order-list", element: <ListOrderModule /> },
         { path: "order-detail/:id", element: <OrderDetail /> },
@@ -123,6 +127,7 @@ function App() {
       {routes}
     </>
   );
+
 }
 
 export default App;

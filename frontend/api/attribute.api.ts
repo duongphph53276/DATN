@@ -1,4 +1,4 @@
-import { IAttribute, IAttributeValue } from "../interfaces/attribute";
+import { IAttribute, IAttributeValue } from "../src/interfaces/attribute.js";
 import instance from "./instance"; // axios instance
 
 export const getAllAttributes = () => instance.get("/attribute");

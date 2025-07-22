@@ -12,7 +12,7 @@ const productVariantSchema = new mongoose.Schema({
     },
     quantity: {
         type: Number,
-        default: 0,
+        required: true,
     },
     image: {
         type: String,
@@ -20,21 +20,7 @@ const productVariantSchema = new mongoose.Schema({
     sold_quantity: {
         type: Number,
         default: 0
-    },
-    attributes: [
-        {
-            attribute_id: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Attribute",
-                required: true,
-            },
-            value_id: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "AttributeValue",
-                required: true,
-            }
-        }
-    ]
+    }
 
 }, { timestamps: true, versionKey: false });
 
