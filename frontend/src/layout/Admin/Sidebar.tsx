@@ -23,7 +23,7 @@ const Sidebar = () => {
     { name: 'Quản lý Role', path: '/admin/roles', icon: <ShieldCheck size={18} /> },
     { name: 'Thêm Role', path: '/admin/roles/create', icon: <Plus size={18} /> },
     { name: 'Quản lý Permission', path: '/admin/permissions', icon: <ShieldCheck size={18} /> }, // Thêm mục mới
-    { name: 'Mã giảm giá', path: '/admin/voucher', icon: <PercentCircle size={18} /> },
+    { name: 'Mã giảm giá', path: `/admin/voucher`, icon: <PercentCircle size={18} /> },
   ]
 
   return (

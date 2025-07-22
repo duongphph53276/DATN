@@ -22,7 +22,8 @@
     "mongoose": "^8.13.2",
     "react-router-dom": "^7.6.3",
     "react-toastify": "^11.0.5",
-    "slugify": "^1.6.6"
+    "slugify": "^1.6.6",
+    "yup": "^1.6.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
