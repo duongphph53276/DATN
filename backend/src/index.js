@@ -94,6 +94,11 @@ app.post('/cart/add', AddToCart);
 app.put('/cart/remove', RemoveFromCart);           
 app.delete('/cart/clear/:userId', ClearCart);    
 
+app.get('/category', ListCategory);
+app.post('/category/add', AddCategory);
+app.put('/category/edit/:id', EditCategory);
+app.delete('/category/:id', DeleteCategory);
+app.get('/category/:id', GetCategoryById);
 // Admin routes
 const adminRouter = express.Router();
 adminRouter.use(authMiddleware, restrictTo('admin'));
@@ -101,11 +106,11 @@ adminRouter.get('/users', getUsers);
 adminRouter.get('/users/:id', getUserById);
 adminRouter.put('/users/:id', updateUser);
 
-adminRouter.get('/category', ListCategory);
-adminRouter.post('/category/add', AddCategory);
-adminRouter.put('/category/edit/:id', EditCategory);
-adminRouter.delete('/category/:id', DeleteCategory);
-adminRouter.get('/category/:id', GetCategoryById);
+// adminRouter.get('/category', ListCategory);
+// adminRouter.post('/category/add', AddCategory);
+// adminRouter.put('/category/edit/:id', EditCategory);
+// adminRouter.delete('/category/:id', DeleteCategory);
+// adminRouter.get('/category/:id', GetCategoryById);
 
 // adminRouter.
 
