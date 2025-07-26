@@ -38,6 +38,15 @@ import AllProducts from './components/Client/HomePage/AllProduct';
 import ScrollToTop from './components/ScrollToTop';
 import Profile from './components/Client/Account/Profile';
 import UpdateProfile from './components/Client/Account/UpdateProfile';
+import BlindBoxPage from './components/Client/HomePage/pages/BlindBoxPage';
+import CoupleBearPage from './components/Client/HomePage/pages/CouplePage';
+import HotTrendPage from './components/Client/HomePage/pages/HottrendPage';
+import SalePage from './components/Client/HomePage/pages/SalePage';
+import GraduationBearPage from './components/Client/HomePage/pages/GoodPage';
+import KidPage from './components/Client/HomePage/pages/KidPage';
+import GiantBearPage from './components/Client/HomePage/pages/BigPage';
+import StuffedAnimals from './components/Client/HomePage/pages/Bear';
+import NewsPage from './components/Client/HomePage/pages/NewPage';
 
 const ProtectedRoute = ({ children, requiresAdmin = false }: { children: JSX.Element; requiresAdmin?: boolean }) => {
   const token = localStorage.getItem("token");
@@ -84,7 +93,18 @@ function App() {
         { path: "checkout", element: <ProtectedRoute><Checkout /></ProtectedRoute> },
         { path: "all-products", element: <AllProducts /> },
         { path: "profile", element: <ProtectedRoute><Profile /></ProtectedRoute> },
+        { path: "blindbox", element: <BlindBoxPage/> },
+        { path: "couple", element: <CoupleBearPage/> },
+        { path: "hottrend", element : <HotTrendPage/>  },
+        { path: "sale", element : <SalePage/>  },
+        { path: "totnghiep", element : <GraduationBearPage/>  },
+        { path: "gaunho", element : <KidPage/>  },
+        { path: "gauto", element : <GiantBearPage/>  },
+        { path: "goi-bong", element : <StuffedAnimals/>  },
+        { path: "goc-cua-gau", element : <NewsPage/>  },
+
         { path: "profile/edit", element: <ProtectedRoute><UpdateProfile /></ProtectedRoute> }, // Bỏ :id
+
       ],
 
     },

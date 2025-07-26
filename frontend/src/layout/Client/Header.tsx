@@ -104,47 +104,32 @@ const Header = () => {
 
           {/* GẤU TEDDY */}
           <div className="relative group">
-            <button className="flex items-center gap-1 hover:text-rose-100 transition">
-              GẤU TEDDY ▾
-            </button>
-            <ul className="absolute left-0 top-full mt-1 bg-white text-gray-800 shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[180px]">
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Teddy nhỏ</Link></li>
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Teddy lớn</Link></li>
-            </ul>
+                      <Link to="/couple" className="hover:text-rose-100 transition">GẤU COUPLE</Link>
+
           </div>
 
-          {/* BỘ SƯU TẬP */}
+       
           <div className="relative group">
-            <button className="flex items-center gap-1 hover:text-rose-100 transition">
-              BỘ SƯU TẬP ▾
-            </button>
-            <ul className="absolute left-0 top-full mt-1 bg-white text-gray-800 shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[180px]">
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Valentine</Link></li>
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Sinh nhật</Link></li>
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Noel</Link></li>
-            </ul>
+             <Link to="/hottrend" className="hover:text-rose-100 transition">GẤU HOTTREND</Link>
+
+          
           </div>
 
           {/* HOẠT HÌNH */}
           <div className="relative group">
-            <button className="flex items-center gap-1 hover:text-rose-100 transition">
-              HOẠT HÌNH ▾
-            </button>
-            <ul className="absolute left-0 top-full mt-1 bg-white text-gray-800 shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[180px]">
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Doraemon</Link></li>
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Kitty</Link></li>
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Pokemon</Link></li>
-            </ul>
+             <Link to="/sale" className="hover:text-rose-100 transition">GẤU SALE</Link>
+          
           </div>
 
           {/* THÚ BÔNG */}
           <div className="relative group">
             <button className="flex items-center gap-1 hover:text-rose-100 transition">
-              THÚ BÔNG ▾
+       GẤU BÔNG KHÁC 
             </button>
             <ul className="absolute left-0 top-full mt-1 bg-white text-gray-800 shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[180px]">
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Size nhỏ</Link></li>
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Size lớn</Link></li>
+              <li><Link to="totnghiep" className="block px-4 py-2 hover:bg-rose-100">Gấu Tốt Nghiệp </Link></li>
+              <li><Link to="gaunho" className="block px-4 py-2 hover:bg-rose-100">Gấu Nhỏ</Link></li>
+              <li><Link to="gauto" className="block px-4 py-2 hover:bg-rose-100">Gấu To</Link></li>
             </ul>
           </div>
 
