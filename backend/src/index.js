@@ -64,6 +64,8 @@ app.post('/product/add', upload.fields([
   { name: "images", maxCount: 1 },
   { name: "album[]", maxCount: 10 }
 ]), createProduct);
+app.get('/category', ListCategory);
+
 app.get('/product', getAllProducts);
 app.get('/product/:id', getProductById);
 app.put('/product/edit/:id', updateProduct);
