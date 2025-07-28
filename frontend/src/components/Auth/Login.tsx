@@ -18,6 +18,8 @@ const Login: React.FC = () => {
       const response = await api.post('/login', { email, password });
       console.log('Response data:', response.data);
       const data = response.data;
+
+
       if (data.token) {
         localStorage.setItem('token', data.token);
         // Lấy role từ data.user nếu có, hoặc giải mã từ token

@@ -38,6 +38,8 @@ import AllProducts from './components/Client/HomePage/AllProduct';
 import ScrollToTop from './components/ScrollToTop';
 import Profile from './components/Client/Account/Profile';
 import UpdateProfile from './components/Client/Account/UpdateProfile';
+import NewsPage from './components/Client/HomePage/pages/NewPage';
+import CategoryPage from './components/Client/HomePage/pages/CategoryPage';
 
 const ProtectedRoute = ({ children, requiresAdmin = false }: { children: JSX.Element; requiresAdmin?: boolean }) => {
   const token = localStorage.getItem("token");
@@ -76,17 +78,17 @@ function App() {
     {
       path: "/",
       element: <ClientLayout />,
-
       children: [
         { path: "", element: <Home /> },
+        { path: "category/:slug", element: <CategoryPage /> },
         { path: "product/:id", element: <DetailsPage /> },
         { path: "cart", element: <ProtectedRoute><Cart /></ProtectedRoute> },
         { path: "checkout", element: <ProtectedRoute><Checkout /></ProtectedRoute> },
         { path: "all-products", element: <AllProducts /> },
         { path: "profile", element: <ProtectedRoute><Profile /></ProtectedRoute> },
-        { path: "profile/edit", element: <ProtectedRoute><UpdateProfile /></ProtectedRoute> }, // Bỏ :id
+        { path: "goc-cua-gau", element: <NewsPage /> },
+        { path: "profile/edit", element: <ProtectedRoute><UpdateProfile /></ProtectedRoute> },
       ],
-
     },
     {
       path: "/admin",
@@ -112,7 +114,6 @@ function App() {
         { path: "roles", element: <ListRole /> },
         { path: "roles/create", element: <AddRole /> },
         { path: "roles/edit/:id", element: <EditRole /> },
-
         { path: "permissions", element: <PermissionManagement /> },
         { path: "order-list", element: <ListOrderModule /> },
         { path: "order-detail/:id", element: <OrderDetail /> },
@@ -127,7 +128,6 @@ function App() {
       {routes}
     </>
   );
-
 }
 
 export default App;
