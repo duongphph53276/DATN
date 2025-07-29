@@ -13,6 +13,7 @@ type Variant = {
   attributes: Array<{ attribute_id: string; value_id: string }>;
 };
 type Product = {
+  product: any;
   id: string;
   name: string;
   category: string;
@@ -21,7 +22,7 @@ type Product = {
   image?: string;
   images?: string;
   size?: string[];
-  variants?: Variant[];
+  variants?: Variant[] ;
 };
 
 // Hàm chuyển chuỗi giá về số
@@ -35,9 +36,7 @@ const DetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
-  const [selectedAttributes, setSelectedAttributes] = useState<{
-    [attributeId: string]: string;
-  }>({});
+  const [selectedAttributes, setSelectedAttributes] = useState<{[attributeId: string]: string;}>({});
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [attributes, setAttributes] = useState<Attribute[]>([]);
@@ -209,12 +208,12 @@ const DetailsPage = () => {
         </div>
 
         {/* Hiển thị các thuộc tính dưới dạng button */}
-        {product.variants?.length > 0 && (
+        {product.variants && product.variants.length > 0 && (
           <div className="mb-6">
             {attributes.map((attr) => {
               const valueIds = Array.from(
                 new Set(
-                  product.variants
+                  product.variants!
                     .flatMap((variant) =>
                       variant.attributes
                         .filter((a) => a.attribute_id === attr._id)

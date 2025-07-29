@@ -1,3 +1,5 @@
+import { IVariant } from "./variant";
+
 export interface IProduct {
   _id?: string | number; // ID MongoDB
   name: string;
@@ -10,4 +12,6 @@ export interface IProduct {
   sku?: string;
   average_rating?: number;
   sold_quantity?: number;
+  variants?: IVariant[];
+  quantity?: number;
 }

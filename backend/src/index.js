@@ -106,11 +106,11 @@ adminRouter.get('/users', getUsers);
 adminRouter.get('/users/:id', getUserById);
 adminRouter.put('/users/:id', updateUser);
 
-// adminRouter.get('/category', ListCategory);
-// adminRouter.post('/category/add', AddCategory);
-// adminRouter.put('/category/edit/:id', EditCategory);
-// adminRouter.delete('/category/:id', DeleteCategory);
-// adminRouter.get('/category/:id', GetCategoryById);
+adminRouter.get('/category', ListCategory);
+adminRouter.post('/category/add', AddCategory);
+adminRouter.put('/category/edit/:id', EditCategory);
+adminRouter.delete('/category/:id', DeleteCategory);
+adminRouter.get('/category/:id', GetCategoryById);
 
 // adminRouter.
 

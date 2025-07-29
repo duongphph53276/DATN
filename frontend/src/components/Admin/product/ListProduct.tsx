@@ -32,7 +32,7 @@ const ListProduct: React.FC = () => {
 
         const productsWithVariants = await Promise.all(
           productsData.map(async (product: IProduct) => {
-            const variantRes = await getVariantsByProduct(product._id);
+            const variantRes = await getVariantsByProduct(product._id!);
             return { ...product, variants: variantRes.data.data || [] };
           })
         );
@@ -262,12 +262,12 @@ const ListProduct: React.FC = () => {
                   <tr key={product._id} className="hover:bg-gray-50 border-b">
                     <td className="p-3"></td>
                     <td className="p-3">
-                      <button
+                      {/* <button
                         className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                         onClick={() => openModal(product._id)}
                       >
                         <i className="bx bx-plus" />
-                      </button>
+                      </button> */}
                     </td>
                     <td className="p-3">
                       {product.images ? (
@@ -282,7 +282,7 @@ const ListProduct: React.FC = () => {
                         <small className="text-gray-500 hidden sm:block">{product.description || ""}</small>
                       </div>
                     </td>
-                    <td className="p-3">{getPriceDisplay(product.variants)}</td>
+                   <td className="p-3">{getPriceDisplay(product.variants ?? [])}</td>
                     <td className="p-3">{product.sku || "N/A"}</td>
                     <td className="p-3">{getCategoryName(product.category_id)}</td>
                     <td className="p-3">{product.sold_quantity || 0}</td>
@@ -320,7 +320,7 @@ const ListProduct: React.FC = () => {
                         </button>
                         <button
                           className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                          onClick={() => handleDelete(product._id)}
+                          onClick={() => handleDelete(product._id!)}
                         >
                           <MdDelete />
                         </button>
@@ -416,31 +416,6 @@ const ListProduct: React.FC = () => {
                         <i className="bx bx-headphone text-red-600" />
                       </span>
                       {getCategoryName(selectedProduct.category_id)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 font-medium">Tồn kho:</td>
-                    <td className="p-2">
-                      <label className="inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="sr-only"
-                          checked={selectedProduct.stock === "In_Stock"}
-                          disabled
-                        />
-                        <span
-                          className={`relative w-10 h-6 bg-gray-200 rounded-full ${
-                            selectedProduct.stock === "In_Stock" ? "bg-green-500" : ""
-                          }`}
-                        >
-                          <span
-                            className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                              selectedProduct.stock === "In_Stock" ? "translate-x-4" : ""
-                            }`}
-                          />
-                        </span>
-                        <span className="ml-2">{selectedProduct.stock || "Hết hàng"}</span>
-                      </label>
                     </td>
                   </tr>
                   <tr>

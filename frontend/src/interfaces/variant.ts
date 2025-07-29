@@ -6,6 +6,7 @@ export interface IVariantAttribute {
 }
 
 export interface IVariant {
+  attributes: any;
   _id?: string | number; // ID MongoDB
   product_id: string | number; // liên kết với sản phẩm cha
   price: number;

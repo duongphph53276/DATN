@@ -96,8 +96,7 @@ const ProductDetailAdmin = () => {
               <th className="px-4 py-2 border">Ảnh</th>
               <th className="px-4 py-2 border">Giá</th>
               <th className="px-4 py-2 border">Số lượng</th>
-              <th className="px-4 py-2 border">Thuộc tính</th>
-              <th className="px-4 py-2 border">Hành động</th>
+              <th className="px-4 py-2 border">Thuộc tính</th>      
             </tr>
           </thead>
           <tbody>
@@ -115,28 +114,12 @@ const ProductDetailAdmin = () => {
                 </td>
                 <td className="px-4 py-2 border">{variant.quantity}</td>
                 <td className="px-4 py-2 border space-y-1">
-                  {variant.attributes.map((attr: IVariantAttribute, idx: number) => (
+                  {variant.attributes!.map((attr: IVariantAttribute, idx: number) => (
                     <div key={idx} className="text-gray-700">
                       <span className="font-medium">{attr.attribute_name || attr.attribute_id}</span>: {attr.value || attr.value_id}
                     </div>
                   ))}
-                </td>
-                <td className="px-4 py-2 border">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleEditVariant(variant._id)}
-                      className="text-blue-600 hover:text-blue-800"
-                    >
-                      Sửa
-                    </button>
-                    <button
-                      onClick={() => handleDeleteVariant(variant._id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      Xóa
-                    </button>
-                  </div>
-                </td>
+                </td>              
               </tr>
             ))}
             {variants.length === 0 && (
