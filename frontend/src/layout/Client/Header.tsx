@@ -1,32 +1,61 @@
 import { FaPhoneAlt, FaSearch, FaUser } from "react-icons/fa";
-import { Link, useNavigate } from "react-router-dom"; // 👈 thêm useNavigate
-import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import CartCountBadge from "./CartCountBadge";
+import api from "../../middleware/axios";
 
 const Header = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const navigate = useNavigate(); // 👈 khởi tạo navigate
+  const [categories, setCategories] = useState([]);
+  const navigate = useNavigate();
   const isLoggedIn = !!localStorage.getItem("token");
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await api.get("/category");
+        if (response.data.status) {
+          console.log("Fetched Categories:", response.data.data);
+          setCategories(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    localStorage.removeItem('role');
+    localStorage.removeItem("role");
     localStorage.removeItem("user");
-    setShowUserMenu(false); // 👈 ẩn menu
-    navigate("/"); // 👈 chuyển về trang chủ
+    setShowUserMenu(false);
+    navigate("/");
   };
+
+  const topLevelCategories = categories.filter((cat) => !cat.parent_id);
+  const otherStuffedBearsCategory = categories.find(
+    (cat) => cat.name === "Gi co"
+  );
+  const subCategories = otherStuffedBearsCategory
+    ? categories.filter((cat) =>
+        cat.parent_id && cat.parent_id._id
+          ? cat.parent_id._id.toString() === otherStuffedBearsCategory._id.toString()
+          : false
+      )
+    : [];
+
+  console.log("Top Level Categories:", topLevelCategories);
+  console.log("Other Stuffed Bears:", otherStuffedBearsCategory);
+  console.log("Subcategories:", subCategories);
 
   return (
     <header className="shadow z-50 bg-white relative">
-      {/* Top bar: Logo – Search – Hotline */}
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 h-20">
-        {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
           <img src="/logo.png" alt="Logo Bemori" className="h-10 w-auto" />
           <span className="text-2xl font-bold text-pink-500">FUZZYBEAR</span>
         </Link>
-
-        {/* Search bar */}
         <div className="flex-1 max-w-md mx-6">
           <div className="relative">
             <input
@@ -39,16 +68,12 @@ const Header = () => {
             </button>
           </div>
         </div>
-
-        {/* Hotline + Cart + User */}
         <div className="flex items-center space-x-6 relative">
           <div className="flex items-center text-rose-300 font-medium space-x-2">
             <FaPhoneAlt size={18} />
             <span>097.989.6616</span>
           </div>
           <CartCountBadge />
-
-          {/* User Icon */}
           <div className="relative">
             <button
               className="text-rose-400 hover:text-rose-600"
@@ -56,7 +81,6 @@ const Header = () => {
             >
               <FaUser size={20} />
             </button>
-
             {showUserMenu && (
               <div className="absolute right-0 mt-2 w-40 bg-white border rounded-md shadow-md z-50 text-sm">
                 {isLoggedIn ? (
@@ -95,62 +119,52 @@ const Header = () => {
           </div>
         </div>
       </div>
-
-      {/* Bottom navigation */}
       <nav className="bg-rose-300 text-white text-sm font-medium">
         <div className="max-w-7xl mx-auto flex flex-wrap justify-center gap-x-8 gap-y-2 py-3 px-4">
-          <Link to="/" className="hover:text-rose-100 transition">TRANG CHỦ</Link>
-          <Link to="/blindbox" className="hover:text-rose-100 transition">BLINDBOX</Link>
-
-          {/* GẤU TEDDY */}
-          <div className="relative group">
-            <button className="flex items-center gap-1 hover:text-rose-100 transition">
-              GẤU TEDDY ▾
-            </button>
-            <ul className="absolute left-0 top-full mt-1 bg-white text-gray-800 shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[180px]">
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Teddy nhỏ</Link></li>
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Teddy lớn</Link></li>
-            </ul>
-          </div>
-
-          {/* BỘ SƯU TẬP */}
-          <div className="relative group">
-            <button className="flex items-center gap-1 hover:text-rose-100 transition">
-              BỘ SƯU TẬP ▾
-            </button>
-            <ul className="absolute left-0 top-full mt-1 bg-white text-gray-800 shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[180px]">
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Valentine</Link></li>
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Sinh nhật</Link></li>
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Noel</Link></li>
-            </ul>
-          </div>
-
-          {/* HOẠT HÌNH */}
-          <div className="relative group">
-            <button className="flex items-center gap-1 hover:text-rose-100 transition">
-              HOẠT HÌNH ▾
-            </button>
-            <ul className="absolute left-0 top-full mt-1 bg-white text-gray-800 shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[180px]">
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Doraemon</Link></li>
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Kitty</Link></li>
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Pokemon</Link></li>
-            </ul>
-          </div>
-
-          {/* THÚ BÔNG */}
-          <div className="relative group">
-            <button className="flex items-center gap-1 hover:text-rose-100 transition">
-              THÚ BÔNG ▾
-            </button>
-            <ul className="absolute left-0 top-full mt-1 bg-white text-gray-800 shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[180px]">
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Size nhỏ</Link></li>
-              <li><Link to="#" className="block px-4 py-2 hover:bg-rose-100">Size lớn</Link></li>
-            </ul>
-          </div>
-
-          <Link to="/goi-bong" className="hover:text-rose-100 transition">GỐI BÔNG & PHỤ KIỆN</Link>
-          <Link to="/goc-cua-gau" className="hover:text-rose-100 transition">GÓC CỦA GẤU ▾</Link>
-          <Link to="/all-products" className="hover:text-rose-100 transition">TẤT CẢ SP ▾</Link>
+          <Link to="/" className="hover:text-rose-100 transition">
+            TRANG CHỦ
+          </Link>
+          {topLevelCategories.map((category) => (
+            <div key={category._id} className="relative group">
+              {category.name === "Gi co" ? (
+                <>
+                  <Link
+                    to={`/category/${category.slug}`}
+                    className="flex items-center gap-1 hover:text-rose-100 transition"
+                  >
+                    {category.name}
+                  </Link>
+                  {subCategories.length > 0 && (
+                    <ul className="absolute left-0 top-full mt-1 bg-white text-gray-800 shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[180px]">
+                      {subCategories.map((subCat) => (
+                        <li key={subCat._id}>
+                          <Link
+                            to={`/category/${subCat.slug}`}
+                            className="block px-4 py-2 hover:bg-rose-100"
+                          >
+                            {subCat.name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              ) : (
+                <Link
+                  to={`/category/${category.slug}`}
+                  className="hover:text-rose-100 transition"
+                >
+                  {category.name}
+                </Link>
+              )}
+            </div>
+          ))}
+          <Link to="/goc-cua-gau" className="hover:text-rose-100 transition">
+            GÓC CỦA GẤU ▾
+          </Link>
+          <Link to="/all-products" className="hover:text-rose-100 transition">
+            TẤT CẢ SP ▾
+          </Link>
         </div>
       </nav>
     </header>

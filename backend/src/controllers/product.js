@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Product from "../models/product.js";
 import ProductVariant from "../models/productVariant.js";
 import VariantAttributeValue from "../models/variantAttributeValue.js";
@@ -98,48 +99,85 @@ export const createProduct = async (req, res) => {
 // Lấy danh sách tất cả sản phẩm
 export const getAllProducts = async (req, res) => {
   try {
-    
-    const products = await Product.find().populate("category_id").lean();
+    const { category } = req.query;
 
+    // Xây dựng query để lọc sản phẩm
+    let query = {};
+    if (category) {
+      if (!mongoose.Types.ObjectId.isValid(category)) {
+        return res.status(400).json({
+          message: "ID danh mục không hợp lệ",
+          status: false
+        });
+      }
+      query = { category_id: new mongoose.Types.ObjectId(category) };
+    }
+
+    console.log("Query:", query); // Log để debug
+
+    // Lấy danh sách sản phẩm theo query
+    const products = await Product.find(query).populate("category_id").lean();
+
+    console.log("Products found:", products); // Log để debug
+
+    if (!products.length && category) {
+      return res.status(200).json({
+        message: "Không có sản phẩm nào trong danh mục này",
+        status: true,
+        data: []
+      });
+    }
+
+    // Lấy biến thể cho các sản phẩm
     const productIds = products.map((p) => p._id);
-
     const variants = await ProductVariant.find({ product_id: { $in: productIds } }).lean();
 
-    // Lấy toàn bộ VariantAttributeValue
-    const variantIds = variants.map(v => v._id);
-    
+    console.log("Variants found:", variants); // Log để debug
+
+    // Lấy thuộc tính cho các biến thể
+    const variantIds = variants.map((v) => v._id);
     const attributeValues = await VariantAttributeValue.find({ variant_id: { $in: variantIds } })
       .populate("attribute_id value_id")
       .lean();
 
-    // Gắn attributes cho từng variant
+    console.log("Attribute values found:", attributeValues); // Log để debug
+
+    // Gắn thuộc tính vào biến thể
     const variantsWithAttrs = variants.map((variant) => {
-      const attrs = attributeValues.filter(attr => attr.variant_id.toString() === variant._id.toString());
+      const attrs = attributeValues.filter(
+        (attr) => attr.variant_id.toString() === variant._id.toString()
+      );
       return {
         ...variant,
-        attributes: attrs.map(attr => ({
+        attributes: attrs.map((attr) => ({
           attribute_id: attr.attribute_id?._id || null,
           value_id: attr.value_id?._id || null,
           attribute_name: attr.attribute_id?.name || "Unknown",
           value: attr.value_id?.value || "Unknown",
-        }))
+        })),
       };
     });
 
     // Gộp biến thể vào sản phẩm
     const productsWithVariants = products.map((product) => ({
       ...product,
-      variants: variantsWithAttrs.filter(v => v.product_id.toString() === product._id.toString())
+      variants: variantsWithAttrs.filter(
+        (v) => v.product_id.toString() === product._id.toString()
+      ),
     }));
 
-    return res.status(200).send({
+    return res.status(200).json({
       message: "Lấy danh sách sản phẩm thành công",
       status: true,
       data: productsWithVariants,
     });
   } catch (error) {
-    console.error("Lỗi khi lấy danh sách sản phẩm:", error);
-    return res.status(500).json({ message: "Lỗi khi lấy danh sách sản phẩm", error });
+    console.error("Lỗi khi lấy danh sách sản phẩm:", error.stack || error);
+    return res.status(500).json({
+      message: "Lỗi khi lấy danh sách sản phẩm",
+      status: false,
+      error: error.message || error.toString(),
+    });
   }
 };
 
