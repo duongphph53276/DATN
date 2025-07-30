@@ -14,7 +14,6 @@ import AddAttribute from './components/Admin/attribute/AddAttribute';
 import AttributeList from './components/Admin/attribute/ListAttribute';
 import EditAttribute from './components/Admin/attribute/EditAttribute';
 import ProductDetailAdmin from './components/Admin/product/ProductDetailAdmin';
-import AddVariant from './components/Admin/variant/AddVariant';
 import AdminLayout from './layout/Admin/Admin.layout';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
@@ -27,7 +26,6 @@ import EditRole from './components/Admin/role/EditRole';
 import ListVoucher from './components/Admin/voucher/ListVoucher';
 import AddVoucher from './components/Admin/voucher/AddVoucher';
 import EditVoucher from './components/Admin/voucher/EditVoucher';
-import EditVariant from './components/Admin/variant/EditVariant';
 import PermissionManagement from './components/Admin/permisson/Permission';
 import ListOrderModule from './components/Admin/order/@ListOrderModule/ListOrderModule';
 import OrderDetail from './components/Admin/order/@OrderDetail/OrderDetail';
@@ -105,7 +103,6 @@ function App() {
         { path: "attribute", element: <AttributeList /> },
         { path: "attribute/add", element: <AddAttribute /> },
         { path: "attribute/edit/:id", element: <EditAttribute /> },
-        { path: "product/:id/add-variant", element: <AddVariant /> },
         { path: "voucher", element: <ListVoucher /> },
         { path: "voucher/add", element: <AddVoucher /> },
         { path: "voucher/edit/:id", element: <EditVoucher /> },

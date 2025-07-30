@@ -19,7 +19,7 @@ type AddProductForm = {
   variants: {
     price: number;
     quantity: number;
-    image?: File | string;
+    image?:  string;
     attributes: { attribute_id: string; value_id: string }[];
   }[];
 };
@@ -44,7 +44,7 @@ const AddProduct = () => {
       .min(2, "Tên sản phẩm phải từ 2 đến 100 ký tự")
       .max(100, "Tên sản phẩm phải từ 2 đến 100 ký tự"),
     category_id: yup.string().required("Bắt buộc chọn danh mục"),
-    description: yup.string().optional(),
+    description: yup.string().optional().nullable(),
     sku: yup.string().nullable().transform((value) => (value?.trim() === "" ? null : value)),
     average_rating: yup.number().optional(),
     sold_quantity: yup.number().optional(),
@@ -303,9 +303,8 @@ const AddProduct = () => {
                 <input
                   {...register("name")}
                   type="text"
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.name ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? "border-red-500" : "border-gray-300"
+                    }`}
                   id="ecommerce-product-name"
                   placeholder="Tên sản phẩm"
                 />
@@ -318,9 +317,8 @@ const AddProduct = () => {
                 <input
                   {...register("sku")}
                   type="text"
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.sku ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.sku ? "border-red-500" : "border-gray-300"
+                    }`}
                   id="ecommerce-product-sku"
                   placeholder="SKU"
                 />
@@ -330,9 +328,8 @@ const AddProduct = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả (Tùy chọn)</label>
                 <textarea
                   {...register("description")}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.description ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.description ? "border-red-500" : "border-gray-300"
+                    }`}
                   rows={5}
                   placeholder="Mô tả sản phẩm"
                 />
@@ -355,9 +352,8 @@ const AddProduct = () => {
                         type="text"
                         value={formattedPrices[index] || ""}
                         onChange={(e) => handlePriceChange(index, e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                          errors.variants?.[index]?.price ? "border-red-500" : "border-gray-300"
-                        }`}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.price ? "border-red-500" : "border-gray-300"
+                          }`}
                         placeholder="Giá (ví dụ: 1,000,000)"
                       />
                       <input
@@ -373,9 +369,8 @@ const AddProduct = () => {
                       <input
                         {...register(`variants.${index}.quantity`)}
                         type="number"
-                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                          errors.variants?.[index]?.quantity ? "border-red-500" : "border-gray-300"
-                        }`}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.quantity ? "border-red-500" : "border-gray-300"
+                          }`}
                         placeholder="Số lượng"
                       />
                       {errors.variants?.[index]?.quantity && (
@@ -400,9 +395,9 @@ const AddProduct = () => {
                           newImages[index] = file;
                           return newImages;
                         });
-                        if (file !== null) {
-                          setValue(`variants.${index}.image`, file);
-                        }
+                        // if (file !== null) {
+                        //   setValue(`variants.${index}.image`, file);
+                        // }
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
                     />
@@ -413,8 +408,8 @@ const AddProduct = () => {
                             variantImages[index]
                               ? URL.createObjectURL(variantImages[index])
                               : typeof getValues(`variants.${index}.image`) === "string"
-                              ? getValues(`variants.${index}.image`)
-                              : ""
+                                ? getValues(`variants.${index}.image`)
+                                : ""
                           }
                           className="h-20 object-cover border rounded-lg"
                         />
@@ -429,9 +424,8 @@ const AddProduct = () => {
                         <select
                           value={attr.attribute_id || ""}
                           onChange={(e) => handleAttributeChange(index, attrIndex, "attribute_id", e.target.value)}
-                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            errors.variants?.[index]?.attributes?.[attrIndex]?.attribute_id ? "border-red-500" : "border-gray-300"
-                          }`}
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.attributes?.[attrIndex]?.attribute_id ? "border-red-500" : "border-gray-300"
+                            }`}
                         >
                           <option value="">-- Chọn thuộc tính --</option>
                           {attributes?.map((att: any) => (
@@ -446,9 +440,8 @@ const AddProduct = () => {
                         <select
                           value={attr.value_id || ""}
                           onChange={(e) => handleAttributeChange(index, attrIndex, "value_id", e.target.value)}
-                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            errors.variants?.[index]?.attributes?.[attrIndex]?.value_id ? "border-red-500" : "border-gray-300"
-                          }`}
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.attributes?.[attrIndex]?.value_id ? "border-red-500" : "border-gray-300"
+                            }`}
                         >
                           <option value="">-- Chọn giá trị --</option>
                           {attributeValues
@@ -516,9 +509,8 @@ const AddProduct = () => {
                 </label>
                 <select
                   {...register("category_id")}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.category_id ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category_id ? "border-red-500" : "border-gray-300"
+                    }`}
                   id="category-org"
                 >
                   <option value="">-- Chọn danh mục --</option>
@@ -534,9 +526,8 @@ const AddProduct = () => {
                 </label>
                 <select
                   {...register("status")}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.status ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.status ? "border-red-500" : "border-gray-300"
+                    }`}
                   id="status-org"
                 >
                   <option value="active">Đang bán</option>
