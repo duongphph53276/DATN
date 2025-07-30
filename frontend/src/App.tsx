@@ -47,7 +47,8 @@ const ProtectedRoute = ({ children, requiresAdmin = false }: { children: JSX.Ele
     return <Navigate to="/login" replace />;
   }
 
-  if (requiresAdmin && role !== "admin") {
+  // Cho phép cả admin và employee truy cập admin area
+  if (requiresAdmin && role !== "admin" && role !== "employee") {
     return <Navigate to="/" replace />;
   }
 

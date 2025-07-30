@@ -1,4 +1,7 @@
 import { UserModel } from '../../models/User/user.js'; // Điều chỉnh đường dẫn theo cấu trúc dự án
+import { RoleModel } from '../../models/User/role.js';
+import { RolePermissionModel } from '../../models/User/role_permission.js';
+import { PermissionModel } from '../../models/User/permission.js';
 
 export const getUsers = async (req, res) => {
   try {
@@ -74,5 +77,66 @@ export const updateUser = async (req, res) => {
     res.status(200).json(user);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+};
+
+// Lấy thông tin user với role và permissions
+export const getUserWithPermissions = async (req, res) => {
+  try {
+    const userId = req.user.id; // Lấy từ token
+    
+    const user = await UserModel.findById(userId)
+      .populate('role_id', 'name description');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User không tồn tại' });
+    }
+    
+    // Lấy permissions của role
+    let permissions = [];
+    if (user.role_id) {
+      const rolePermissions = await RolePermissionModel.find({ role_id: user.role_id._id })
+        .populate('permission_id', 'name description');
+      
+      permissions = rolePermissions.map(rp => rp.permission_id);
+    }
+    
+    res.json({
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        avatar: user.avatar,
+        status: user.status,
+        role: user.role_id
+      },
+      permissions: permissions
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Kiểm tra quyền của user
+export const checkUserPermission = async (req, res) => {
+  try {
+    const { permissionName } = req.params;
+    const userId = req.user.id;
+    
+    const user = await UserModel.findById(userId).populate('role_id');
+    
+    if (!user || !user.role_id) {
+      return res.json({ hasPermission: false });
+    }
+    
+    const rolePermission = await RolePermissionModel.findOne({
+      role_id: user.role_id._id,
+      'permission_id': await PermissionModel.findOne({ name: permissionName })
+    });
+    
+    res.json({ hasPermission: !!rolePermission });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
