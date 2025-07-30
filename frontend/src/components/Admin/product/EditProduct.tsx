@@ -5,6 +5,8 @@ import { getProductById, updateProduct } from "../../../../api/product.api";
 import { getCategories } from "../../../../api/category.api";
 import { uploadToCloudinary } from "../../../lib/cloudinary";
 import { getAllAttributes, getAttributeValues } from "../../../../api/attribute.api";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
 
 type EditProductForm = {
   name: string;
@@ -15,13 +17,103 @@ type EditProductForm = {
   average_rating?: number;
   sold_quantity?: number;
   variants: {
-    _id?: string; // Thêm ID để cập nhật biến thể hiện có
+    _id?: string;
     price: number;
     quantity: number;
     image?: File | string;
     attributes: { attribute_id: string; value_id: string }[];
   }[];
 };
+
+const validationSchema = yup.object().shape({
+  name: yup
+    .string()
+    .required("Tên sản phẩm là bắt buộc")
+    .min(2, "Tên sản phẩm phải từ 2 đến 100 ký tự")
+    .max(100, "Tên sản phẩm phải từ 2 đến 100 ký tự"),
+  category_id: yup.string().required("Bắt buộc chọn danh mục"),
+  description: yup.string().optional(),
+  sku: yup.string().nullable().transform((value) => (value?.trim() === "" ? null : value)),
+  average_rating: yup.number().optional(),
+  sold_quantity: yup.number().optional(),
+  status: yup.string().oneOf(["active", "disabled", "new", "bestseller"]).nullable(),
+  variants: yup.array().of(
+    yup.object().shape({
+      price: yup
+        .number()
+        .required("Giá là bắt buộc")
+        .min(0, "Giá không được âm")
+        .typeError("Giá phải là một số"),
+      quantity: yup
+        .number()
+        .required("Số lượng là bắt buộc")
+        .min(0, "Số lượng không được âm")
+        .typeError("Số lượng phải là một số"),
+      image: yup.mixed().nullable(),
+      attributes: yup
+        .array()
+        .of(
+          yup.object().shape({
+            attribute_id: yup.string().required("Bắt buộc chọn thuộc tính"),
+            value_id: yup.string().required("Bắt buộc chọn giá trị"),
+          })
+        )
+        .min(1, "Phải có ít nhất một thuộc tính")
+        .test(
+          "unique-attributes-in-variant",
+          "Các thuộc tính trong cùng một biến thể không được trùng lặp",
+          (attributes) => {
+            if (!attributes) return true;
+            const attributeKeys = attributes.map(
+              (attr) => `${attr.attribute_id}-${attr.value_id}`
+            );
+            const uniqueKeys = new Set(attributeKeys);
+            return uniqueKeys.size === attributeKeys.length;
+          }
+        )
+        .test(
+          "unique-attributes-across-variants",
+          "Tổ hợp thuộc tính này đã tồn tại trong một biến thể khác",
+          (attributes, context) => {
+            const currentKey = attributes
+              ?.map((attr) => `${attr.attribute_id}-${attr.value_id}`)
+              .sort()
+              .join("|") || "";
+            const allVariants = context.from?.[1]?.value?.variants || [];
+            const variantKeys = allVariants
+              .filter((_: any, idx: number) => idx !== context.options.index)
+              .map((v: any) =>
+                v.attributes
+                  .map((attr: any) => `${attr.attribute_id}-${attr.value_id}`)
+                  .sort()
+                  .join("|")
+              );
+            return !variantKeys.includes(currentKey);
+          }
+        )
+        .test(
+          "no-duplicate-with-existing",
+          "Biến thể này đã tồn tại trong hệ thống",
+          (attributes, context) => {
+            const currentKey = attributes
+              ?.map((attr) => `${attr.attribute_id}-${attr.value_id}`)
+              .sort()
+              .join("|") || "";
+            const allVariants = context.from?.[1]?.value?.variants || [];
+            const currentVariant = allVariants[context.options.index] || {};
+            const otherVariants = allVariants.filter((_: any, idx: any) => idx !== context.options.index);
+            const existingKeys = otherVariants.map((v: any) =>
+              v.attributes
+                .map((attr: any) => `${attr.attribute_id}-${attr.value_id}`)
+                .sort()
+                .join("|")
+            );
+            return !existingKeys.includes(currentKey) || (currentVariant._id && currentKey === existingKeys.find((key: string) => key === currentKey));
+          }
+        ),
+    })
+  ).min(1, "Phải có ít nhất một biến thể"),
+});
 
 const EditProduct = () => {
   const navigate = useNavigate();
@@ -44,10 +136,13 @@ const EditProduct = () => {
     setValue,
     getValues,
     watch,
+    trigger,
     formState: { errors },
   } = useForm<EditProductForm>({
+    resolver: yupResolver(validationSchema),
+    mode: "onChange",
     defaultValues: {
-      variants: [{ price: 0, quantity: 0, attributes: [{ attribute_id: "", value_id: "" }] }],
+      variants: [{ price: undefined, quantity: 0, attributes: [{ attribute_id: "", value_id: "" }] }],
     },
   });
 
@@ -57,6 +152,10 @@ const EditProduct = () => {
   });
 
   useEffect(() => {
+    trigger("variants");
+  }, [watch("variants"), trigger]);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -64,7 +163,6 @@ const EditProduct = () => {
         const [catRes, attrRes] = await Promise.all([getCategories(), getAllAttributes()]);
         setCategories(catRes.data?.data || []);
         setAttributes(attrRes.data?.data || []);
-
         const attrIds = attrRes.data?.data?.map((attr: any) => attr._id) || [];
         const valuesPromises = attrIds.map((id: string) => getAttributeValues(id));
         const valuesRes = await Promise.all(valuesPromises);
@@ -73,24 +171,21 @@ const EditProduct = () => {
 
         if (id) {
           const res = await getProductById(id);
-          console.log("API Response:", res); // Log toàn bộ response
-          console.log("Variants from API:", res.data.data.variants); // Log riêng variants
+          console.log("API Response:", res);
+          console.log("Variants from API:", res.data.data.variants);
           if (!res.data || !res.data.data || !res.data.data.product) {
             throw new Error("Dữ liệu sản phẩm không hợp lệ từ API");
           }
           const product = res.data.data.product;
           console.log("Product data:", product);
           setProductData(product);
-
           setValue("name", product.name || "");
           setValue("category_id", product.category_id?._id || "");
           setValue("description", product.description || "");
           setValue("status", product.status || "active");
           setValue("sku", product.sku || "");
-
-          // Xử lý variants
           const variants = res.data.data.variants || [];
-          console.log("Processed variants:", variants); // Log sau khi xử lý
+          console.log("Processed variants:", variants);
           setValue("variants", variants.length > 0 ? variants.map((v: any) => ({
             _id: v._id,
             price: v.price || 0,
@@ -101,13 +196,16 @@ const EditProduct = () => {
               value_id: a.value_id?._id || a.value_id || "",
             })) || [{ attribute_id: "", value_id: "" }],
           })) : [{ price: 0, quantity: 0, attributes: [{ attribute_id: "", value_id: "" }] }]);
-
           setFormattedPrices(variants.length > 0 ? variants.map((v: any) => (v.price || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")) : ["0"]);
           setVariantImages(variants.length > 0 ? variants.map((v: any) => null) : [null]);
         }
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu:", error);
-        alert("Không thể tải dữ liệu sản phẩm: " + (error.message || "Lỗi không xác định"));
+        if (error instanceof Error) {
+          alert("Không thể tải dữ liệu sản phẩm: " + error.message);
+        } else {
+          alert("Không thể tải dữ liệu sản phẩm: Lỗi không xác định");
+        }
       } finally {
         setLoading(false);
       }
@@ -115,35 +213,61 @@ const EditProduct = () => {
     fetchData();
   }, [id, setValue]);
 
-  const formatNumber = (value: string) => {
-    const cleanedValue = value.replace(/[^0-9]/g, "");
-    return cleanedValue.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  };
-
   const handlePriceChange = (index: number, value: string) => {
-    const rawValue = value.replace(/,/g, "");
-    setFormattedPrices((prev) => {
-      const newPrices = [...prev];
-      newPrices[index] = formatNumber(rawValue);
-      return newPrices;
-    });
-    setValue(`variants.${index}.price`, Number(rawValue) || 0);
+    console.log("Input value:", value);
+    // Loại bỏ tất cả ký tự không phải số (ngoại trừ trường hợp ô trống)
+    const sanitizedValue = value.replace(/[^0-9]/g, "");
+    console.log("Sanitized value:", sanitizedValue);
+
+    try {
+      if (sanitizedValue === "") {
+        setFormattedPrices((prev) => {
+          const newPrices = [...prev];
+          newPrices[index] = "";
+          return newPrices;
+        });
+        setValue(`variants.${index}.price`, undefined, { shouldValidate: false });
+        trigger(`variants.${index}.price`); // Kích hoạt validation
+      } else {
+        const numValue = parseInt(sanitizedValue, 10);
+        console.log("Number value:", numValue);
+        if (isNaN(numValue)) {
+          setFormattedPrices((prev) => {
+            const newPrices = [...prev];
+            newPrices[index] = prev[index] || "";
+            return newPrices;
+          });
+          trigger(`variants.${index}.price`); // Kích hoạt validation để hiển thị lỗi
+          return;
+        }
+        // Định dạng số với dấu phẩy để hiển thị
+        const formattedValue = numValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        setFormattedPrices((prev) => {
+          const newPrices = [...prev];
+          newPrices[index] = formattedValue;
+          return newPrices;
+        });
+        // Cập nhật giá trị form dưới dạng số
+        setValue(`variants.${index}.price`, numValue, { shouldValidate: true });
+        trigger(`variants.${index}.price`); // Kích hoạt validation sau khi cập nhật
+      }
+    } catch (error) {
+      console.error("Lỗi trong handlePriceChange:", error);
+      // Ngăn lỗi làm crash component
+    }
   };
 
   const onSubmit: SubmitHandler<EditProductForm> = async (data) => {
     try {
       if (isSubmitting || !id) return;
       setIsSubmitting(true);
-
       let imageUrl = productData.images || "";
       if (imageFile) imageUrl = await uploadToCloudinary(imageFile);
-
       const albumUrls = productData.album || [];
       if (albumFiles.length > 0) {
         const newAlbumUrls = await Promise.all(albumFiles.map((file) => uploadToCloudinary(file)));
         albumUrls.push(...newAlbumUrls);
       }
-
       const variantPromises = data.variants.map(async (variant, index) => {
         let variantImage = variant.image;
         if (variantImages[index] instanceof File) variantImage = await uploadToCloudinary(variantImages[index]);
@@ -151,7 +275,6 @@ const EditProduct = () => {
         return { ...variant, image: variantImage };
       });
       const updatedVariants = await Promise.all(variantPromises);
-
       const payload = {
         name: data.name,
         category_id: data.category_id,
@@ -162,13 +285,16 @@ const EditProduct = () => {
         album: albumUrls,
         variants: updatedVariants,
       };
-
       await updateProduct(id, payload);
       alert("Cập nhật sản phẩm thành công!");
       navigate("/admin/product");
     } catch (error) {
       console.error("Lỗi khi cập nhật sản phẩm:", error);
-      alert(error.response?.data?.message || "Cập nhật thất bại");
+      if (error instanceof Error) {
+        alert("Không thể tải dữ liệu sản phẩm: " + error.message);
+      } else {
+        alert("Không thể tải dữ liệu sản phẩm: Lỗi không xác định");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -189,18 +315,21 @@ const EditProduct = () => {
   const handleAddAttribute = (variantIndex: number) => {
     const currentAttributes = getValues(`variants.${variantIndex}.attributes`) || [];
     setValue(`variants.${variantIndex}.attributes`, [...currentAttributes, { attribute_id: "", value_id: "" }]);
+    trigger(`variants.${variantIndex}.attributes`);
   };
 
   const handleRemoveAttribute = (variantIndex: number, attrIndex: number) => {
     const currentAttributes = getValues(`variants.${variantIndex}.attributes`) || [];
     currentAttributes.splice(attrIndex, 1);
     setValue(`variants.${variantIndex}.attributes`, currentAttributes);
+    trigger(`variants.${variantIndex}.attributes`);
   };
 
   const handleAttributeChange = (variantIndex: number, attrIndex: number, field: string, value: string) => {
     const currentAttributes = getValues(`variants.${variantIndex}.attributes`) || [];
     currentAttributes[attrIndex] = { ...currentAttributes[attrIndex], [field]: value };
     setValue(`variants.${variantIndex}.attributes`, currentAttributes);
+    trigger(`variants.${variantIndex}.attributes`);
   };
 
   const watchedAttributes = watch("variants");
@@ -219,10 +348,8 @@ const EditProduct = () => {
           Quay lại
         </button>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          {/* Form content tương tự AddProduct, chỉ thay đổi tiêu đề */}
           <div className="bg-white shadow-md rounded-lg mb-6">
             <div className="p-4 border-b">
               <h5 className="text-lg font-medium text-gray-800">Thông tin sản phẩm</h5>
@@ -235,7 +362,7 @@ const EditProduct = () => {
                 <input
                   {...register("name")}
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? "border-red-500" : "border-gray-300"}`}
                   id="ecommerce-product-name"
                   placeholder="Tên sản phẩm"
                 />
@@ -248,7 +375,7 @@ const EditProduct = () => {
                 <input
                   {...register("sku")}
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.sku ? "border-red-500" : "border-gray-300"}`}
                   id="ecommerce-product-sku"
                   placeholder="SKU"
                 />
@@ -258,7 +385,7 @@ const EditProduct = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả (Tùy chọn)</label>
                 <textarea
                   {...register("description")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.description ? "border-red-500" : "border-gray-300"}`}
                   rows={5}
                   placeholder="Mô tả sản phẩm"
                 />
@@ -266,7 +393,6 @@ const EditProduct = () => {
               </div>
             </div>
           </div>
-
           <div className="bg-white shadow-md rounded-lg mb-6">
             <div className="p-4 border-b">
               <h5 className="text-lg font-medium text-gray-800">Biến thể</h5>
@@ -281,10 +407,9 @@ const EditProduct = () => {
                         type="text"
                         value={formattedPrices[index] || ""}
                         onChange={(e) => handlePriceChange(index, e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Giá (ví dụ: 1,000,000)"
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.price ? "border-red-500" : "border-gray-300"}`}
+                        placeholder="Giá"
                       />
-                      <input type="hidden" {...register(`variants.${index}.price`)} />
                       {errors.variants?.[index]?.price && (
                         <p className="text-red-500 text-sm mt-1">{errors.variants[index].price.message}</p>
                       )}
@@ -292,9 +417,9 @@ const EditProduct = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Số lượng</label>
                       <input
-                        {...register(`variants.${index}.quantity`)}
+                        {...register(`variants.${index}.quantity`, { valueAsNumber: true })}
                         type="number"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.quantity ? "border-red-500" : "border-gray-300"}`}
                         placeholder="Số lượng"
                       />
                       {errors.variants?.[index]?.quantity && (
@@ -302,7 +427,6 @@ const EditProduct = () => {
                       )}
                     </div>
                   </div>
-
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Hình ảnh</label>
                     <input
@@ -319,7 +443,9 @@ const EditProduct = () => {
                           newImages[index] = file;
                           return newImages;
                         });
-                        setValue(`variants.${index}.image`, file);
+                        if (file !== null) {
+                          setValue(`variants.${index}.image`, file);
+                        }
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
                     />
@@ -330,15 +456,14 @@ const EditProduct = () => {
                             variantImages[index]
                               ? URL.createObjectURL(variantImages[index])
                               : typeof getValues(`variants.${index}.image`) === "string"
-                                ? getValues(`variants.${index}.image`)
-                                : ""
+                              ? getValues(`variants.${index}.image`)
+                              : ""
                           }
                           className="h-20 object-cover border rounded-lg"
                         />
                       </div>
                     )}
                   </div>
-
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Thuộc tính</label>
                     {(getValues(`variants.${index}.attributes`) || []).map((attr: any, attrIndex: number) => (
@@ -346,7 +471,7 @@ const EditProduct = () => {
                         <select
                           value={attr.attribute_id || ""}
                           onChange={(e) => handleAttributeChange(index, attrIndex, "attribute_id", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.attributes?.[attrIndex]?.attribute_id ? "border-red-500" : "border-gray-300"}`}
                         >
                           <option value="">-- Chọn thuộc tính --</option>
                           {attributes?.map((att: any) => (
@@ -355,10 +480,13 @@ const EditProduct = () => {
                             </option>
                           ))}
                         </select>
+                        {errors.variants?.[index]?.attributes?.[attrIndex]?.attribute_id && (
+                          <p className="text-red-500 text-sm mt-1">{errors.variants[index].attributes[attrIndex].attribute_id.message}</p>
+                        )}
                         <select
                           value={attr.value_id || ""}
                           onChange={(e) => handleAttributeChange(index, attrIndex, "value_id", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.attributes?.[attrIndex]?.value_id ? "border-red-500" : "border-gray-300"}`}
                         >
                           <option value="">-- Chọn giá trị --</option>
                           {attributeValues
@@ -369,6 +497,9 @@ const EditProduct = () => {
                               </option>
                             ))}
                         </select>
+                        {errors.variants?.[index]?.attributes?.[attrIndex]?.value_id && (
+                          <p className="text-red-500 text-sm mt-1">{errors.variants[index].attributes[attrIndex].value_id.message}</p>
+                        )}
                         {attrIndex > 0 && (
                           <button
                             type="button"
@@ -380,6 +511,9 @@ const EditProduct = () => {
                         )}
                       </div>
                     ))}
+                    {errors.variants?.[index]?.attributes?.message && (
+                      <p className="text-red-500 text-sm mt-1">{errors.variants[index].attributes.message}</p>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleAddAttribute(index)}
@@ -407,7 +541,6 @@ const EditProduct = () => {
             </div>
           </div>
         </div>
-
         <div className="lg:col-span-1">
           <div className="bg-white shadow-md rounded-lg mb-6">
             <div className="p-4 border-b">
@@ -420,7 +553,7 @@ const EditProduct = () => {
                 </label>
                 <select
                   {...register("category_id")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category_id ? "border-red-500" : "border-gray-300"}`}
                   id="category-org"
                 >
                   <option value="">-- Chọn danh mục --</option>
@@ -428,6 +561,7 @@ const EditProduct = () => {
                     <option key={cat._id} value={cat._id}>{cat.name}</option>
                   ))}
                 </select>
+                {errors.category_id && <p className="text-red-500 text-sm mt-1">{errors.category_id.message}</p>}
               </div>
               <div className="mb-4">
                 <label htmlFor="status-org" className="block text-sm font-medium text-gray-700 mb-1">
@@ -435,7 +569,7 @@ const EditProduct = () => {
                 </label>
                 <select
                   {...register("status")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.status ? "border-red-500" : "border-gray-300"}`}
                   id="status-org"
                 >
                   <option value="active">Đang bán</option>
@@ -443,6 +577,7 @@ const EditProduct = () => {
                   <option value="new">Mới</option>
                   <option value="bestseller">Bán chạy</option>
                 </select>
+                {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Hình ảnh sản phẩm</label>
@@ -493,7 +628,6 @@ const EditProduct = () => {
           </div>
         </div>
       </div>
-
       <div className="flex justify-start gap-4 pt-4">
         <button
           type="button"

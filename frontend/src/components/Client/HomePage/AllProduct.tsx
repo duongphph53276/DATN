@@ -200,12 +200,12 @@ const AllProducts: React.FC = () => {
                     className="w-full h-52 object-cover"
                   /> */}
                   <Link to={`/product/${product._id}`}>
-                  {product.images ? (
-                        <img src={product.images} alt={product.name} className="w-full h-52 object-cover" />
-                      ) : (
-                        <span className="text-gray-400 italic">Không có ảnh</span>
-                      )}
-                      </Link>
+                    {product.images ? (
+                      <img src={product.images} alt={product.name} className="w-full h-52 object-cover" />
+                    ) : (
+                      <span className="text-gray-400 italic">Không có ảnh</span>
+                    )}
+                  </Link>
                   <div className="p-4">
                     <h3 className="text-lg font-semibold text-gray-800 truncate">{product.name || "Sản phẩm không tên"}</h3>
                     <div className="mt-2 flex items-center gap-2">
@@ -235,19 +235,18 @@ const AllProducts: React.FC = () => {
                           if (valueIds.length === 0) return null;
 
                           return (
-                            <div key={attr._id}>                         
+                            <div key={attr._id}>
                               <div className="flex flex-wrap gap-2">
                                 {valueIds.map((valueId) => (
                                   <button
-                                    key={valueId}
-                                    onClick={() => handleSelectAttribute(product._id, attr._id, valueId)}
-                                    className={`px-3 py-1 rounded-full text-sm border transition ${
-                                      selectedAttributes[product._id]?.[attr._id] === valueId
+                                    key={String(valueId)}
+                                    onClick={() => handleSelectAttribute(product._id, attr._id, valueId as string)}
+                                    className={`px-3 py-1 rounded-full text-sm border transition ${selectedAttributes[product._id]?.[attr._id] === valueId
                                         ? "bg-rose-500 text-white border-rose-500"
                                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                    }`}
+                                      }`}
                                   >
-                                    {getAttributeValue(valueId)}
+                                    {getAttributeValue(valueId as string)}
                                   </button>
                                 ))}
                               </div>

@@ -19,7 +19,7 @@ type AddProductForm = {
   variants: {
     price: number;
     quantity: number;
-    image?: File | string;
+    image?:  string;
     attributes: { attribute_id: string; value_id: string }[];
   }[];
 };
@@ -37,7 +37,6 @@ const AddProduct = () => {
   const [loading, setLoading] = useState(true);
   const [formattedPrices, setFormattedPrices] = useState<string[]>([]);
 
-  // Trong phần định nghĩa validationSchema
   const validationSchema = yup.object().shape({
     name: yup
       .string()
@@ -45,21 +44,23 @@ const AddProduct = () => {
       .min(2, "Tên sản phẩm phải từ 2 đến 100 ký tự")
       .max(100, "Tên sản phẩm phải từ 2 đến 100 ký tự"),
     category_id: yup.string().required("Bắt buộc chọn danh mục"),
-    description: yup.string().max(1000, "Mô tả không được vượt quá 1000 ký tự"),
+    description: yup.string().optional().nullable(),
     sku: yup.string().nullable().transform((value) => (value?.trim() === "" ? null : value)),
+    average_rating: yup.number().optional(),
+    sold_quantity: yup.number().optional(),
     status: yup.string().oneOf(["active", "disabled", "new", "bestseller"]).nullable(),
     variants: yup.array().of(
       yup.object().shape({
         price: yup
           .number()
-          .transform((value) => (isNaN(value) || value === "" ? 0 : value)) // Xử lý rỗng thành 0
           .required("Giá là bắt buộc")
-          .min(0, "Giá không được âm"),
+          .min(0, "Giá không được âm")
+          .typeError("Giá phải là một số"),
         quantity: yup
           .number()
-          .transform((value) => (isNaN(value) || value === "" ? 0 : value)) // Xử lý rỗng thành 0
           .required("Số lượng là bắt buộc")
-          .min(0, "Số lượng không được âm"),
+          .min(0, "Số lượng không được âm")
+          .typeError("Số lượng phải là một số"),
         image: yup.mixed().nullable(),
         attributes: yup
           .array()
@@ -70,34 +71,55 @@ const AddProduct = () => {
             })
           )
           .min(1, "Phải có ít nhất một thuộc tính")
-          .test("unique-attributes", "Tổ hợp thuộc tính này đã tồn tại trong form", (attributes, context) => {
-            const currentKey = attributes
-              ?.map((attr) => `${attr.attribute_id}-${attr.value_id}`)
-              .sort()
-              .join("|") || "";
-            const variantKeys = new Set(
-              (context.from?.[0]?.value?.variants || []).map((v: any) =>
-                v.attributes
+          .test(
+            "unique-attributes-in-variant",
+            "Các thuộc tính trong cùng một biến thể không được trùng lặp",
+            (attributes) => {
+              if (!attributes) return true;
+              const attributeKeys = attributes.map(
+                (attr) => `${attr.attribute_id}-${attr.value_id}`
+              );
+              const uniqueKeys = new Set(attributeKeys);
+              return uniqueKeys.size === attributeKeys.length;
+            }
+          )
+          .test(
+            "unique-attributes-across-variants",
+            "Tổ hợp thuộc tính này đã tồn tại trong một biến thể khác",
+            (attributes, context) => {
+              const currentKey = attributes
+                ?.map((attr) => `${attr.attribute_id}-${attr.value_id}`)
+                .sort()
+                .join("|") || "";
+              const allVariants = context.from?.[1]?.value?.variants || [];
+              const variantKeys = allVariants
+                .filter((_: any, idx: any) => idx !== context.options.index)
+                .map((v: any) =>
+                  v.attributes
+                    .map((attr: any) => `${attr.attribute_id}-${attr.value_id}`)
+                    .sort()
+                    .join("|")
+                );
+              return !variantKeys.includes(currentKey);
+            }
+          )
+          .test(
+            "no-duplicate-with-existing",
+            "Biến thể này đã tồn tại trong hệ thống",
+            (attributes) => {
+              const currentKey = attributes
+                ?.map((attr) => `${attr.attribute_id}-${attr.value_id}`)
+                .sort()
+                .join("|") || "";
+              return !existingVariants.some((existing) => {
+                const existingKey = existing.attributes
                   .map((attr: any) => `${attr.attribute_id}-${attr.value_id}`)
                   .sort()
-                  .join("|")
-              )
-            );
-            return !variantKeys.has(currentKey);
-          })
-          .test("no-duplicate-with-existing", "Biến thể này đã tồn tại trong hệ thống", (attributes, context) => {
-            const currentKey = attributes
-              ?.map((attr) => `${attr.attribute_id}-${attr.value_id}`)
-              .sort()
-              .join("|") || "";
-            return !existingVariants.some((existing) => {
-              const existingKey = existing.attributes
-                .map((attr: any) => `${attr.attribute_id}-${attr.value_id}`)
-                .sort()
-                .join("|");
-              return existingKey === currentKey;
-            });
-          }),
+                  .join("|");
+                return existingKey === currentKey;
+              });
+            }
+          ),
       })
     ).min(1, "Phải có ít nhất một biến thể"),
   });
@@ -109,16 +131,18 @@ const AddProduct = () => {
     setValue,
     getValues,
     watch,
+    trigger,
     formState: { errors },
   } = useForm<AddProductForm>({
     resolver: yupResolver(validationSchema),
+    mode: "onChange",
     context: {
       getIndex: (attributesRef: any, variants: any[]) => {
         return variants.findIndex((v) => v.attributes === attributesRef);
       },
     },
     defaultValues: {
-      variants: [{ price: 0, quantity: 0, attributes: [{ attribute_id: "", value_id: "" }] }],
+      variants: [{ price: undefined, quantity: 0, attributes: [{ attribute_id: "", value_id: "" }] }],
     },
   });
 
@@ -126,6 +150,10 @@ const AddProduct = () => {
     control,
     name: "variants",
   });
+
+  useEffect(() => {
+    trigger("variants");
+  }, [watch("variants"), trigger]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -141,8 +169,8 @@ const AddProduct = () => {
         const allValues = valuesRes.flatMap((res) => res.data?.data || []);
         setAttributeValues(allValues);
 
-        // Giả lập tải existingVariants (thay bằng API call thực tế)
-        setExistingVariants([]); // Mặc định rỗng nếu chưa có API
+        // TODO: Thay bằng API call thực tế để lấy existingVariants
+        setExistingVariants([]);
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu:", error);
         alert("Không thể tải dữ liệu. Vui lòng kiểm tra kết nối hoặc thử lại sau.");
@@ -165,7 +193,8 @@ const AddProduct = () => {
       newPrices[index] = formatNumber(rawValue);
       return newPrices;
     });
-    setValue(`variants.${index}.price`, Number(rawValue) || 0);
+    setValue(`variants.${index}.price`, rawValue ? Number(rawValue) : undefined);
+    trigger(`variants.${index}.price`);
   };
 
   const onSubmit: SubmitHandler<AddProductForm> = async (data) => {
@@ -226,18 +255,21 @@ const AddProduct = () => {
   const handleAddAttribute = (variantIndex: number) => {
     const currentAttributes = getValues(`variants.${variantIndex}.attributes`) || [];
     setValue(`variants.${variantIndex}.attributes`, [...currentAttributes, { attribute_id: "", value_id: "" }]);
+    trigger(`variants.${variantIndex}.attributes`);
   };
 
   const handleRemoveAttribute = (variantIndex: number, attrIndex: number) => {
     const currentAttributes = getValues(`variants.${variantIndex}.attributes`) || [];
     currentAttributes.splice(attrIndex, 1);
     setValue(`variants.${variantIndex}.attributes`, currentAttributes);
+    trigger(`variants.${variantIndex}.attributes`);
   };
 
   const handleAttributeChange = (variantIndex: number, attrIndex: number, field: string, value: string) => {
     const currentAttributes = getValues(`variants.${variantIndex}.attributes`) || [];
     currentAttributes[attrIndex] = { ...currentAttributes[attrIndex], [field]: value };
     setValue(`variants.${variantIndex}.attributes`, currentAttributes);
+    trigger(`variants.${variantIndex}.attributes`);
   };
 
   const watchedAttributes = watch("variants");
@@ -271,7 +303,8 @@ const AddProduct = () => {
                 <input
                   {...register("name")}
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? "border-red-500" : "border-gray-300"
+                    }`}
                   id="ecommerce-product-name"
                   placeholder="Tên sản phẩm"
                 />
@@ -284,7 +317,8 @@ const AddProduct = () => {
                 <input
                   {...register("sku")}
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.sku ? "border-red-500" : "border-gray-300"
+                    }`}
                   id="ecommerce-product-sku"
                   placeholder="SKU"
                 />
@@ -294,7 +328,8 @@ const AddProduct = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả (Tùy chọn)</label>
                 <textarea
                   {...register("description")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.description ? "border-red-500" : "border-gray-300"
+                    }`}
                   rows={5}
                   placeholder="Mô tả sản phẩm"
                 />
@@ -317,7 +352,8 @@ const AddProduct = () => {
                         type="text"
                         value={formattedPrices[index] || ""}
                         onChange={(e) => handlePriceChange(index, e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.price ? "border-red-500" : "border-gray-300"
+                          }`}
                         placeholder="Giá (ví dụ: 1,000,000)"
                       />
                       <input
@@ -333,7 +369,8 @@ const AddProduct = () => {
                       <input
                         {...register(`variants.${index}.quantity`)}
                         type="number"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.quantity ? "border-red-500" : "border-gray-300"
+                          }`}
                         placeholder="Số lượng"
                       />
                       {errors.variants?.[index]?.quantity && (
@@ -358,7 +395,9 @@ const AddProduct = () => {
                           newImages[index] = file;
                           return newImages;
                         });
-                        setValue(`variants.${index}.image`, file);
+                        // if (file !== null) {
+                        //   setValue(`variants.${index}.image`, file);
+                        // }
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
                     />
@@ -385,7 +424,8 @@ const AddProduct = () => {
                         <select
                           value={attr.attribute_id || ""}
                           onChange={(e) => handleAttributeChange(index, attrIndex, "attribute_id", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.attributes?.[attrIndex]?.attribute_id ? "border-red-500" : "border-gray-300"
+                            }`}
                         >
                           <option value="">-- Chọn thuộc tính --</option>
                           {attributes?.map((att: any) => (
@@ -400,7 +440,8 @@ const AddProduct = () => {
                         <select
                           value={attr.value_id || ""}
                           onChange={(e) => handleAttributeChange(index, attrIndex, "value_id", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.attributes?.[attrIndex]?.value_id ? "border-red-500" : "border-gray-300"
+                            }`}
                         >
                           <option value="">-- Chọn giá trị --</option>
                           {attributeValues
@@ -468,7 +509,8 @@ const AddProduct = () => {
                 </label>
                 <select
                   {...register("category_id")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category_id ? "border-red-500" : "border-gray-300"
+                    }`}
                   id="category-org"
                 >
                   <option value="">-- Chọn danh mục --</option>
@@ -484,7 +526,8 @@ const AddProduct = () => {
                 </label>
                 <select
                   {...register("status")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.status ? "border-red-500" : "border-gray-300"
+                    }`}
                   id="status-org"
                 >
                   <option value="active">Đang bán</option>
@@ -546,7 +589,7 @@ const AddProduct = () => {
 
       <div className="flex justify-start gap-4 pt-4">
         <button
-          type="button"
+          type="submit"
           onClick={handleSubmit(onSubmit)}
           disabled={isSubmitting}
           className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:bg-blue-300"
