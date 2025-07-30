@@ -27,7 +27,7 @@ type AddProductForm = {
 const AddProduct = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);
-  const [attributes, setAttributes] = useState<any[]>([]);
+  const [attributes, setAttributes] = useState<any[]>([]);  
   const [attributeValues, setAttributeValues] = useState<any[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [albumFiles, setAlbumFiles] = useState<File[]>([]);

@@ -1,4 +1,7 @@
 import jwt from "jsonwebtoken";
+import { UserModel } from '../models/User/user.js';
+import { RolePermissionModel } from '../models/User/role_permission.js';
+import { PermissionModel } from '../models/User/permission.js';
 
 export const authMiddleware = (req, res, next) => {
   try {
@@ -19,5 +22,38 @@ export const restrictTo = (...roles) => {
       return res.status(403).send({ message: "Bạn không có quyền truy cập", status: false });
     }
     next();
+  };
+};
+
+// Middleware kiểm tra permission cụ thể
+export const requirePermission = (permissionName) => {
+  return async (req, res, next) => {
+    try {
+      const userId = req.user.id;
+      
+      const user = await UserModel.findById(userId).populate('role_id');
+      
+      if (!user || !user.role_id) {
+        return res.status(403).send({ message: "Bạn không có quyền truy cập", status: false });
+      }
+      
+      const permission = await PermissionModel.findOne({ name: permissionName });
+      if (!permission) {
+        return res.status(403).send({ message: "Permission không tồn tại", status: false });
+      }
+      
+      const rolePermission = await RolePermissionModel.findOne({
+        role_id: user.role_id._id,
+        permission_id: permission._id
+      });
+      
+      if (!rolePermission) {
+        return res.status(403).send({ message: "Bạn không có quyền truy cập", status: false });
+      }
+      
+      next();
+    } catch (error) {
+      res.status(500).send({ message: "Lỗi kiểm tra quyền", status: false });
+    }
   };
 };
