@@ -12,12 +12,14 @@ import { createVariant, deleteVariant, getVariantById, getVariantsByProduct, upd
 import orderRoutes from './routes/order.routes.js';
 import { checkEmail, login, Profile, register, UpdateProfile } from './controllers/auth.js';
 import { authMiddleware, restrictTo } from './middleware/auth.js';
-import { getUserById, getUsers, updateUser } from './controllers/user/user.js';
-import { createRole, getRoleById, getRoles, updateRole } from './controllers/user/role.js';
+import { getUserById, getUsers, updateUser, getUserWithPermissions, checkUserPermission } from './controllers/user/user.js';
+import { createRole, getRoleById, getRoles, updateRole, getRolePermissions, assignPermissionToRole, removePermissionFromRole, getAvailablePermissions } from './controllers/user/role.js';
 import path from "path";
 import { fileURLToPath } from "url";
 import upload from './middleware/upload.js';
 import { createPermission, deletePermission, getPermissionById, getPermissions, updatePermission } from './controllers/user/permission.js';
+import { createDefaultPermissions } from './data/permissions.js';
+import { createDefaultRoles } from './data/roles.js';
 
 import { AddToCart, ClearCart, GetCartByUser, RemoveFromCart } from './controllers/cart.js';
 
@@ -38,6 +40,8 @@ app.post('/register', register);
 app.post('/login', login);
 app.get('/check-email', checkEmail);
 app.get('/user', authMiddleware, getUserById);
+app.get('/user/permissions', authMiddleware, getUserWithPermissions);
+app.get('/user/check-permission/:permissionName', authMiddleware, checkUserPermission);
 
 app.get('/profile', authMiddleware, Profile);
 app.put('/profile', authMiddleware, UpdateProfile);
@@ -46,6 +50,12 @@ app.post('/roles/create', createRole);
 app.get('/roles', getRoles);
 app.get('/roles/:id', getRoleById);
 app.put('/roles/:id', updateRole);
+
+// Role-Permission routes
+app.get('/roles/:roleId/permissions', getRolePermissions);
+app.post('/roles/assign-permission', assignPermissionToRole);
+app.delete('/roles/:role_id/permissions/:permission_id', removePermissionFromRole);
+app.get('/roles/:roleId/available-permissions', getAvailablePermissions);
 
 // Permission routes
 app.post('/permissions/create', createPermission);
@@ -103,7 +113,7 @@ app.delete('/category/:id', DeleteCategory);
 app.get('/category/:id', GetCategoryById);
 // Admin routes
 const adminRouter = express.Router();
-adminRouter.use(authMiddleware, restrictTo('admin'));
+adminRouter.use(authMiddleware, restrictTo('admin', 'employee'));
 adminRouter.get('/users', getUsers);
 adminRouter.get('/users/:id', getUserById);
 adminRouter.put('/users/:id', updateUser);
@@ -123,6 +133,13 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // Khởi động server
 const startServer = async () => {
   await connectDB();
+  
+  // Tạo permissions mặc định
+  await createDefaultPermissions();
+  
+  // Tạo roles mặc định và gán permissions
+  await createDefaultRoles();
+  
   app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
   });
