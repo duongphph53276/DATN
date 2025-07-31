@@ -116,33 +116,50 @@ const AllProducts: React.FC = () => {
     attributeId: string,
     valueId: string
   ) => {
-    const updated = {
-      ...selectedAttributes[productId],
-      [attributeId]: valueId,
-    };
+    setSelectedAttributes((prev) => {
+      const currentAttributes = prev[productId] || {};
+      const updatedAttributes = { ...currentAttributes };
+      if (currentAttributes[attributeId] === valueId) {
+        delete updatedAttributes[attributeId]; // Bỏ chọn
+      } else {
+        updatedAttributes[attributeId] = valueId; // Chọn giá trị mới
+      }
 
-    setSelectedAttributes((prev) => ({
-      ...prev,
-      [productId]: updated,
-    }));
+      const product = products.find((p) => p._id === productId);
+      const matchedVariant = product?.variants?.find((variant: any) => {
+        return variant.attributes.every(
+          (attr: any) => updatedAttributes[attr.attribute_id] === attr.value_id
+        );
+      });
 
-    const product = products.find((p) => p._id === productId);
-    const matchedVariant = product?.variants?.find((variant: any) => {
-      return variant.attributes.every(
-        (attr: any) => updated[attr.attribute_id] === attr.value_id
-      );
+      setSelectedVariants((prevVariants) => ({
+        ...prevVariants,
+        [productId]: matchedVariant || undefined,
+      }));
+
+      return {
+        ...prev,
+        [productId]: updatedAttributes,
+      };
     });
-
-    setSelectedVariants((prev) => ({
-      ...prev,
-      [productId]: matchedVariant,
-    }));
   };
 
   const handleAddToCart = (product: any) => {
-    const selectedVariant = selectedVariants[product._id] || product.variants?.[0];
-    if (product.variants?.length && !selectedVariant) {
-      alert("Vui lòng chọn một biến thể!");
+    const selectedVariant = selectedVariants[product._id];
+    const productAttributes = selectedAttributes[product._id] || {};
+
+    // Kiểm tra xem tất cả thuộc tính cần thiết đã được chọn
+    const requiredAttributes = attributes.filter((attr: any) =>
+      product.variants.some((variant: any) =>
+        variant.attributes.some((a: any) => a.attribute_id === attr._id)
+      )
+    );
+    const allAttributesSelected = requiredAttributes.every(
+      (attr: any) => productAttributes[attr._id]
+    );
+
+    if (product.variants?.length && (!selectedVariant || !allAttributesSelected)) {
+      alert("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
       return;
     }
 
@@ -171,6 +188,30 @@ const AllProducts: React.FC = () => {
     navigate("/cart");
   };
 
+  // Hàm lọc các giá trị thuộc tính hợp lệ dựa trên lựa chọn hiện tại
+  const getValidAttributeValues = (product: any, attributeId: string, selectedAttributes: { [key: string]: string }) => {
+    const validValueIds = new Set<string>();
+
+    product.variants.forEach((variant: any) => {
+      const variantAttributes = variant.attributes;
+      const isValidVariant = Object.entries(selectedAttributes)
+        .filter(([key]) => key !== attributeId)
+        .every(([key, value]) => {
+          const variantAttr = variantAttributes.find((a: any) => a.attribute_id === key);
+          return variantAttr && variantAttr.value_id === value;
+        });
+
+      if (isValidVariant) {
+        const currentAttr = variantAttributes.find((a: any) => a.attribute_id === attributeId);
+        if (currentAttr) {
+          validValueIds.add(currentAttr.value_id);
+        }
+      }
+    });
+
+    return Array.from(validValueIds);
+  };
+
   if (loading) return <div className="p-6 text-center text-gray-500">Đang tải dữ liệu...</div>;
 
   return (
@@ -186,7 +227,7 @@ const AllProducts: React.FC = () => {
           ) : (
             filteredProducts.map((product) => {
               const defaultPrice = getDefaultPrice(product);
-              const selectedVariant = selectedVariants[product._id] || (product.variants?.length ? product.variants[0] : null);
+              const selectedVariant = selectedVariants[product._id];
               const displayedPrice = selectedVariant ? parsePrice(selectedVariant.price) : defaultPrice;
 
               return (
@@ -194,14 +235,13 @@ const AllProducts: React.FC = () => {
                   key={product._id}
                   className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 border border-gray-100"
                 >
-                  {/* <img
-                    src={selectedVariant?.image || product.image || "path/to/placeholder-image.jpg"}
-                    alt={product.name}
-                    className="w-full h-52 object-cover"
-                  /> */}
                   <Link to={`/product/${product._id}`}>
                     {product.images ? (
-                      <img src={product.images} alt={product.name} className="w-full h-52 object-cover" />
+                      <img
+                        src={selectedVariant?.image || product.images}
+                        alt={product.name}
+                        className="w-full h-52 object-cover"
+                      />
                     ) : (
                       <span className="text-gray-400 italic">Không có ảnh</span>
                     )}
@@ -215,36 +255,29 @@ const AllProducts: React.FC = () => {
                           {parsePrice(product.oldPrice).toLocaleString()}₫
                         </span>
                       )}
+                      
                     </div>
 
-                    {/* ✅ Hiển thị thuộc tính */}
                     {product.variants?.length > 0 && (
                       <div className="mt-4 space-y-3">
                         {attributes.map((attr: any) => {
-                          const valueIds = Array.from(
-                            new Set(
-                              product.variants
-                                .flatMap((variant: any) =>
-                                  variant.attributes
-                                    .filter((a: any) => a.attribute_id === attr._id)
-                                    .map((a: any) => a.value_id)
-                                )
-                            )
-                          );
+                          const valueIds = getValidAttributeValues(product, attr._id, selectedAttributes[product._id] || {});
 
                           if (valueIds.length === 0) return null;
 
                           return (
                             <div key={attr._id}>
-                              <div className="flex flex-wrap gap-2">
+                              <label className="text-sm font-medium text-gray-600">{getAttributeName(attr._id)}</label>
+                              <div className="flex flex-wrap gap-2 mt-1">
                                 {valueIds.map((valueId) => (
                                   <button
                                     key={String(valueId)}
                                     onClick={() => handleSelectAttribute(product._id, attr._id, valueId as string)}
-                                    className={`px-3 py-1 rounded-full text-sm border transition ${selectedAttributes[product._id]?.[attr._id] === valueId
+                                    className={`px-3 py-1 rounded-full text-sm border transition ${
+                                      selectedAttributes[product._id]?.[attr._id] === valueId
                                         ? "bg-rose-500 text-white border-rose-500"
                                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                      }`}
+                                    }`}
                                   >
                                     {getAttributeValue(valueId as string)}
                                   </button>
@@ -258,8 +291,7 @@ const AllProducts: React.FC = () => {
 
                     <button
                       onClick={() => handleAddToCart(product)}
-                      disabled={product.variants?.length && !selectedVariants[product._id] && !product.variants[0]}
-                      className="mt-4 w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-medium py-2 px-4 rounded-xl hover:brightness-110 transition disabled:bg-gray-400"
+                      className="mt-4 w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-medium py-2 px-4 rounded-xl hover:brightness-110 transition"
                     >
                       Thêm vào giỏ hàng
                     </button>
