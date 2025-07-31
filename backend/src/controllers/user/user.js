@@ -1,3 +1,4 @@
+// backend/src/controllers/user/user.js
 import { UserModel } from '../../models/User/user.js'; // Điều chỉnh đường dẫn theo cấu trúc dự án
 import { RoleModel } from '../../models/User/role.js';
 import { RolePermissionModel } from '../../models/User/role_permission.js';

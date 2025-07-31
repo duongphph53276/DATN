@@ -1,3 +1,4 @@
+// backend/src/models/User/user.js
 import mongoose, { Schema } from 'mongoose';
 
 const UserSchema = new Schema({
