@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePermissions } from '../../hooks/usePermissions';
+import { FaUser, FaSignOutAlt, FaBell, FaCog, FaSearch } from 'react-icons/fa';
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,44 +28,137 @@ const Header = () => {
   }, []);
 
   return (
-    <header className="bg-white shadow-md px-6 py-4 flex justify-between items-center relative">
-      <h1 className="text-xl font-semibold text-black">Admin Dashboard</h1>
-      <div className="flex items-center gap-4 relative" ref={dropdownRef}>
-        {loading ? (
-          <span className="text-sm text-gray-700">Đang tải...</span>
-        ) : (
-          <span className="text-sm text-gray-700">
-            Xin chào, {userInfo?.name || 'Admin'} 
-            {userInfo?.role && (
-              <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                {userInfo.role.name}
-              </span>
-            )}
-          </span>
-        )}
-        <div className="relative">
-          <img
-            src={userInfo?.avatar || "https://picsum.photos/200"}
-            alt="Avatar"
-            className="w-10 h-10 rounded-full cursor-pointer"
-            onClick={() => setIsOpen(!isOpen)}
-          />
-          {isOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow z-50">
-              <div className="px-4 py-2 border-b">
-                <div className="text-sm font-medium text-gray-900">{userInfo?.name || 'Admin'}</div>
-                <div className="text-xs text-gray-500">{userInfo?.email}</div>
+    <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 px-6 py-4 flex justify-between items-center sticky top-0 z-40">
+      {/* Left Section */}
+      <div className="flex items-center space-x-6">
+        <div>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Admin Dashboard
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">Quản lý hệ thống</p>
+        </div>
+        
+        {/* Search Bar */}
+        <div className="hidden md:flex items-center relative">
+          <div className="relative">
+            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm..."
+              className="pl-10 pr-4 py-2 w-64 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Right Section */}
+      <div className="flex items-center space-x-4" ref={dropdownRef}>
+        {/* Notifications */}
+        <button className="relative p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
+          <FaBell className="text-lg" />
+          <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+        </button>
+
+        {/* Settings */}
+        <button className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
+          <FaCog className="text-lg" />
+        </button>
+
+        {/* User Profile */}
+        <div className="flex items-center space-x-3">
+          {loading ? (
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+              <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          ) : (
+            <>
+              <div className="hidden md:block text-right">
+                <p className="text-sm font-medium text-gray-900">
+                  {userInfo?.name || 'Admin'}
+                </p>
                 {userInfo?.role && (
-                  <div className="text-xs text-blue-600 mt-1">Role: {userInfo.role.name}</div>
+                  <span className="text-xs bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-2 py-1 rounded-full">
+                    {userInfo.role.name}
+                  </span>
                 )}
               </div>
-              <button
-                onClick={handleLogout}
-                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                Đăng xuất
-              </button>
-            </div>
+              
+              <div className="relative">
+                <button
+                  className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+                  onClick={() => setIsOpen(!isOpen)}
+                >
+                  {userInfo?.avatar ? (
+                    <img
+                      src={userInfo.avatar}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                      <FaUser className="text-white text-sm" />
+                    </div>
+                  )}
+                </button>
+                
+                {isOpen && (
+                  <div className="absolute right-0 mt-3 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden backdrop-blur-sm">
+                    {/* User Info Header */}
+                    <div className="px-4 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-blue-200 shadow-sm">
+                          {userInfo?.avatar ? (
+                            <img
+                              src={userInfo.avatar}
+                              alt="Avatar"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                              <FaUser className="text-white text-lg" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">
+                            {userInfo?.name || 'Admin'}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {userInfo?.email || 'admin@example.com'}
+                          </p>
+                          {userInfo?.role && (
+                            <span className="inline-block mt-1 text-xs bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-2 py-1 rounded-full">
+                              {userInfo.role.name}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Menu Items */}
+                    <div className="py-2">
+                      <button className="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150">
+                        <FaUser className="mr-3 text-blue-500" />
+                        Hồ sơ
+                      </button>
+                      <button className="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150">
+                        <FaCog className="mr-3 text-blue-500" />
+                        Cài đặt
+                      </button>
+                      <div className="border-t border-gray-100 my-1"></div>
+                      <button
+                        className="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
+                        onClick={handleLogout}
+                      >
+                        <FaSignOutAlt className="mr-3" />
+                        Đăng xuất
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>

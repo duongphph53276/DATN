@@ -94,7 +94,7 @@ export const Profile = async (req, res) => {
 
 export const UpdateProfile = async (req, res) => {
   try {
-    const { name, phoneNumber, avatar } = req.body; // Chỉ cho phép cập nhật các trường này
+    const { name, phoneNumber, avatar } = req.body;
     const userId = req.user.id; // Lấy id từ token qua authMiddleware
 
     const user = await UserModel.findById(userId);
@@ -104,7 +104,7 @@ export const UpdateProfile = async (req, res) => {
 
     // Cập nhật các trường nếu có trong request body
     if (name) user.name = name;
-    if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (phoneNumber) user.phone = phoneNumber; // Cập nhật vào trường phone
     if (avatar) user.avatar = avatar;
 
     await user.save();

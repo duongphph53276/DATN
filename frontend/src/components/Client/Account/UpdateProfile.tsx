@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaPhone, FaMapMarkerAlt, FaCamera } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCamera, FaCalendar, FaShieldAlt } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 import { User } from '../../../interfaces/user';
 
 const UpdateProfile: React.FC = () => {
@@ -77,9 +78,8 @@ const UpdateProfile: React.FC = () => {
         },
         body: JSON.stringify({
           name: formData.name,
-          phoneNumber: formData.phoneNumber,
+          phoneNumber: formData.phone || formData.phoneNumber,
           avatar: formData.avatar,
-          address_id: formData.address_id,
         }),
       });
       const data = await response.json();
@@ -94,6 +94,42 @@ const UpdateProfile: React.FC = () => {
     }
   };
 
+  // Format date
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Chưa có thông tin';
+    return new Date(dateString).toLocaleDateString('vi-VN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Get status text
+  const getStatusText = (status?: string) => {
+    switch (status) {
+      case 'active':
+        return 'Hoạt động';
+      case 'block':
+        return 'Bị khóa';
+      default:
+        return 'Chưa xác định';
+    }
+  };
+
+  // Get status color
+  const getStatusColor = (status?: string) => {
+    switch (status) {
+      case 'active':
+        return 'text-green-600';
+      case 'block':
+        return 'text-red-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-10 text-gray-500 text-lg">Đang tải...</div>;
   }
@@ -103,75 +139,138 @@ const UpdateProfile: React.FC = () => {
   }
 
   return (
-    <div className="max-w-xl mx-auto mt-14 px-4">
+    <div className="max-w-2xl mx-auto mt-14 px-4">
       <div className="bg-white shadow-2xl rounded-3xl p-8 transition-all duration-300 hover:shadow-pink-100">
-        <h2 className="text-2xl font-semibold text-gray-800 text-center mb-6">Chỉnh sửa hồ sơ</h2>
-        {success && <div className="text-green-500 mb-4 text-center">{success}</div>}
-        {error && <div className="text-red-500 mb-4 text-center">{error}</div>}
-        <form onSubmit={handleSubmit} className="space-y-5 text-gray-700">
-          <div className="flex items-center gap-3">
-            <FaUser className="text-pink-500 text-lg" />
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-pink-400"
-              placeholder="Nhập họ tên"
-              required
+        <div className="flex flex-col items-center space-y-4 relative">
+          <div className="relative group">
+            <img
+              src={formData.avatar || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQqMZXi12fBQGZpQvD27ZJvSGmn-oNCXI9Etw&s'}
+              alt="Avatar"
+              className="w-28 h-28 rounded-full object-cover ring-4 ring-rose-400 shadow-md transition-transform group-hover:scale-105"
             />
-          </div>
-          <div className="flex items-center gap-3">
-            <FaPhone className="text-green-500 text-lg" />
-            <input
-              type="text"
-              name="phoneNumber"
-              value={formData.phoneNumber || ''}
-              onChange={handleChange}
-              className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-green-400"
-              placeholder="Nhập số điện thoại"
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            <FaMapMarkerAlt className="text-orange-500 text-lg" />
-            <input
-              type="text"
-              name="address_id"
-              value={formData.address_id || ''}
-              onChange={handleChange}
-              className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-orange-400"
-              placeholder="Nhập địa chỉ giao hàng"
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="relative group">
-              <img
-                src={formData.avatar || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQqMZXi12fBQGZpQvD27ZJvSGmn-oNCXI9Etw&s'}
-                alt="Avatar"
-                className="w-28 h-28 rounded-full object-cover ring-4 ring-rose-400 shadow-md transition-transform group-hover:scale-105"
+            <label
+              htmlFor="avatar-upload"
+              className="absolute bottom-0 right-0 bg-white border border-gray-300 rounded-full p-2 shadow-md cursor-pointer hover:bg-gray-100 transition"
+              title="Đổi ảnh đại diện"
+            >
+              <FaCamera className="text-gray-600" />
+              <input
+                type="file"
+                id="avatar-upload"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="hidden"
               />
-              <label
-                htmlFor="avatar-upload"
-                className="absolute bottom-0 right-0 bg-white border border-gray-300 rounded-full p-2 shadow-md cursor-pointer hover:bg-gray-100 transition"
-                title="Đổi ảnh đại diện"
-              >
-                <FaCamera className="text-gray-600" />
+            </label>
+          </div>
+
+          <h2 className="text-2xl font-semibold text-gray-800">Chỉnh sửa hồ sơ</h2>
+          
+          {success && <div className="text-green-500 text-center">{success}</div>}
+          {error && <div className="text-red-500 text-center">{error}</div>}
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+          {/* Thông tin cơ bản */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Thông tin cơ bản</h3>
+            
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <FaUser className="text-pink-500 text-lg" />
                 <input
-                  type="file"
-                  id="avatar-upload"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  className="hidden"
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-pink-400"
+                  placeholder="Nhập tên của bạn..."
+                  required
                 />
-              </label>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <FaEnvelope className="text-blue-500 text-lg" />
+                <input
+                  type="email"
+                  value={formData.email}
+                  className="border border-gray-300 rounded-lg px-3 py-2 w-full bg-gray-100 cursor-not-allowed"
+                  disabled
+                  title="Email không thể thay đổi"
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <FaPhone className="text-green-500 text-lg" />
+                <input
+                  type="text"
+                  name="phone"
+                  value={formData.phone || formData.phoneNumber || ''}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-green-400"
+                  placeholder="Nhập số điện thoại..."
+                />
+              </div>
+
+                             <div className="flex items-center gap-3">
+                 <FaMapMarkerAlt className="text-orange-500 text-lg" />
+                 <div className="flex-1">
+                   <p className="text-sm text-gray-600 mb-2">
+                     <strong>Quản lý địa chỉ:</strong> Vui lòng sử dụng trang quản lý địa chỉ riêng biệt
+                   </p>
+                   <Link
+                     to="/addresses"
+                     className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                   >
+                     <FaMapMarkerAlt /> Đi đến quản lý địa chỉ
+                   </Link>
+                 </div>
+               </div>
             </div>
           </div>
-          <button
-            type="submit"
-            className="w-full text-sm text-white bg-rose-500 hover:bg-rose-600 px-4 py-2 rounded-full shadow transition"
-          >
-            Lưu thay đổi
-          </button>
+
+          {/* Thông tin tài khoản (chỉ đọc) */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Thông tin tài khoản</h3>
+            
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <FaShieldAlt className="text-purple-500 text-lg" />
+                <span className="text-base">
+                  <strong>Trạng thái:</strong> 
+                  <span className={`ml-1 ${getStatusColor(formData.status)}`}>
+                    {getStatusText(formData.status)}
+                  </span>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <FaCalendar className="text-indigo-500 text-lg" />
+                <span className="text-base"><strong>Ngày tạo:</strong> {formatDate(formData.createdAt)}</span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <FaCalendar className="text-indigo-500 text-lg" />
+                <span className="text-base"><strong>Cập nhật lần cuối:</strong> {formatDate(formData.updatedAt)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2 justify-center">
+            <button
+              type="submit"
+              className="text-sm text-white bg-green-500 hover:bg-green-600 px-6 py-2 rounded-full shadow transition"
+            >
+              Lưu thay đổi
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/profile')}
+              className="text-sm text-white bg-gray-500 hover:bg-gray-600 px-6 py-2 rounded-full shadow transition"
+            >
+              Hủy
+            </button>
+          </div>
         </form>
       </div>
     </div>

@@ -11,6 +11,7 @@ import { createAttributeValue, deleteAttributeValue, getAttributeValueById, getA
 import { createVariant, deleteVariant, getVariantById, getVariantsByProduct, updateVariant } from './controllers/productVariant.js';
 import orderRoutes from './routes/order.routes.js';
 import { checkEmail, login, Profile, register, UpdateProfile } from './controllers/auth.js';
+import { getUserAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from './controllers/address/address.js';
 import { authMiddleware, restrictTo } from './middleware/auth.js';
 import { getUserById, getUsers, updateUser, getUserWithPermissions, checkUserPermission } from './controllers/user/user.js';
 import { createRole, getRoleById, getRoles, updateRole, getRolePermissions, assignPermissionToRole, removePermissionFromRole, getAvailablePermissions } from './controllers/user/role.js';
@@ -45,6 +46,13 @@ app.get('/user/check-permission/:permissionName', authMiddleware, checkUserPermi
 
 app.get('/profile', authMiddleware, Profile);
 app.put('/profile', authMiddleware, UpdateProfile);
+
+// Address routes
+app.get('/addresses', authMiddleware, getUserAddresses);
+app.post('/addresses', authMiddleware, createAddress);
+app.put('/addresses/:id', authMiddleware, updateAddress);
+app.delete('/addresses/:id', authMiddleware, deleteAddress);
+app.put('/addresses/:id/default', authMiddleware, setDefaultAddress);
 
 app.post('/roles/create', createRole);
 app.get('/roles', getRoles);
