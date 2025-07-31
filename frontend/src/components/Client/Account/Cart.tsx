@@ -1,38 +1,50 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { IVariantAttribute, IVariant } from "../../../interfaces/variant.ts"; 
 
 interface CartItem {
   id: string;
   name: string;
   image: string;
-  size: string;
   price: number;
   quantity: number;
+  variant?: IVariant;
 }
 
 const Cart: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Load từ localStorage
+  // Load từ localStorage và lắng nghe sự kiện cartUpdated
   useEffect(() => {
     const stored = localStorage.getItem("cart");
     if (stored) {
       setCartItems(JSON.parse(stored));
     }
+
+    const handleCartUpdated = () => {
+      const updatedCart = JSON.parse(localStorage.getItem("cart") || "[]");
+      setCartItems(updatedCart);
+      setSuccessMessage("Đã thêm sản phẩm vào giỏ hàng!");
+      setTimeout(() => setSuccessMessage(null), 3000);
+    };
+
+    window.addEventListener("cartUpdated", handleCartUpdated);
+    return () => window.removeEventListener("cartUpdated", handleCartUpdated);
   }, []);
 
   // Cập nhật + phát sự kiện
   const updateCart = (items: CartItem[]) => {
     setCartItems(items);
     localStorage.setItem("cart", JSON.stringify(items));
-    window.dispatchEvent(new Event("cartUpdated")); // Đồng bộ với badge
+    window.dispatchEvent(new Event("cartUpdated"));
   };
 
   // Tăng số lượng
   const increaseQty = (item: CartItem) => {
     const updated = cartItems.map((i) =>
-      i.id === item.id && i.size === item.size
+      i.id === item.id && (!i.variant || JSON.stringify(i.variant?.attributes) === JSON.stringify(item.variant?.attributes))
         ? { ...i, quantity: i.quantity + 1 }
         : i
     );
@@ -42,7 +54,7 @@ const Cart: React.FC = () => {
   // Giảm số lượng
   const decreaseQty = (item: CartItem) => {
     const updated = cartItems.map((i) =>
-      i.id === item.id && i.size === item.size && i.quantity > 1
+      i.id === item.id && (!i.variant || JSON.stringify(i.variant?.attributes) === JSON.stringify(item.variant?.attributes)) && i.quantity > 1
         ? { ...i, quantity: i.quantity - 1 }
         : i
     );
@@ -52,7 +64,7 @@ const Cart: React.FC = () => {
   // Xoá sản phẩm
   const removeItem = (item: CartItem) => {
     const updated = cartItems.filter(
-      (i) => !(i.id === item.id && i.size === item.size)
+      (i) => !(i.id === item.id && (!i.variant || JSON.stringify(i.variant?.attributes) === JSON.stringify(item.variant?.attributes)))
     );
     updateCart(updated);
   };
@@ -63,9 +75,28 @@ const Cart: React.FC = () => {
     0
   );
 
+  // Hiển thị tất cả thuộc tính của biến thể
+  const getVariantAttributesDisplay = (variant?: IVariant) => {
+    if (!variant || !variant.attributes || variant.attributes.length === 0) {
+      return <span className="text-gray-400 text-sm">-</span>;
+    }
+
+    return variant.attributes.map((attr: IVariantAttribute) => (
+      <p key={attr.attribute_id} className="text-sm text-gray-500">
+        {attr.attribute_name || "Thuộc tính"}: {attr.value || "Không xác định"}
+      </p>
+    ));
+  };
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
       <h2 className="text-3xl font-bold text-center mb-10 text-pink-600">🛒 Giỏ hàng của bạn</h2>
+
+      {successMessage && (
+        <div className="fixed top-5 right-5 bg-green-100 text-green-600 text-sm py-2 px-4 rounded-lg animate-slide-down z-50">
+          {successMessage}
+        </div>
+      )}
 
       {cartItems.length === 0 ? (
         <p className="text-center text-gray-500 text-lg">Chưa có sản phẩm nào trong giỏ.</p>
@@ -74,7 +105,7 @@ const Cart: React.FC = () => {
           <div className="space-y-6">
             {cartItems.map((item, idx) => (
               <div
-                key={`${item.id}-${item.size}-${idx}`}
+                key={`${item.id}-${JSON.stringify(item.variant?.attributes)}-${idx}`}
                 className="flex flex-col sm:flex-row items-center gap-4 border-b pb-6"
               >
                 <img
@@ -82,20 +113,22 @@ const Cart: React.FC = () => {
                   alt={item.name}
                   className="w-24 h-24 object-cover rounded-xl border shadow-sm"
                 />
-                <div className="flex-1 text-center sm:text-left">
+                <div className="flex-1 text-center sm:text-left min-h-[100px]">
                   <h3 className="text-lg font-semibold text-gray-800">{item.name}</h3>
-                  <p className="text-sm text-gray-500">Size: {item.size}</p>
+                  <div className="mt-2 min-h-[40px]">
+                    {getVariantAttributesDisplay(item.variant)}
+                  </div>
                   <div className="flex justify-center sm:justify-start items-center gap-3 mt-3">
                     <button
                       onClick={() => decreaseQty(item)}
-                      className="w-8 h-8 rounded-full bg-gray-100 text-xl text-gray-700 hover:bg-gray-200"
+                      className="w-8 h-8 rounded-full bg-gray-100 text-xl text-gray-700 hover:bg-gray-200 active:scale-95"
                     >
                       –
                     </button>
                     <span className="text-base font-medium">{item.quantity}</span>
                     <button
                       onClick={() => increaseQty(item)}
-                      className="w-8 h-8 rounded-full bg-gray-100 text-xl text-gray-700 hover:bg-gray-200"
+                      className="w-8 h-8 rounded-full bg-gray-100 text-xl text-gray-700 hover:bg-gray-200 active:scale-95"
                     >
                       +
                     </button>
@@ -116,7 +149,6 @@ const Cart: React.FC = () => {
             ))}
           </div>
 
-          {/* Tổng cộng và thanh toán */}
           <div className="flex flex-col sm:flex-row justify-between items-center mt-12 pt-6 border-t">
             <p className="text-xl font-semibold text-gray-700">
               Tổng cộng:{" "}
