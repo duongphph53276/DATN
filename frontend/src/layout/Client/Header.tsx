@@ -1,12 +1,15 @@
-import { FaPhoneAlt, FaSearch, FaUser } from "react-icons/fa";
+import { FaPhoneAlt, FaSearch, FaUser, FaSignOutAlt, FaUserCircle, FaClipboardList } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import CartCountBadge from "./CartCountBadge";
 import api from "../../middleware/axios";
+import { User } from "../../interfaces/user";
 
 const Header = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [user, setUser] = useState<User | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const isLoggedIn = !!localStorage.getItem("token");
 
@@ -22,7 +25,41 @@ const Header = () => {
         console.error("Error fetching categories:", error);
       }
     };
+
+    const fetchUserProfile = async () => {
+      if (isLoggedIn) {
+        try {
+          const token = localStorage.getItem("token");
+          const response = await fetch('http://localhost:5000/profile', {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          const data = await response.json();
+          if (data.status) {
+            setUser(data.user);
+          }
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+        }
+      }
+    };
+
     fetchCategories();
+    fetchUserProfile();
+  }, [isLoggedIn]);
+
+  const handleClickOutside = (e: MouseEvent) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      setShowUserMenu(false);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleLogout = () => {
@@ -74,44 +111,111 @@ const Header = () => {
             <span>097.989.6616</span>
           </div>
           <CartCountBadge />
-          <div className="relative">
-            <button
-              className="text-rose-400 hover:text-rose-600"
-              onClick={() => setShowUserMenu(!showUserMenu)}
-            >
-              <FaUser size={20} />
-            </button>
+          <div className="relative" ref={dropdownRef}>
+            {isLoggedIn ? (
+              <button
+                className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden border-2 border-rose-200 hover:border-rose-400 transition-all duration-200"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+              >
+                {user?.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <FaUser className="text-rose-400 text-lg" />
+                )}
+              </button>
+            ) : (
+              <button
+                className="text-rose-400 hover:text-rose-600 transition-colors duration-200"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+              >
+                <FaUser size={20} />
+              </button>
+            )}
+            
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-40 bg-white border rounded-md shadow-md z-50 text-sm">
+              <div className="absolute right-0 mt-3 w-56 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
                 {isLoggedIn ? (
                   <>
-                    <Link
-                      to="/profile"
-                      className="block px-4 py-2 hover:bg-rose-50"
-                    >
-                      Hồ sơ
-                    </Link>
-                    <button
-                      className="w-full text-left px-4 py-2 hover:bg-rose-50"
-                      onClick={handleLogout}
-                    >
-                      Đăng xuất
-                    </button>
+                    {/* User Info Header */}
+                    <div className="px-4 py-3 bg-gradient-to-r from-rose-50 to-pink-50 border-b border-gray-100">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-rose-200">
+                          {user?.avatar ? (
+                            <img
+                              src={user.avatar}
+                              alt="Avatar"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <FaUser className="text-rose-400 text-lg w-full h-full flex items-center justify-center" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">
+                            {user?.name || 'Người dùng'}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {user?.email || 'user@example.com'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Menu Items */}
+                    <div className="py-2">
+                      <Link
+                        to="/profile"
+                        className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-700 transition-colors duration-150"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        <FaUserCircle className="mr-3 text-rose-500" />
+                        Hồ sơ
+                      </Link>
+                      <Link
+                        to="/my-orders"
+                        className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-700 transition-colors duration-150"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        <FaClipboardList className="mr-3 text-rose-500" />
+                        Đơn hàng của tôi
+                      </Link>
+                      <div className="border-t border-gray-100 my-1"></div>
+                      <button
+                        className="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
+                        onClick={handleLogout}
+                      >
+                        <FaSignOutAlt className="mr-3" />
+                        Đăng xuất
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <>
-                    <Link
-                      to="/login"
-                      className="block px-4 py-2 hover:bg-rose-50"
-                    >
-                      Đăng nhập
-                    </Link>
-                    <Link
-                      to="/register"
-                      className="block px-4 py-2 hover:bg-rose-50"
-                    >
-                      Đăng ký
-                    </Link>
+                    <div className="px-4 py-3 bg-gradient-to-r from-rose-50 to-pink-50 border-b border-gray-100">
+                      <p className="text-sm font-semibold text-gray-900">Tài khoản</p>
+                    </div>
+                    <div className="py-2">
+                      <Link
+                        to="/login"
+                        className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-700 transition-colors duration-150"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        <FaUser className="mr-3 text-rose-500" />
+                        Đăng nhập
+                      </Link>
+                      <Link
+                        to="/register"
+                        className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-700 transition-colors duration-150"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        <FaUserCircle className="mr-3 text-rose-500" />
+                        Đăng ký
+                      </Link>
+                    </div>
                   </>
                 )}
               </div>

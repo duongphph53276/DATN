@@ -36,6 +36,8 @@ import AllProducts from './components/Client/HomePage/AllProduct';
 import ScrollToTop from './components/ScrollToTop';
 import Profile from './components/Client/Account/Profile';
 import UpdateProfile from './components/Client/Account/UpdateProfile';
+import AddressManagement from './components/Client/Account/AddressManagement';
+import MyOrders from './components/Client/Account/MyOrders';
 import NewsPage from './components/Client/HomePage/pages/NewPage';
 import CategoryPage from './components/Client/HomePage/pages/CategoryPage';
 
@@ -85,8 +87,10 @@ function App() {
         { path: "checkout", element: <ProtectedRoute><Checkout /></ProtectedRoute> },
         { path: "all-products", element: <AllProducts /> },
         { path: "profile", element: <ProtectedRoute><Profile /></ProtectedRoute> },
-        { path: "goc-cua-gau", element: <NewsPage /> },
         { path: "profile/edit", element: <ProtectedRoute><UpdateProfile /></ProtectedRoute> },
+        { path: "addresses", element: <ProtectedRoute><AddressManagement /></ProtectedRoute> },
+        { path: "my-orders", element: <ProtectedRoute><MyOrders /></ProtectedRoute> },
+        { path: "goc-cua-gau", element: <NewsPage /> },
       ],
     },
     {
