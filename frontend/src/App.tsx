@@ -19,6 +19,7 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import ForgotPassword from './components/Auth/ForgotPassword';
 import ListUser from './components/Admin/user/ListUser';
+import UserDetail from './components/Admin/user/UserDetail';
 import EditUser from './components/Admin/user/EditUser';
 import ListRole from './components/Admin/role/ListRole';
 import AddRole from './components/Admin/role/AddRole';
@@ -36,6 +37,7 @@ import AllProducts from './components/Client/HomePage/AllProduct';
 import ScrollToTop from './components/ScrollToTop';
 import Profile from './components/Client/Account/Profile';
 import UpdateProfile from './components/Client/Account/UpdateProfile';
+import ChangePassword from './components/Client/Account/ChangePassword';
 import AddressManagement from './components/Client/Account/AddressManagement';
 import MyOrders from './components/Client/Account/MyOrders';
 import NewsPage from './components/Client/HomePage/pages/NewPage';
@@ -88,6 +90,7 @@ function App() {
         { path: "all-products", element: <AllProducts /> },
         { path: "profile", element: <ProtectedRoute><Profile /></ProtectedRoute> },
         { path: "profile/edit", element: <ProtectedRoute><UpdateProfile /></ProtectedRoute> },
+        { path: "profile/change-password", element: <ProtectedRoute><ChangePassword /></ProtectedRoute> },
         { path: "addresses", element: <ProtectedRoute><AddressManagement /></ProtectedRoute> },
         { path: "my-orders", element: <ProtectedRoute><MyOrders /></ProtectedRoute> },
         { path: "goc-cua-gau", element: <NewsPage /> },
@@ -112,6 +115,7 @@ function App() {
         { path: "voucher/add", element: <AddVoucher /> },
         { path: "voucher/edit/:id", element: <EditVoucher /> },
         { path: "users", element: <ListUser /> },
+        { path: "users/:id", element: <UserDetail /> },
         { path: "users/edit/:id", element: <EditUser /> },
         { path: "roles", element: <ListRole /> },
         { path: "roles/create", element: <AddRole /> },

@@ -140,6 +140,12 @@ const Profile: React.FC = () => {
             >
               Chỉnh sửa
             </button>
+            <button
+              onClick={() => navigate('/profile/change-password')}
+              className="text-sm text-white bg-blue-500 hover:bg-blue-600 px-4 py-1.5 rounded-full shadow transition"
+            >
+              Đổi mật khẩu
+            </button>
           </div>
         </div>
 

@@ -19,6 +19,10 @@ export interface User {
   avatar?: string;
   address_id?: string;
   status?: string;
+  // Thêm các trường cho tính năng cấm người dùng
+  banDuration?: string;
+  banReason?: string;
+  banUntil?: string | Date;
   createdAt?: string;
   updatedAt?: string;
 }

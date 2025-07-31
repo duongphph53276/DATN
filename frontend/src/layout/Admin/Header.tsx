@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePermissions } from '../../hooks/usePermissions';
-import { FaUser, FaSignOutAlt, FaBell, FaCog, FaSearch } from 'react-icons/fa';
+import { FaUser, FaSignOutAlt, FaBell, FaCog } from 'react-icons/fa';
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,18 +36,6 @@ const Header = () => {
             Admin Dashboard
           </h1>
           <p className="text-sm text-gray-500 mt-1">Quản lý hệ thống</p>
-        </div>
-        
-        {/* Search Bar */}
-        <div className="hidden md:flex items-center relative">
-          <div className="relative">
-            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm..."
-              className="pl-10 pr-4 py-2 w-64 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
-            />
-          </div>
         </div>
       </div>
 
