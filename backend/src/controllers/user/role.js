@@ -1,6 +1,7 @@
 import { RoleModel } from '../../models/User/role.js'; // Điều chỉnh đường dẫn theo cấu trúc dự án
 import { RolePermissionModel } from '../../models/User/role_permission.js';
 import { PermissionModel } from '../../models/User/permission.js';
+import { UserModel } from '../../models/User/user.js';
 
 export const createRole = async (req, res) => {
   const { name, description } = req.body;
@@ -122,6 +123,37 @@ export const getAvailablePermissions = async (req, res) => {
     );
     
     res.json(availablePermissions);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Xóa role
+export const deleteRole = async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Kiểm tra xem role có tồn tại không
+    const role = await RoleModel.findById(id);
+    if (!role) {
+      return res.status(404).json({ message: 'Role not found' });
+    }
+
+    // Kiểm tra xem có user nào đang sử dụng role này không
+    const usersWithRole = await UserModel.find({ role_id: id });
+    
+    if (usersWithRole.length > 0) {
+      return res.status(400).json({ 
+        message: `Không thể xóa role này vì có ${usersWithRole.length} người dùng đang sử dụng` 
+      });
+    }
+
+    // Xóa tất cả role permissions liên quan
+    await RolePermissionModel.deleteMany({ role_id: id });
+    
+    // Xóa role
+    await RoleModel.findByIdAndDelete(id);
+    
+    res.status(200).json({ message: 'Role deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

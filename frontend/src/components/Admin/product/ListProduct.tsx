@@ -5,8 +5,9 @@ import { useNavigate } from "react-router-dom";
 import { getCategories } from "../../../../api/category.api";
 import { IProduct } from "../../../interfaces/product";
 import { AiOutlineDoubleLeft, AiOutlineDoubleRight } from "react-icons/ai";
-import { FaEdit, FaEye } from "react-icons/fa";
+import { FaEdit, FaFilter, FaSearch, FaUndo } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
+import { X, ChevronDown, ChevronUp } from "lucide-react";
 
 const ListProduct: React.FC = () => {
   const navigate = useNavigate();
@@ -23,6 +24,8 @@ const ListProduct: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [priceFilter, setPriceFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [activeFilters, setActiveFilters] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -103,6 +106,25 @@ const ListProduct: React.FC = () => {
     setCurrentPage(1); // Reset to first page when filters change
   }, [categoryFilter, statusFilter, priceFilter, searchQuery, products]);
 
+  // Count active filters
+  useEffect(() => {
+    let count = 0;
+    if (categoryFilter) count++;
+    if (statusFilter) count++;
+    if (priceFilter) count++;
+    if (searchQuery) count++;
+    setActiveFilters(count);
+  }, [categoryFilter, statusFilter, priceFilter, searchQuery]);
+
+  // Reset all filters
+  const resetFilters = () => {
+    setCategoryFilter("");
+    setStatusFilter("");
+    setPriceFilter("");
+    setSearchQuery("");
+    setShowFilters(false);
+  };
+
   // Pagination logic
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
@@ -160,89 +182,196 @@ const ListProduct: React.FC = () => {
   };
 
   return (
-    <div className="bg-white shadow-md rounded-lg">
-      <div className="p-4 border-b">
-        <h5 className="text-lg font-semibold text-gray-800">Bộ lọc</h5>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <div>
-            <select
-              id="ProductCategory"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-            >
-              <option value="">Danh mục</option>
-              {categories.map((category) => (
-                <option key={category._id} value={category._id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+    <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg">
+      {/* Header with Search and Actions */}
+      <div className="p-6 border-b border-gray-200/50">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div className="flex-1 w-full lg:w-auto">
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
+              <input
+                type="search"
+                className="w-full lg:w-96 pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
+                placeholder="Tìm kiếm sản phẩm theo tên hoặc SKU..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
           </div>
-          <div>
-            <select
-              id="ProductStatus"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="">Trạng thái</option>
-              <option value="new">Mới</option>
-              <option value="active">Hoạt động</option>
-              <option value="disabled">Tạm tắt</option>
-              <option value="bestseller">Bán chạy</option>
-            </select>
-          </div>
-          <div>
-            <select
-              id="ProductPrice"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={priceFilter}
-              onChange={(e) => setPriceFilter(e.target.value)}
-            >
-              <option value="">Giá</option>
-              <option value="0-100000">0 - 100,000đ</option>
-              <option value="100001-500000">100,001 - 500,000đ</option>
-              <option value="500001-1000000">500,001 - 1,000,000đ</option>
-              <option value="1000001">Trên 1,000,000đ</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-4">
-          <div className="w-full md:w-1/3 mb-4 md:mb-0">
-            <input
-              type="search"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              id="dt-search-0"
-              placeholder="Tìm kiếm sản phẩm theo tên hoặc SKU"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2">
+          
+          <div className="flex items-center gap-3">
+            {/* Filter Toggle Button */}
             <button
-              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
-              type="button"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all duration-200 ${
+                showFilters || activeFilters > 0
+                  ? 'bg-blue-50 border-blue-200 text-blue-700'
+                  : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}
             >
-              <i className="bx bx-export text-lg" />
-              <span className="hidden sm:inline">Xuất</span>
+              <FaFilter className="text-sm" />
+              <span className="hidden sm:inline">Bộ lọc</span>
+              {activeFilters > 0 && (
+                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                  {activeFilters}
+                </span>
+              )}
+              {showFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
+
+            {/* Reset Filters Button */}
+            {activeFilters > 0 && (
+              <button
+                onClick={resetFilters}
+                className="flex items-center gap-2 px-4 py-3 bg-gray-100 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200"
+                title="Đặt lại bộ lọc"
+              >
+                <FaUndo className="text-sm" />
+                <span className="hidden sm:inline">Đặt lại</span>
+              </button>
+            )}
+
+
+
+            {/* Add Product Button */}
             <button
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
               onClick={() => navigate("/admin/product/add")}
+              className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 shadow-lg shadow-blue-500/25"
             >
-              <i className="bx bx-plus text-lg" />
+              <span className="text-lg">+</span>
               <span className="hidden sm:inline">Thêm sản phẩm</span>
             </button>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Active Filters Display */}
+        {activeFilters > 0 && (
+          <div className="flex flex-wrap items-center gap-2 mt-4">
+            <span className="text-sm text-gray-600">Bộ lọc đang hoạt động:</span>
+            {categoryFilter && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                Danh mục: {categories.find(cat => cat._id === categoryFilter)?.name}
+                <button
+                  onClick={() => setCategoryFilter("")}
+                  className="ml-1 hover:text-blue-600"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {statusFilter && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
+                Trạng thái: {statusFilter === 'new' ? 'Mới' : statusFilter === 'active' ? 'Hoạt động' : statusFilter === 'disabled' ? 'Tạm tắt' : 'Bán chạy'}
+                <button
+                  onClick={() => setStatusFilter("")}
+                  className="ml-1 hover:text-green-600"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {priceFilter && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full">
+                Giá: {priceFilter === '0-100000' ? '0 - 100,000đ' : priceFilter === '100001-500000' ? '100,001 - 500,000đ' : priceFilter === '500001-1000000' ? '500,001 - 1,000,000đ' : 'Trên 1,000,000đ'}
+                <button
+                  onClick={() => setPriceFilter("")}
+                  className="ml-1 hover:text-purple-600"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {searchQuery && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-800 text-sm rounded-full">
+                Tìm kiếm: "{searchQuery}"
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="ml-1 hover:text-orange-600"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Filters Panel */}
+      {showFilters && (
+        <div className="p-6 bg-gray-50/50 border-b border-gray-200/50">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Category Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Danh mục
+              </label>
+              <select
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+              >
+                <option value="">Tất cả danh mục</option>
+                {categories.map((category) => (
+                  <option key={category._id} value={category._id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Trạng thái
+              </label>
+              <select
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="">Tất cả trạng thái</option>
+                <option value="new">Mới</option>
+                <option value="active">Hoạt động</option>
+                <option value="disabled">Tạm tắt</option>
+                <option value="bestseller">Bán chạy</option>
+              </select>
+            </div>
+
+            {/* Price Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Khoảng giá
+              </label>
+              <select
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
+                value={priceFilter}
+                onChange={(e) => setPriceFilter(e.target.value)}
+              >
+                <option value="">Tất cả giá</option>
+                <option value="0-100000">0 - 100,000đ</option>
+                <option value="100001-500000">100,001 - 500,000đ</option>
+                <option value="500001-1000000">500,001 - 1,000,000đ</option>
+                <option value="1000001">Trên 1,000,000đ</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Table Section */}
+      <div className="p-6">
+
+        <div className="overflow-x-auto rounded-xl border border-gray-200/50">
           <table className="w-full text-sm text-left text-gray-700">
-            <thead className="border-t bg-gray-50">
+            <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-200/50">
               <tr>
                 <th className="p-3"></th>
                 <th className="p-3"></th>
@@ -259,7 +388,7 @@ const ListProduct: React.FC = () => {
             <tbody>
               {currentProducts.length > 0 ? (
                 currentProducts.map((product) => (
-                  <tr key={product._id} className="hover:bg-gray-50 border-b">
+                  <tr key={product._id} className="hover:bg-gray-50/50 border-b border-gray-100/50 transition-colors duration-200">
                     <td className="p-3"></td>
                     <td className="p-3">
                       {/* <button
@@ -271,31 +400,41 @@ const ListProduct: React.FC = () => {
                     </td>
                     <td className="p-3">
                       {product.images ? (
-                        <img src={product.images} alt={product.name} className="w-16 h-16 object-cover rounded border" />
+                        <img src={product.images} alt={product.name} className="w-16 h-16 object-cover rounded-xl border border-gray-200/50 shadow-sm" />
                       ) : (
-                        <span className="text-gray-400 italic">Không có ảnh</span>
+                        <div className="w-16 h-16 bg-gray-100 rounded-xl border border-gray-200/50 flex items-center justify-center">
+                          <span className="text-gray-400 text-xs">Không có ảnh</span>
+                        </div>
                       )}
                     </td>
                     <td className="p-3">
                       <div className="flex flex-col">
-                        <h6 className="font-medium">{product.name}</h6>
-                        <small className="text-gray-500 hidden sm:block">{product.description || ""}</small>
+                        <h6 className="font-semibold text-gray-900">{product.name}</h6>
+                        <small className="text-gray-500 hidden sm:block text-xs">{product.description || "Không có mô tả"}</small>
                       </div>
                     </td>
-                   <td className="p-3">{getPriceDisplay(product.variants ?? [])}</td>
-                    <td className="p-3">{product.sku || "N/A"}</td>
-                    <td className="p-3">{getCategoryName(product.category_id)}</td>
-                    <td className="p-3">{product.sold_quantity || 0}</td>
+                                       <td className="p-3">
+                      <span className="font-semibold text-gray-900">{getPriceDisplay(product.variants ?? [])}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-gray-600 font-mono text-sm">{product.sku || "N/A"}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-gray-700">{getCategoryName(product.category_id)}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="font-medium text-gray-900">{product.sold_quantity || 0}</span>
+                    </td>
                     <td className="p-3">
                       <span
-                        className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                        className={`inline-block px-3 py-1.5 rounded-full text-xs font-semibold ${
                           product.status === "active"
-                            ? "bg-green-100 text-green-700"
+                            ? "bg-green-100 text-green-700 border border-green-200"
                             : product.status === "disabled"
-                            ? "bg-gray-100 text-gray-700"
+                            ? "bg-gray-100 text-gray-700 border border-gray-200"
                             : product.status === "new"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-yellow-100 text-yellow-700"
+                            ? "bg-blue-100 text-blue-700 border border-blue-200"
+                            : "bg-yellow-100 text-yellow-700 border border-yellow-200"
                         }`}
                       >
                         {product.status === "active" && "Đang bán"}
@@ -307,22 +446,18 @@ const ListProduct: React.FC = () => {
                     <td className="p-3">
                       <div className="flex gap-2">
                         <button
-                          className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                          onClick={() => navigate(`/admin/product/${product._id}`)}
-                        >
-                          <FaEye />
-                        </button>
-                        <button
-                          className="p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+                          className="p-2 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition-all duration-200 shadow-sm hover:shadow-md"
                           onClick={() => navigate(`/admin/product/edit/${product._id}`)}
+                          title="Chỉnh sửa"
                         >
-                          <FaEdit />
+                          <FaEdit size={14} />
                         </button>
                         <button
-                          className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                          className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 shadow-sm hover:shadow-md"
                           onClick={() => handleDelete(product._id!)}
+                          title="Xóa"
                         >
-                          <MdDelete />
+                          <MdDelete size={14} />
                         </button>
                       </div>
                     </td>
@@ -330,8 +465,14 @@ const ListProduct: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={10} className="text-center py-6 text-gray-500 italic">
-                    Không có sản phẩm nào
+                  <td colSpan={10} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                        <FaSearch className="text-gray-400 text-xl" />
+                      </div>
+                      <p className="text-gray-500 font-medium">Không tìm thấy sản phẩm nào</p>
+                      <p className="text-gray-400 text-sm">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -339,23 +480,26 @@ const ListProduct: React.FC = () => {
           </table>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-between items-center mt-4">
-          <div className="text-sm text-gray-600">
-            Hiển thị {indexOfFirstProduct + 1} đến {Math.min(indexOfLastProduct, filteredProducts.length)} của {filteredProducts.length} sản phẩm
+        {/* Pagination */}
+        <div className="flex flex-col md:flex-row justify-between items-center mt-6 pt-6 border-t border-gray-200/50">
+          <div className="text-sm text-gray-600 mb-4 md:mb-0">
+            Hiển thị <span className="font-semibold">{indexOfFirstProduct + 1}</span> đến <span className="font-semibold">{Math.min(indexOfLastProduct, filteredProducts.length)}</span> của <span className="font-semibold">{filteredProducts.length}</span> sản phẩm
           </div>
-          <div className="flex gap-2 mt-4 md:mt-0">
+          <div className="flex items-center gap-2">
             <button
-              className="px-3 py-1 border border-gray-300 rounded-lg text-gray-600 disabled:opacity-50"
+              className="px-4 py-2 border border-gray-200 rounded-xl text-gray-600 disabled:opacity-50 hover:bg-gray-50 transition-all duration-200 disabled:hover:bg-transparent"
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
             >
-              <AiOutlineDoubleLeft />
+              <AiOutlineDoubleLeft size={16} />
             </button>
             {Array.from({ length: totalPages }, (_, index) => (
               <button
                 key={index + 1}
-                className={`px-3 py-1 border border-gray-300 rounded-lg ${
-                  currentPage === index + 1 ? "bg-blue-500 text-white" : "text-gray-600"
+                className={`px-4 py-2 border rounded-xl transition-all duration-200 ${
+                  currentPage === index + 1 
+                    ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white border-blue-500 shadow-lg shadow-blue-500/25" 
+                    : "border-gray-200 text-gray-600 hover:bg-gray-50"
                 }`}
                 onClick={() => handlePageChange(index + 1)}
               >
@@ -363,11 +507,11 @@ const ListProduct: React.FC = () => {
               </button>
             ))}
             <button
-              className="px-3 py-1 border border-gray-300 rounded-lg text-gray-600 disabled:opacity-50"
+              className="px-4 py-2 border border-gray-200 rounded-xl text-gray-600 disabled:opacity-50 hover:bg-gray-50 transition-all duration-200 disabled:hover:bg-transparent"
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
             >
-              <AiOutlineDoubleRight />
+              <AiOutlineDoubleRight size={16} />
             </button>
           </div>
         </div>

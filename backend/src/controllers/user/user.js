@@ -66,17 +66,74 @@ export const getUserById = async (req, res) => {
 
 export const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { role_id, status } = req.body;
+  const { 
+    email, 
+    name, 
+    phone, 
+    role_id, 
+    address_id, 
+    avatar, 
+    status, 
+    password,
+    banDuration,
+    banReason,
+    banUntil
+  } = req.body;
+  
   try {
+    // Kiểm tra xem user có tồn tại không
+    const existingUser = await UserModel.findById(id);
+    if (!existingUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Chuẩn bị dữ liệu cập nhật
+    const updateData = {
+      email,
+      name,
+      phone,
+      role_id,
+      address_id,
+      avatar,
+      status,
+      updatedAt: Date.now()
+    };
+
+    // Chỉ cập nhật password nếu có
+    if (password) {
+      const bcrypt = await import('bcrypt');
+      updateData.password = await bcrypt.default.hash(password, 10);
+    }
+
+    // Xử lý thông tin cấm
+    if (status === 'block') {
+      updateData.banDuration = banDuration;
+      updateData.banReason = banReason;
+      updateData.banUntil = banUntil;
+    } else {
+      // Nếu status là active, xóa thông tin cấm
+      updateData.banDuration = null;
+      updateData.banReason = null;
+      updateData.banUntil = null;
+    }
+
     const user = await UserModel.findByIdAndUpdate(
       id,
-      { role_id, status, updated_at: Date.now() },
+      updateData,
       { new: true, runValidators: true }
-    ).populate('role_id address_id');
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.status(200).json(user);
+    ).populate('role_id address_id').select('-password');
+    
+    res.status(200).json({
+      status: true,
+      message: 'Cập nhật người dùng thành công',
+      data: user
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ 
+      status: false,
+      message: 'Lỗi khi cập nhật người dùng',
+      error: error.message 
+    });
   }
 };
 
@@ -138,5 +195,78 @@ export const checkUserPermission = async (req, res) => {
     res.json({ hasPermission: !!rolePermission });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// Đổi mật khẩu
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    // Kiểm tra dữ liệu đầu vào
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        status: false,
+        message: 'Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới'
+      });
+    }
+
+    // Kiểm tra độ dài mật khẩu mới
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        status: false,
+        message: 'Mật khẩu mới phải có ít nhất 6 ký tự'
+      });
+    }
+
+    // Lấy thông tin user
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        status: false,
+        message: 'Không tìm thấy người dùng'
+      });
+    }
+
+    // Kiểm tra mật khẩu hiện tại
+    const bcrypt = await import('bcrypt');
+    const isCurrentPasswordValid = await bcrypt.default.compare(currentPassword, user.password);
+    
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        status: false,
+        message: 'Mật khẩu hiện tại không đúng'
+      });
+    }
+
+    // Kiểm tra mật khẩu mới không được trùng với mật khẩu hiện tại
+    const isNewPasswordSame = await bcrypt.default.compare(newPassword, user.password);
+    if (isNewPasswordSame) {
+      return res.status(400).json({
+        status: false,
+        message: 'Mật khẩu mới không được trùng với mật khẩu hiện tại'
+      });
+    }
+
+    // Hash mật khẩu mới
+    const hashedNewPassword = await bcrypt.default.hash(newPassword, 10);
+
+    // Cập nhật mật khẩu
+    await UserModel.findByIdAndUpdate(userId, {
+      password: hashedNewPassword,
+      updatedAt: Date.now()
+    });
+
+    res.status(200).json({
+      status: true,
+      message: 'Đổi mật khẩu thành công'
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: false,
+      message: 'Lỗi server khi đổi mật khẩu',
+      error: error.message
+    });
   }
 };

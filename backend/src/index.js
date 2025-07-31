@@ -13,8 +13,8 @@ import orderRoutes from './routes/order.routes.js';
 import { checkEmail, login, Profile, register, UpdateProfile } from './controllers/auth.js';
 import { getUserAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from './controllers/address/address.js';
 import { authMiddleware, restrictTo } from './middleware/auth.js';
-import { getUserById, getUsers, updateUser, getUserWithPermissions, checkUserPermission } from './controllers/user/user.js';
-import { createRole, getRoleById, getRoles, updateRole, getRolePermissions, assignPermissionToRole, removePermissionFromRole, getAvailablePermissions } from './controllers/user/role.js';
+import { getUserById, getUsers, updateUser, getUserWithPermissions, checkUserPermission, changePassword } from './controllers/user/user.js';
+import { createRole, getRoleById, getRoles, updateRole, deleteRole, getRolePermissions, assignPermissionToRole, removePermissionFromRole, getAvailablePermissions } from './controllers/user/role.js';
 import path from "path";
 import { fileURLToPath } from "url";
 import upload from './middleware/upload.js';
@@ -46,6 +46,7 @@ app.get('/user/check-permission/:permissionName', authMiddleware, checkUserPermi
 
 app.get('/profile', authMiddleware, Profile);
 app.put('/profile', authMiddleware, UpdateProfile);
+app.put('/profile/change-password', authMiddleware, changePassword);
 
 // Address routes
 app.get('/addresses', authMiddleware, getUserAddresses);
@@ -58,6 +59,7 @@ app.post('/roles/create', createRole);
 app.get('/roles', getRoles);
 app.get('/roles/:id', getRoleById);
 app.put('/roles/:id', updateRole);
+app.delete('/roles/:id', deleteRole);
 
 // Role-Permission routes
 app.get('/roles/:roleId/permissions', getRolePermissions);

@@ -10,7 +10,7 @@ import {
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { BsThreeDotsVertical } from "react-icons/bs";
-import { FaEdit, FaEye } from "react-icons/fa";
+import { FaEdit } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
 
 interface AttributeValue {
@@ -174,12 +174,6 @@ const AttributeList = () => {
                   <td className="p-3">{attr.type}</td>
                   <td className="p-3">
                     <div className="flex gap-2">
-                      <button
-                        className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                        onClick={() => openModal(attr._id)}
-                      >
-                        <FaEye />
-                      </button>
                       <button  
                         className="p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
                         onClick={(e) => {
