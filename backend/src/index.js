@@ -10,7 +10,7 @@ import { createAttribute, getAttributeById, deleteAttribute, getAllAttributes, u
 import { createAttributeValue, deleteAttributeValue, getAttributeValueById, getAttributeValues, updateAttributeValue } from './controllers/attributeValue.js';
 import { createVariant, deleteVariant, getVariantById, getVariantsByProduct, updateVariant } from './controllers/productVariant.js';
 import orderRoutes from './routes/order.routes.js';
-import { checkEmail, login, Profile, register, UpdateProfile } from './controllers/auth.js';
+import { checkEmail, login, Profile, register, UpdateProfile, verifyEmail } from './controllers/auth.js';
 import { getUserAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from './controllers/address/address.js';
 import { authMiddleware, restrictTo } from './middleware/auth.js';
 import { getUserById, getUsers, updateUser, getUserWithPermissions, checkUserPermission, changePassword } from './controllers/user/user.js';
@@ -23,6 +23,8 @@ import { createDefaultPermissions } from './data/permissions.js';
 import { createDefaultRoles } from './data/roles.js';
 
 import { AddToCart, ClearCart, GetCartByUser, RemoveFromCart } from './controllers/cart.js';
+
+
 
 
 dotenv.config();
@@ -137,6 +139,9 @@ adminRouter.get('/category/:id', GetCategoryById);
 // adminRouter.
 
 app.use('/admin', adminRouter);
+
+app.get('/verify-email', verifyEmail);
+
 
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
