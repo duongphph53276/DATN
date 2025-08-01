@@ -3,7 +3,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/db.js';
-import { CreateVoucher, ListVoucher, UpdateVoucher, DeleteVoucher } from './controllers/voucher.js';
+import { CreateVoucher, ListVoucher, UpdateVoucher, DeleteVoucher, GetVoucherById } from './controllers/voucher.js';
 import { AddCategory, DeleteCategory, EditCategory, GetCategoryById, ListCategory } from './controllers/category.js';
 import { createProduct, deleteProduct, getAllProducts, getProductById, updateProduct } from './controllers/product.js';
 import { createAttribute, getAttributeById, deleteAttribute, getAllAttributes, updateAttribute } from "./controllers/attribute.js";
@@ -80,6 +80,7 @@ app.get('/vouchers', ListVoucher);
 app.post('/vouchers', CreateVoucher);
 app.put('/vouchers/:id', UpdateVoucher);
 app.delete('/vouchers/:id', DeleteVoucher);
+app.get('/vouchers/:id', GetVoucherById); // ✅ Đúng: dùng controller của voucher
 
 // product routes
 app.post('/product/add', upload.fields([
