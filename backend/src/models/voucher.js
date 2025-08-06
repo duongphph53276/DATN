@@ -6,11 +6,11 @@ const voucherSchema = new Schema({
     required: true,
     unique: true,
   },
-  type: {
-    type: String,
-    enum: ['percentage', 'fixed'],
-    required: true,
-  },
+  discount_type: {
+  type: String,
+  enum: ['percentage', 'fixed'],
+  required: true,
+},
   value: {
     type: Number,
     required: true,
