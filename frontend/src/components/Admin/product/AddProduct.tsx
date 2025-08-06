@@ -7,6 +7,11 @@ import { getCategories } from "../../../../api/category.api.ts";
 import { uploadToCloudinary } from "../../../lib/cloudinary.ts";
 import { getAllAttributes, getAttributeValues } from "../../../../api/attribute.api.ts";
 import * as yup from "yup";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
+import { useDropzone } from "react-dropzone";
+import ImageGallery from "react-image-gallery";
+import "react-image-gallery/styles/css/image-gallery.css";
 
 type AddProductForm = {
   name: string;
@@ -19,15 +24,26 @@ type AddProductForm = {
   variants: {
     price: number;
     quantity: number;
-    image?:  string;
+    image?: string;
     attributes: { attribute_id: string; value_id: string }[];
   }[];
+};
+
+// Cấu hình toolbar cho React Quill, bao gồm nút chèn ảnh
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ["bold", "italic", "underline", "strike"],
+    [{ list: "ordered" }, { list: "bullet" }],
+    ["link", "image"],
+    ["clean"],
+  ],
 };
 
 const AddProduct = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);
-  const [attributes, setAttributes] = useState<any[]>([]);  
+  const [attributes, setAttributes] = useState<any[]>([]);
   const [attributeValues, setAttributeValues] = useState<any[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [albumFiles, setAlbumFiles] = useState<File[]>([]);
@@ -169,7 +185,6 @@ const AddProduct = () => {
         const allValues = valuesRes.flatMap((res) => res.data?.data || []);
         setAttributeValues(allValues);
 
-        // TODO: Thay bằng API call thực tế để lấy existingVariants
         setExistingVariants([]);
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu:", error);
@@ -196,6 +211,76 @@ const AddProduct = () => {
     setValue(`variants.${index}.price`, rawValue ? Number(rawValue) : undefined);
     trigger(`variants.${index}.price`);
   };
+
+  const { getRootProps: getImageRootProps, getInputProps: getImageInputProps } = useDropzone({
+    accept: {
+      "image/jpeg": [".jpeg", ".jpg"],
+      "image/png": [".png"],
+      "image/gif": [".gif"],
+    },
+    maxFiles: 1,
+    onDrop: (acceptedFiles) => {
+      if (acceptedFiles.length > 0) {
+        setImageFile(acceptedFiles[0]);
+      } else {
+        alert("Hình ảnh phải có định dạng jpg, png hoặc gif");
+      }
+    },
+  });
+
+  const { getRootProps: getAlbumRootProps, getInputProps: getAlbumInputProps } = useDropzone({
+    accept: {
+      "image/jpeg": [".jpeg", ".jpg"],
+      "image/png": [".png"],
+      "image/gif": [".gif"],
+    },
+    multiple: true,
+    onDrop: (acceptedFiles) => {
+      if (acceptedFiles.every((file) => ["image/jpeg", "image/png", "image/gif"].includes(file.type))) {
+        setAlbumFiles(acceptedFiles);
+      } else {
+        alert("Tất cả hình ảnh trong album phải có định dạng jpg, png hoặc gif");
+      }
+    },
+  });
+
+  // Hàm xử lý tải ảnh lên Cloudinary và chèn vào React Quill
+  const handleImageUpload = () => {
+    const input = document.createElement("input");
+    input.setAttribute("type", "file");
+    input.setAttribute("accept", "image/*");
+    input.click();
+
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (file && ["image/jpeg", "image/png", "image/gif"].includes(file.type)) {
+        try {
+          const imageUrl = await uploadToCloudinary(file);
+          const quill = (document.querySelector(".ql-editor") as any)?.quill;
+          if (quill) {
+            const range = quill.getSelection();
+            if (range) {
+              quill.insertEmbed(range.index, "image", imageUrl);
+            }
+          }
+        } catch (error) {
+          console.error("Lỗi khi tải ảnh lên:", error);
+          alert("Không thể tải ảnh lên. Vui lòng thử lại.");
+        }
+      } else {
+        alert("Hình ảnh phải có định dạng jpg, png hoặc gif");
+      }
+    };
+  };
+
+  // Thêm handler cho toolbar của React Quill
+  useEffect(() => {
+    const quill = (document.querySelector(".ql-editor") as any)?.quill;
+    if (quill) {
+      const toolbar = quill.getModule("toolbar");
+      toolbar.addHandler("image", handleImageUpload);
+    }
+  }, []);
 
   const onSubmit: SubmitHandler<AddProductForm> = async (data) => {
     try {
@@ -303,8 +388,7 @@ const AddProduct = () => {
                 <input
                   {...register("name")}
                   type="text"
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? "border-red-500" : "border-gray-300"
-                    }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? "border-red-500" : "border-gray-300"}`}
                   id="ecommerce-product-name"
                   placeholder="Tên sản phẩm"
                 />
@@ -317,21 +401,20 @@ const AddProduct = () => {
                 <input
                   {...register("sku")}
                   type="text"
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.sku ? "border-red-500" : "border-gray-300"
-                    }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.sku ? "border-red-500" : "border-gray-300"}`}
                   id="ecommerce-product-sku"
                   placeholder="SKU"
                 />
                 {errors.sku && <p className="text-red-500 text-sm mt-1">{errors.sku.message}</p>}
               </div>
-              <div>
+              <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả (Tùy chọn)</label>
-                <textarea
-                  {...register("description")}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.description ? "border-red-500" : "border-gray-300"
-                    }`}
-                  rows={5}
+                <ReactQuill
+                  value={watch("description") || ""}
+                  onChange={(value) => setValue("description", value)}
+                  className={errors.description ? "border-red-500" : ""}
                   placeholder="Mô tả sản phẩm"
+                  modules={quillModules}
                 />
                 {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
               </div>
@@ -352,8 +435,7 @@ const AddProduct = () => {
                         type="text"
                         value={formattedPrices[index] || ""}
                         onChange={(e) => handlePriceChange(index, e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.price ? "border-red-500" : "border-gray-300"
-                          }`}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.price ? "border-red-500" : "border-gray-300"}`}
                         placeholder="Giá (ví dụ: 1,000,000)"
                       />
                       <input
@@ -369,8 +451,7 @@ const AddProduct = () => {
                       <input
                         {...register(`variants.${index}.quantity`)}
                         type="number"
-                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.quantity ? "border-red-500" : "border-gray-300"
-                          }`}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.quantity ? "border-red-500" : "border-gray-300"}`}
                         placeholder="Số lượng"
                       />
                       {errors.variants?.[index]?.quantity && (
@@ -395,9 +476,6 @@ const AddProduct = () => {
                           newImages[index] = file;
                           return newImages;
                         });
-                        // if (file !== null) {
-                        //   setValue(`variants.${index}.image`, file);
-                        // }
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
                     />
@@ -408,8 +486,8 @@ const AddProduct = () => {
                             variantImages[index]
                               ? URL.createObjectURL(variantImages[index])
                               : typeof getValues(`variants.${index}.image`) === "string"
-                                ? getValues(`variants.${index}.image`)
-                                : ""
+                              ? getValues(`variants.${index}.image`)
+                              : ""
                           }
                           className="h-20 object-cover border rounded-lg"
                         />
@@ -424,8 +502,7 @@ const AddProduct = () => {
                         <select
                           value={attr.attribute_id || ""}
                           onChange={(e) => handleAttributeChange(index, attrIndex, "attribute_id", e.target.value)}
-                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.attributes?.[attrIndex]?.attribute_id ? "border-red-500" : "border-gray-300"
-                            }`}
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.attributes?.[attrIndex]?.attribute_id ? "border-red-500" : "border-gray-300"}`}
                         >
                           <option value="">-- Chọn thuộc tính --</option>
                           {attributes?.map((att: any) => (
@@ -440,8 +517,7 @@ const AddProduct = () => {
                         <select
                           value={attr.value_id || ""}
                           onChange={(e) => handleAttributeChange(index, attrIndex, "value_id", e.target.value)}
-                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.attributes?.[attrIndex]?.value_id ? "border-red-500" : "border-gray-300"
-                            }`}
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.attributes?.[attrIndex]?.value_id ? "border-red-500" : "border-gray-300"}`}
                         >
                           <option value="">-- Chọn giá trị --</option>
                           {attributeValues
@@ -509,8 +585,7 @@ const AddProduct = () => {
                 </label>
                 <select
                   {...register("category_id")}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category_id ? "border-red-500" : "border-gray-300"
-                    }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category_id ? "border-red-500" : "border-gray-300"}`}
                   id="category-org"
                 >
                   <option value="">-- Chọn danh mục --</option>
@@ -526,8 +601,7 @@ const AddProduct = () => {
                 </label>
                 <select
                   {...register("status")}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.status ? "border-red-500" : "border-gray-300"
-                    }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.status ? "border-red-500" : "border-gray-300"}`}
                   id="status-org"
                 >
                   <option value="active">Đang bán</option>
@@ -539,46 +613,48 @@ const AddProduct = () => {
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Hình ảnh sản phẩm</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null;
-                    if (file && !["image/jpeg", "image/png", "image/gif"].includes(file.type)) {
-                      alert("Hình ảnh chính phải có định dạng jpg, png hoặc gif");
-                      return;
-                    }
-                    setImageFile(file);
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
-                />
+                <div
+                  {...getImageRootProps()}
+                  className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-blue-500"
+                >
+                  <input {...getImageInputProps()} />
+                  <p className="text-gray-500">Kéo và thả hình ảnh hoặc nhấn để chọn (jpg, png, gif)</p>
+                </div>
                 {imageFile && (
                   <div className="grid grid-cols-2 gap-2 mt-2">
-                    <img src={URL.createObjectURL(imageFile)} className="h-20 object-cover border rounded-lg" />
+                    <div className="relative">
+                      <img src={URL.createObjectURL(imageFile)} className="h-20 object-cover border rounded-lg" />
+                      <button
+                        onClick={() => setImageFile(null)}
+                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                      >
+                        X
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Album ảnh</label>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files || []);
-                    if (files.some((file) => !["image/jpeg", "image/png", "image/gif"].includes(file.type))) {
-                      alert("Tất cả hình ảnh trong album phải có định dạng jpg, png hoặc gif");
-                      return;
-                    }
-                    setAlbumFiles(files);
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
-                />
+                <div
+                  {...getAlbumRootProps()}
+                  className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-blue-500"
+                >
+                  <input {...getAlbumInputProps()} />
+                  <p className="text-gray-500">Kéo và thả nhiều hình ảnh hoặc nhấn để chọn (jpg, png, gif)</p>
+                </div>
                 {albumFiles.length > 0 && (
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    {albumFiles.map((file, i) => (
-                      <img key={i} src={URL.createObjectURL(file)} className="h-20 object-cover border rounded-lg" />
-                    ))}
+                  <div className="mt-2">
+                    <ImageGallery
+                      items={albumFiles.map((file) => ({
+                        original: URL.createObjectURL(file),
+                        thumbnail: URL.createObjectURL(file),
+                      }))}
+                      showPlayButton={false}
+                      showFullscreenButton={true}
+                      showThumbnails={true}
+                      thumbnailPosition="bottom"
+                    />
                   </div>
                 )}
               </div>

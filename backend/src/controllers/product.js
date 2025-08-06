@@ -3,6 +3,7 @@ import Product from "../models/product.js";
 import ProductVariant from "../models/productVariant.js";
 import VariantAttributeValue from "../models/variantAttributeValue.js";
 import { generateSku } from "../utils/generateSku.js";
+import Reviews from '../models/reviews.js';
 
 export const createProduct = async (req, res) => {
   try {
@@ -187,14 +188,29 @@ export const getProductById = async (req, res) => {
     const product = await Product.findById(req.params.id).populate("category_id").lean();
     if (!product) return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
 
+    // Tính average_rating và review_count
+    const reviews = await Reviews.find({ product_id: req.params.id });
+    console.log("Reviews found:", reviews); // Kiểm tra danh sách đánh giá
+    const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
+    const averageRating = reviews.length > 0 ? Number((totalRating / reviews.length).toFixed(1)) : 0;
+    const reviewCount = reviews.length;
+    console.log("Calculated averageRating:", averageRating, "reviewCount:", reviewCount); // Kiểm tra kết quả tính toán
+
+    // Cập nhật product với average_rating và review_count
+    const updatedProduct = {
+      ...product,
+      average_rating: averageRating,
+      review_count: reviewCount,
+    };
+
     const variants = await ProductVariant.find({ product_id: req.params.id }).lean();
-    console.log("Raw variants from DB:", variants); // Log raw variants
+    console.log("Raw variants from DB:", variants);
 
     const variantIds = variants.map(v => v._id);
     const attributeValues = await VariantAttributeValue.find({ variant_id: { $in: variantIds } })
       .populate("attribute_id value_id")
       .lean();
-    console.log("Attribute values:", attributeValues); // Log attributes
+    console.log("Attribute values:", attributeValues);
 
     const variantsWithAttrs = variants.map((variant) => {
       const attrs = attributeValues.filter(attr => attr.variant_id.toString() === variant._id.toString());
@@ -207,8 +223,8 @@ export const getProductById = async (req, res) => {
       };
     });
 
-    console.log("Variants with attrs:", variantsWithAttrs); // Log final variants
-    return res.json({ data: { product, variants: variantsWithAttrs } });
+    console.log("Variants with attrs:", variantsWithAttrs);
+    return res.json({ data: { product: updatedProduct, variants: variantsWithAttrs } });
   } catch (err) {
     console.error("Lỗi getProductById:", err);
     return res.status(500).json({ message: "Lỗi lấy sản phẩm", error: err.message });

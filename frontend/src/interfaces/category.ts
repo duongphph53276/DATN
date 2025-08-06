@@ -1,4 +1,5 @@
 export interface ICategory {
+  description: any;
   _id?: string;
   name: string;
   slug?: string;

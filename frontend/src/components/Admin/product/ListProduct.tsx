@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { getCategories } from "../../../../api/category.api";
 import { IProduct } from "../../../interfaces/product";
 import { AiOutlineDoubleLeft, AiOutlineDoubleRight } from "react-icons/ai";
-import { FaEdit, FaFilter, FaSearch, FaUndo } from "react-icons/fa";
+import { FaEdit, FaFilter, FaSearch, FaUndo, FaEye } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
 import { X, ChevronDown, ChevronUp } from "lucide-react";
 
@@ -206,16 +206,15 @@ const ListProduct: React.FC = () => {
               )}
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3">
             {/* Filter Toggle Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all duration-200 ${
-                showFilters || activeFilters > 0
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all duration-200 ${showFilters || activeFilters > 0
                   ? 'bg-blue-50 border-blue-200 text-blue-700'
                   : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <FaFilter className="text-sm" />
               <span className="hidden sm:inline">Bộ lọc</span>
@@ -410,10 +409,9 @@ const ListProduct: React.FC = () => {
                     <td className="p-3">
                       <div className="flex flex-col">
                         <h6 className="font-semibold text-gray-900">{product.name}</h6>
-                        <small className="text-gray-500 hidden sm:block text-xs">{product.description || "Không có mô tả"}</small>
                       </div>
                     </td>
-                                       <td className="p-3">
+                    <td className="p-3">
                       <span className="font-semibold text-gray-900">{getPriceDisplay(product.variants ?? [])}</span>
                     </td>
                     <td className="p-3">
@@ -427,15 +425,14 @@ const ListProduct: React.FC = () => {
                     </td>
                     <td className="p-3">
                       <span
-                        className={`inline-block px-3 py-1.5 rounded-full text-xs font-semibold ${
-                          product.status === "active"
+                        className={`inline-block px-3 py-1.5 rounded-full text-xs font-semibold ${product.status === "active"
                             ? "bg-green-100 text-green-700 border border-green-200"
                             : product.status === "disabled"
-                            ? "bg-gray-100 text-gray-700 border border-gray-200"
-                            : product.status === "new"
-                            ? "bg-blue-100 text-blue-700 border border-blue-200"
-                            : "bg-yellow-100 text-yellow-700 border border-yellow-200"
-                        }`}
+                              ? "bg-gray-100 text-gray-700 border border-gray-200"
+                              : product.status === "new"
+                                ? "bg-blue-100 text-blue-700 border border-blue-200"
+                                : "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                          }`}
                       >
                         {product.status === "active" && "Đang bán"}
                         {product.status === "disabled" && "Tạm tắt"}
@@ -445,6 +442,12 @@ const ListProduct: React.FC = () => {
                     </td>
                     <td className="p-3">
                       <div className="flex gap-2">
+                        <button
+                          className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                          onClick={() => navigate(`/admin/product/${product._id}`)}
+                        >
+                          <FaEye />
+                        </button>
                         <button
                           className="p-2 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition-all duration-200 shadow-sm hover:shadow-md"
                           onClick={() => navigate(`/admin/product/edit/${product._id}`)}
@@ -496,11 +499,10 @@ const ListProduct: React.FC = () => {
             {Array.from({ length: totalPages }, (_, index) => (
               <button
                 key={index + 1}
-                className={`px-4 py-2 border rounded-xl transition-all duration-200 ${
-                  currentPage === index + 1 
-                    ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white border-blue-500 shadow-lg shadow-blue-500/25" 
+                className={`px-4 py-2 border rounded-xl transition-all duration-200 ${currentPage === index + 1
+                    ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white border-blue-500 shadow-lg shadow-blue-500/25"
                     : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                }`}
+                  }`}
                 onClick={() => handlePageChange(index + 1)}
               >
                 {index + 1}
@@ -578,15 +580,14 @@ const ListProduct: React.FC = () => {
                     <td className="p-2 font-medium">Trạng thái:</td>
                     <td className="p-2">
                       <span
-                        className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                          selectedProduct.status === "active"
+                        className={`inline-block px-2 py-1 rounded text-xs font-medium ${selectedProduct.status === "active"
                             ? "bg-green-100 text-green-700"
                             : selectedProduct.status === "disabled"
-                            ? "bg-gray-100 text-gray-700"
-                            : selectedProduct.status === "new"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-yellow-100 text-yellow-700"
-                        }`}
+                              ? "bg-gray-100 text-gray-700"
+                              : selectedProduct.status === "new"
+                                ? "bg-blue-100 text-blue-700"
+                                : "bg-yellow-100 text-yellow-700"
+                          }`}
                       >
                         {selectedProduct.status || "Lên lịch"}
                       </span>
