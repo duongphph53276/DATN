@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { IVariantAttribute, IVariant } from "../../../interfaces/variant.ts"; 
+import { IVariant } from "../../../interfaces/variant"; 
 
 interface CartItem {
   id: string;
@@ -9,6 +9,7 @@ interface CartItem {
   price: number;
   quantity: number;
   variant?: IVariant;
+  variantAttributes?: string; // Thêm trường này để đồng bộ với DetailsPage
 }
 
 const Cart: React.FC = () => {
@@ -75,17 +76,12 @@ const Cart: React.FC = () => {
     0
   );
 
-  // Hiển thị tất cả thuộc tính của biến thể
-  const getVariantAttributesDisplay = (variant?: IVariant) => {
-    if (!variant || !variant.attributes || variant.attributes.length === 0) {
-      return <span className="text-gray-400 text-sm">-</span>;
+  // Hiển thị thuộc tính từ variantAttributes
+  const getVariantAttributesDisplay = (item: CartItem) => {
+    if (!item.variantAttributes) {
+      return <span className="text-gray-400 text-sm">Không có thuộc tính</span>;
     }
-
-    return variant.attributes.map((attr: IVariantAttribute) => (
-      <p key={attr.attribute_id} className="text-sm text-gray-500">
-        {attr.attribute_name || "Thuộc tính"}: {attr.value || "Không xác định"}
-      </p>
-    ));
+    return <p className="text-sm text-gray-500">{item.variantAttributes}</p>;
   };
 
   return (
@@ -116,7 +112,7 @@ const Cart: React.FC = () => {
                 <div className="flex-1 text-center sm:text-left min-h-[100px]">
                   <h3 className="text-lg font-semibold text-gray-800">{item.name}</h3>
                   <div className="mt-2 min-h-[40px]">
-                    {getVariantAttributesDisplay(item.variant)}
+                    {getVariantAttributesDisplay(item)}
                   </div>
                   <div className="flex justify-center sm:justify-start items-center gap-3 mt-3">
                     <button

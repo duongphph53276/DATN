@@ -23,6 +23,7 @@ import { createDefaultPermissions } from './data/permissions.js';
 import { createDefaultRoles } from './data/roles.js';
 
 import { AddToCart, ClearCart, GetCartByUser, RemoveFromCart } from './controllers/cart.js';
+import { createReview, deleteReview, getAllReviews, getReviewById, getUserReviewByProduct, updateReview } from './controllers/reviews.js';
 
 
 
@@ -124,6 +125,14 @@ app.post('/category/add', AddCategory);
 app.put('/category/edit/:id', EditCategory);
 app.delete('/category/:id', DeleteCategory);
 app.get('/category/:id', GetCategoryById);
+
+// Review routes
+app.post('/reviews', authMiddleware, createReview );
+app.get('/reviews', getAllReviews); 
+app.get('/reviews/:id', getReviewById); 
+app.put('/reviews/:id', authMiddleware, updateReview); 
+app.delete('/reviews/:id', authMiddleware, deleteReview);
+app.get('/reviews/user/product/:product_id', authMiddleware, getUserReviewByProduct);
 // Admin routes
 const adminRouter = express.Router();
 adminRouter.use(authMiddleware, restrictTo('admin', 'employee'));

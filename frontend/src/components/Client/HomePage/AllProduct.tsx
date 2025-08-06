@@ -38,17 +38,16 @@ const AllProducts: React.FC = () => {
   const [attributeValues, setAttributeValues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVariants, setSelectedVariants] = useState<{ [key: string]: any }>({});
-  const [selectedAttributes, setSelectedAttributes] = useState<{
-    [productId: string]: { [attributeId: string]: string };
-  }>({});
+  const [selectedAttributes, setSelectedAttributes] = useState<{ [productId: string]: { [attributeId: string]: string } }>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 12;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         const productRes = await getAllProducts();
-        const fetchedProducts = productRes.data?.data || [];
-        setProducts(fetchedProducts);
+        setProducts(productRes.data?.data || []);
 
         const attrRes = await getAllAttributes();
         setAttributes(attrRes.data?.data || []);
@@ -67,6 +66,15 @@ const AllProducts: React.FC = () => {
     };
     fetchData();
   }, []);
+
+  // Cuộn lên đầu khi chuyển trang
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
 
   const getAttributeName = (attributeId: string) => {
     const attribute = attributes.find((attr) => attr._id === attributeId);
@@ -111,18 +119,19 @@ const AllProducts: React.FC = () => {
     return matchCategory && matchPrice;
   });
 
-  const handleSelectAttribute = (
-    productId: string,
-    attributeId: string,
-    valueId: string
-  ) => {
+  const indexOfLastProduct = currentPage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+
+  const handleSelectAttribute = (productId: string, attributeId: string, valueId: string) => {
     setSelectedAttributes((prev) => {
       const currentAttributes = prev[productId] || {};
       const updatedAttributes = { ...currentAttributes };
       if (currentAttributes[attributeId] === valueId) {
-        delete updatedAttributes[attributeId]; // Bỏ chọn
+        delete updatedAttributes[attributeId];
       } else {
-        updatedAttributes[attributeId] = valueId; // Chọn giá trị mới
+        updatedAttributes[attributeId] = valueId;
       }
 
       const product = products.find((p) => p._id === productId);
@@ -148,7 +157,6 @@ const AllProducts: React.FC = () => {
     const selectedVariant = selectedVariants[product._id];
     const productAttributes = selectedAttributes[product._id] || {};
 
-    // Kiểm tra xem tất cả thuộc tính cần thiết đã được chọn
     const requiredAttributes = attributes.filter((attr: any) =>
       product.variants.some((variant: any) =>
         variant.attributes.some((a: any) => a.attribute_id === attr._id)
@@ -163,11 +171,24 @@ const AllProducts: React.FC = () => {
       return;
     }
 
+    const variantAttributes = selectedVariant
+      ? Object.entries(productAttributes)
+        .map(([attrId, valueId]) => `${getAttributeName(attrId)}: ${getAttributeValue(valueId)}`)
+        .join(", ")
+      : "Không có thuộc tính";
+
     const cart = JSON.parse(localStorage.getItem("cart") || "[]");
     const existingIndex = cart.findIndex(
       (item: any) =>
         item._id === product._id &&
-        (!item.variant || JSON.stringify(item.variant?.attributes) === JSON.stringify(selectedVariant?.attributes))
+        (!item.variant ||
+          JSON.stringify(
+            item.variant?.attributes?.map((attr: any) => [attr.attribute_id, attr.value_id]).sort()
+          ) ===
+          JSON.stringify(
+            selectedVariant?.attributes?.map((attr: any) => [attr.attribute_id, attr.value_id]).sort()
+          )
+        )
     );
 
     if (existingIndex !== -1) {
@@ -179,16 +200,17 @@ const AllProducts: React.FC = () => {
         price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
         image: selectedVariant ? selectedVariant.image || product.image : product.image,
         variant: selectedVariant || undefined,
+        variantAttributes,
         quantity: 1,
       });
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
+    window.dispatchEvent(new Event("cartUpdated"));
     alert("Đã thêm sản phẩm vào giỏ hàng!");
     navigate("/cart");
   };
 
-  // Hàm lọc các giá trị thuộc tính hợp lệ dựa trên lựa chọn hiện tại
   const getValidAttributeValues = (product: any, attributeId: string, selectedAttributes: { [key: string]: string }) => {
     const validValueIds = new Set<string>();
 
@@ -222,10 +244,10 @@ const AllProducts: React.FC = () => {
         <ProductFilters onFilter={setFilters} />
 
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-          {filteredProducts.length === 0 ? (
+          {currentProducts.length === 0 ? (
             <p className="col-span-full text-center text-gray-500">Không tìm thấy sản phẩm phù hợp.</p>
           ) : (
-            filteredProducts.map((product) => {
+            currentProducts.map((product) => {
               const defaultPrice = getDefaultPrice(product);
               const selectedVariant = selectedVariants[product._id];
               const displayedPrice = selectedVariant ? parsePrice(selectedVariant.price) : defaultPrice;
@@ -255,29 +277,25 @@ const AllProducts: React.FC = () => {
                           {parsePrice(product.oldPrice).toLocaleString()}₫
                         </span>
                       )}
-                      
                     </div>
 
                     {product.variants?.length > 0 && (
                       <div className="mt-4 space-y-3">
                         {attributes.map((attr: any) => {
                           const valueIds = getValidAttributeValues(product, attr._id, selectedAttributes[product._id] || {});
-
                           if (valueIds.length === 0) return null;
 
                           return (
                             <div key={attr._id}>
-                              <label className="text-sm font-medium text-gray-600">{getAttributeName(attr._id)}</label>
                               <div className="flex flex-wrap gap-2 mt-1">
                                 {valueIds.map((valueId) => (
                                   <button
                                     key={String(valueId)}
                                     onClick={() => handleSelectAttribute(product._id, attr._id, valueId as string)}
-                                    className={`px-3 py-1 rounded-full text-sm border transition ${
-                                      selectedAttributes[product._id]?.[attr._id] === valueId
-                                        ? "bg-rose-500 text-white border-rose-500"
-                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                    }`}
+                                    className={`px-3 py-1 rounded-full text-sm border transition ${selectedAttributes[product._id]?.[attr._id] === valueId
+                                      ? "bg-rose-500 text-white border-rose-500"
+                                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                      }`}
                                   >
                                     {getAttributeValue(valueId as string)}
                                   </button>
@@ -301,6 +319,46 @@ const AllProducts: React.FC = () => {
             })
           )}
         </div>
+
+        {/* Phân trang có Prev/Next */}
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-10 gap-2 flex-wrap items-center">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 rounded-lg border ${currentPage === 1
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "bg-white text-gray-700 hover:bg-gray-100"
+                }`}
+            >
+              « Prev
+            </button>
+
+            {Array.from({ length: totalPages }, (_, index) => (
+              <button
+                key={index + 1}
+                onClick={() => setCurrentPage(index + 1)}
+                className={`px-4 py-2 rounded-lg border ${currentPage === index + 1
+                  ? "bg-rose-500 text-white"
+                  : "bg-white text-gray-700 hover:bg-gray-100"
+                  }`}
+              >
+                {index + 1}
+              </button>
+            ))}
+
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className={`px-4 py-2 rounded-lg border ${currentPage === totalPages
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "bg-white text-gray-700 hover:bg-gray-100"
+                }`}
+            >
+              Next »
+            </button>
+          </div>
+        )}
       </div>
     </ErrorBoundary>
   );
