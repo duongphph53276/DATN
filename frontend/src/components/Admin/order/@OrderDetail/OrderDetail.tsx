@@ -1,3 +1,4 @@
+// OrderDetail/index.tsx
 import classNames from 'classnames/bind'
 import styles from './OrderDetail.module.scss'
 import { useParams } from 'react-router-dom'
@@ -13,6 +14,7 @@ import OrderHeader from './_components/OrderHeader'
 import OrderInfoGrid from './_components/OrderInfoGrid'
 import OrderTable from './_components/OrderTable'
 import OrderTotalBox from './_components/OrderTotalBox'
+import { canChangeStatus, getStatusChangeErrorMessage } from '../../../../utils/orderStatusValidation'
 
 const cx = classNames.bind(styles)
 
@@ -42,6 +44,14 @@ export default function OrderDetail() {
     const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newStatus = e.target.value as stateOrder['status']
         if (!order) return
+
+        if (!canChangeStatus(order.status, newStatus)) {
+            const errorMessage = getStatusChangeErrorMessage(order.status, newStatus)
+            ToastError(errorMessage)
+            e.target.value = order.status
+            return
+        }
+
         try {
             const updated: any = await dispatch(updateOrder({ _id: order._id, order_status: newStatus })).unwrap()
             ToastSucess(updated.message)
@@ -49,6 +59,7 @@ export default function OrderDetail() {
         } catch (err) {
             console.error('Lỗi khi cập nhật trạng thái:', err)
             ToastError(`Lỗi khi cập nhật trạng thái ${err}`)
+            e.target.value = order.status
         }
     }
 
@@ -59,7 +70,7 @@ export default function OrderDetail() {
                 <OrderHeader orderId={order._id} orderStatus={order.status} onChangeStatus={handleStatusChange} />
                 <OrderInfoGrid order={order} />
                 <OrderTable items={order.order_details} />
-                <OrderTotalBox subtotal={subtotal} vat={vat} vatPercent={vatPercent} grandTotal={grandTotal} />
+                <OrderTotalBox vat={vat} vatPercent={vatPercent} order={order}  />
             </div>
         </div>
     )

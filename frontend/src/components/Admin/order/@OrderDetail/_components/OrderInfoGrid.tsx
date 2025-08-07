@@ -24,17 +24,17 @@ export default function OrderInfoGrid({ order }: Props) {
       </div>
       <div>
         <p className={cx('label')}>Hoá Đơn Từ:</p>
-        <p>Vuaclass Shop</p>
-        <p>support@vuaclass.com</p>
-        <p>Ho Chi Minh City, Vietnam</p>
-        <p>0123 456 789</p>
+        <p>FUZZY BEAR</p>
+        <p>support@fuzzy.com</p>
+        <p>Ha noi, Vietnam</p>
+        <p>03828944738</p>
       </div>
       <div>
         <p className={cx('label')}>Hoá Đơn Cho:</p>
-        <p>{order.user_id}</p>
-        <p>customer@example.com</p>
-        <p>Address ID: {order.address_id}</p>
-        <p>0123 987 654</p>
+        <p>{order.user.name}</p>
+        <p>{order.user.email}</p>
+        <p>Address: {order.address.street}, {order.address.city}, {order.address.country}</p>
+        <p>{order.user.phone}</p>
       </div>
     </div>
   )

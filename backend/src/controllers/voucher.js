@@ -158,3 +158,18 @@ export const GetVoucherById = async (req, res) => {
     res.status(500).json({ message: "Lỗi khi lấy thông tin voucher", error: error.message });
   }
 };
+export const ApplyVoucher = async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    const voucher = await VoucherModel.findOne({ code: code });
+
+    if (!voucher) {
+      return res.status(404).json({ message: "Voucher không tồn tại" });
+    }
+
+    res.status(200).json({ message: "Áp dụng voucher thành công", status: true, data: voucher });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi khi áp dụng voucher", error: error.message });
+  }
+};

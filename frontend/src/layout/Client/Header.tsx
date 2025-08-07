@@ -2,6 +2,7 @@ import { FaPhoneAlt, FaSearch, FaUser, FaSignOutAlt, FaUserCircle, FaClipboardLi
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import CartCountBadge from "./CartCountBadge";
+import NotificationBell from '../../components/common/NotificationBell';
 import api from "../../middleware/axios";
 import { User } from "../../interfaces/user";
 
@@ -30,7 +31,7 @@ const Header = () => {
       if (isLoggedIn) {
         try {
           const token = localStorage.getItem("token");
-          const response = await fetch('http://localhost:5000/profile', {
+          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/profile`, {
             method: 'GET',
             headers: {
               Authorization: `Bearer ${token}`,
@@ -111,6 +112,7 @@ const Header = () => {
             <span>097.989.6616</span>
           </div>
           <CartCountBadge />
+          <NotificationBell isLoggedIn={isLoggedIn} />
           <div className="relative" ref={dropdownRef}>
             {isLoggedIn ? (
               <button

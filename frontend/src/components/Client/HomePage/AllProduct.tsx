@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import ProductFilters from "../../../layout/Client/ProductFilters";
 import { getAllProducts } from "../../../../api/product.api";
 import { getAllAttributes, getAttributeValues } from "../../../../api/attribute.api";
+import { ToastSucess } from "../../../utils/toast";
 
 // Hàm chuyển chuỗi giá về số
 const parsePrice = (value: string | number | undefined | null): number => {
@@ -206,8 +207,7 @@ const AllProducts: React.FC = () => {
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("cartUpdated"));
-    alert("Đã thêm sản phẩm vào giỏ hàng!");
+    ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
     navigate("/cart");
   };
 

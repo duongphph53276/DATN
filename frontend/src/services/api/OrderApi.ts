@@ -15,3 +15,11 @@ export const getOrderById = async(id:string)=>{
   const response = await api.get(`${URL}/${id}`);
   return response.data;
 }
+export const getOrderByUserId = async(id:string,params: GetOrderParams)=>{
+  const response = await api.get(`${URL}/user/${id}`, {params});
+  return response.data;
+}
+export const createNewOrder = async(data:any)=>{
+  const response = await api.post(URL,data);
+  return response.data;
+}

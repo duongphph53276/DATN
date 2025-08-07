@@ -33,13 +33,13 @@ const AttributeList: React.FC = () => {
   const [editingValueId, setEditingValueId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState(0);
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -212,16 +212,15 @@ const AttributeList: React.FC = () => {
               )}
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3">
             {/* Filter Toggle Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all duration-200 ${
-                showFilters || activeFilters > 0
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all duration-200 ${showFilters || activeFilters > 0
                   ? 'bg-blue-50 border-blue-200 text-blue-700'
                   : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <FaFilter className="text-sm" />
               <span className="hidden sm:inline">Bộ lọc</span>
@@ -473,9 +472,8 @@ const AttributeList: React.FC = () => {
                 <button
                   key={page}
                   onClick={() => paginate(page)}
-                  className={`px-3 py-2 border border-gray-200 rounded-xl ${
-                    currentPage === page ? 'bg-blue-500 text-white' : 'hover:bg-gray-50'
-                  }`}
+                  className={`px-3 py-2 border border-gray-200 rounded-xl ${currentPage === page ? 'bg-blue-500 text-white' : 'hover:bg-gray-50'
+                    }`}
                 >
                   {page}
                 </button>

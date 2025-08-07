@@ -1,3 +1,6 @@
+import { IProduct } from "./product";
+import { IVariant } from "./variant";
+
 export interface OrderDetail {
   _id: string;
   order_id: string;
@@ -5,7 +8,10 @@ export interface OrderDetail {
   name: string;
   price: number;
   image: string;
+  quantity: number;
   __v: number;
+  product : IProduct,
+  variant: IVariant
 }
 
 export interface stateOrder {
@@ -14,7 +20,7 @@ export interface stateOrder {
   status: "pending" | "processing" | "shipping" | "delivered" | "cancelled";
   quantity: number;
   total_amount: number;
-  discount_code: string | null;
+  voucher_id: string | null;
   payment_method: "credit_card" | "paypal" | "cash_on_delivery" | string;
   address_id: string;
   delivered_at: string | null;
@@ -22,6 +28,48 @@ export interface stateOrder {
   updated_at: string;
   __v: number;
   order_details: OrderDetail[];
+  voucher: {
+    _id: string;
+    code: string;
+    type: "percentage" | "fixed";
+    value: number;
+    start_date: string;
+    end_date: string;
+    quantity: number;
+    used_quantity: number;
+    is_active: boolean;
+    min_order_value: number;
+    max_user_number: number;
+    applicable_products: string[];
+    createdAt: string;
+    updatedAt: string;
+  };
+  address: {
+    _id: string;
+    user_id: string;
+    street: string;
+    city: string;
+    postal_code: string;
+    country: string;
+    is_default: boolean;
+    createdAt: string;
+    updatedAt: string;
+  };
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+    phoneNumber: string;
+    avatar: string;
+    address_id: string;
+    status: string;
+    banDuration: string;
+    banReason: string;
+    banUntil: string | Date;
+    createdAt: string;
+    updatedAt: string;
+  }
 }
 
 export interface Pagination {
@@ -34,7 +82,10 @@ export interface Pagination {
 }
 
 export interface OrderState {
-  client: stateOrder[];
+  client: {
+    orders: stateOrder[];
+    pagination: Pagination;
+  };
   admin: {
     orders: stateOrder[];
     pagination: Pagination;
@@ -43,7 +94,7 @@ export interface OrderState {
 }
 
 export interface orderUpdateStatusData {
-  _id: string;
+  _id: string | undefined;
   order_status: string;
 }
 
@@ -53,6 +104,11 @@ export interface OrderListResponse {
     pagination: Pagination;
   };
 }
+export interface GetOrderPayload {
+  id: string;
+  params?: GetOrderParams | null;
+};
+
 export interface GetOrderParams {
   page?: number;
   limit?: number;

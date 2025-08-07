@@ -24,4 +24,4 @@ const productVariantSchema = new mongoose.Schema({
 
 }, { timestamps: true, versionKey: false });
 
-export default mongoose.model("ProductVariant", productVariantSchema);
+export default mongoose.models.ProductVariant || mongoose.model("ProductVariant", productVariantSchema);
