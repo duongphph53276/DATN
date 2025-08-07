@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePermissions } from '../../hooks/usePermissions';
 import { FaUser, FaSignOutAlt, FaBell, FaCog } from 'react-icons/fa';
+import NotificationAdmin from '../../components/Admin/common/NotificationAdmin';
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -42,10 +43,7 @@ const Header = () => {
       {/* Right Section */}
       <div className="flex items-center space-x-4" ref={dropdownRef}>
         {/* Notifications */}
-        <button className="relative p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
-          <FaBell className="text-lg" />
-          <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-        </button>
+        <NotificationAdmin isLoggedIn={!!userInfo} />
 
         {/* Settings */}
         <button className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">

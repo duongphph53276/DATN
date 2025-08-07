@@ -31,6 +31,7 @@ const Login: React.FC = () => {
         const tokenPayload = JSON.parse(atob(data.token.split('.')[1]));
         const role = roleFromUser || tokenPayload.role || 'client';
         localStorage.setItem('role', role);
+        localStorage.setItem('user', JSON.stringify(data.user));
         
         setSuccessMessage('Đăng nhập thành công! Đang chuyển hướng...');
         

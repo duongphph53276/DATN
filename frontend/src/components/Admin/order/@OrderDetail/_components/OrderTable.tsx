@@ -23,11 +23,11 @@ export default function OrderTable({ items }: Props) {
       <tbody>
         {items.map((item) => (
           <tr key={item._id}>
-            <td><img src={item.image} alt={item.name} /></td>
+            <td><img src={item.image} alt={item.name} width={100} /></td>
             <td>{item.name}</td>
             <td>{formatCurrency(item.price)}</td>
-            <td>1</td>
-            <td>{formatCurrency(item.price)}</td>
+            <td>{item.quantity}</td>
+            <td>{formatCurrency(item.price * item.quantity)}</td>
           </tr>
         ))}
       </tbody>

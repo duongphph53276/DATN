@@ -31,7 +31,7 @@ const EditVoucher: React.FC = () => {
   useEffect(() => {
     const fetchVoucher = async () => {
       try {
-        const response = await axios.get<ISingleVoucherResponse>(`http://localhost:5000/vouchers/${id}`);
+        const response = await axios.get<ISingleVoucherResponse>(`http://localhost:5001/vouchers/${id}`);
         if (response.data.status && response.data.data) {
           const voucher = response.data.data;
           setFormData({
@@ -91,7 +91,7 @@ const EditVoucher: React.FC = () => {
         end_date: new Date(formData.end_date).toISOString(),
         type: formData.discount_type, // Map to backend's expected 'type' field
       };
-      const response = await axios.put(`http://localhost:5000/vouchers/${id}`, payload);
+      const response = await axios.put(`http://localhost:5001/vouchers/${id}`, payload);
       if (response.data.status) {
         alert('Cập nhật voucher thành công');
         navigate('/admin/voucher');

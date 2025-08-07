@@ -1,8 +1,51 @@
 import { OrderModel } from '../models/OrderModel.js';
 import { OrderDetailModel } from '../models/OrderDetailModel.js';
+import { VoucherModel } from '../models/Voucher.js';
+import { AddressModel } from '../models/User/address.js';
+import { UserModel } from '../models/User/user.js';
+import ProductVariant from '../models/ProductVariant.js';
+import Product from "../models/product.js";
+import {
+  createOrderSuccessNotification,
+  createOrderStatusNotification,
+  createNewOrderAdminNotification,
+  cancelledAdminNotification
+} from '../services/notificationService.js';
+
 import mongoose from 'mongoose';
 
 class OrderController {
+
+  /**
+   * Helper function to populate user information
+   */
+  static async populateUserInfo(userId) {
+    try {
+      const user = await UserModel.findById(userId)
+        .select('name email phone avatar created_at')
+        .lean();
+      return user;
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Helper function to add user info to orders
+   */
+  static async addUserInfoToOrders(orders) {
+    return Promise.all(
+      orders.map(async (order) => {
+        const user = await OrderController.populateUserInfo(order.user_id);
+        return {
+          ...order,
+          user: user
+        };
+      })
+    );
+  }
+
   /**
    * @desc    Get all orders with pagination and filtering
    * @route   GET /api/orders
@@ -43,9 +86,34 @@ class OrderController {
           const orderDetails = await OrderDetailModel
             .find({ order_id: order._id })
             .lean();
+
+          const orderDetailsWithInfo = await Promise.all(
+            orderDetails.map(async (detail) => {
+              const [product, variant] = await Promise.all([
+                Product.findById(detail.product_id).lean(),
+                ProductVariant.findById(detail.variant_id).lean()
+              ]);
+
+              return {
+                ...detail,
+                product: product,
+                variant: variant
+              };
+            })
+          );
+
+          const [voucher, address, user] = await Promise.all([
+            order.voucher_id ? VoucherModel.findById(order.voucher_id).lean() : null,
+            AddressModel.findById(order.address_id).lean(),
+            OrderController.populateUserInfo(order.user_id)
+          ]);
+
           return {
             ...order,
-            order_details: orderDetails
+            user: user,
+            voucher: voucher,
+            address: address,
+            order_details: orderDetailsWithInfo
           };
         })
       );
@@ -102,13 +170,39 @@ class OrderController {
         .find({ order_id: id })
         .lean();
 
+      const orderDetailsWithInfo = await Promise.all(
+        orderDetails.map(async (detail) => {
+          const [product, variant] = await Promise.all([
+            Product.findById(detail.product_id).lean(),
+            ProductVariant.findById(detail.variant_id).lean()
+          ]);
+
+          return {
+            ...detail,
+            product: product,
+            variant: variant
+          };
+        })
+      );
+
+      const [voucher, address, user] = await Promise.all([
+        order.voucher_id ? VoucherModel.findById(order.voucher_id).lean() : null,
+        AddressModel.findById(order.address_id).lean(),
+        OrderController.populateUserInfo(order.user_id)
+      ]);
+
+      const orderWithDetails = {
+        ...order,
+        user: user,
+        voucher: voucher,
+        address: address,
+        order_details: orderDetailsWithInfo
+      };
+
       res.status(200).json({
         success: true,
         message: 'Order retrieved successfully',
-        data: {
-          ...order,
-          order_details: orderDetails
-        }
+        data: orderWithDetails
       });
     } catch (error) {
       res.status(500).json({
@@ -133,7 +227,7 @@ class OrderController {
         user_id,
         quantity,
         total_amount,
-        discount_code,
+        voucher_id,
         payment_method,
         address_id,
         order_details
@@ -146,6 +240,14 @@ class OrderController {
         });
       }
 
+      const userExists = await UserModel.findById(user_id).lean();
+      if (!userExists) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
       if (!Array.isArray(order_details) || order_details.length === 0) {
         return res.status(400).json({
           success: false,
@@ -153,11 +255,20 @@ class OrderController {
         });
       }
 
+      for (const detail of order_details) {
+        if (!detail.product_id || !detail.variant_id || !detail.name || !detail.price || !detail.quantity) {
+          return res.status(400).json({
+            success: false,
+            message: 'Each order detail must include product_id, variant_id, name, price, and quantity'
+          });
+        }
+      }
+
       const newOrder = new OrderModel({
         user_id,
         quantity,
         total_amount,
-        discount_code,
+        voucher_id,
         payment_method,
         address_id
       });
@@ -166,22 +277,55 @@ class OrderController {
 
       const orderDetailsData = order_details.map(detail => ({
         order_id: savedOrder._id,
+        product_id: detail.product_id,
         variant_id: detail.variant_id,
         name: detail.name,
         price: detail.price,
+        quantity: detail.quantity,
         image: detail.image
       }));
 
       const savedOrderDetails = await OrderDetailModel.insertMany(orderDetailsData, { session });
 
+      const orderDetailsWithInfo = await Promise.all(
+        savedOrderDetails.map(async (detail) => {
+          const [product, variant] = await Promise.all([
+            Product.findById(detail.product_id).lean(),
+            ProductVariant.findById(detail.variant_id).lean()
+          ]);
+
+          return {
+            ...detail.toObject(),
+            product: product,
+            variant: variant
+          };
+        })
+      );
+
+      const [voucher, address, user] = await Promise.all([
+        savedOrder.voucher_id ? VoucherModel.findById(savedOrder.voucher_id).lean() : null,
+        AddressModel.findById(savedOrder.address_id).lean(),
+        OrderController.populateUserInfo(savedOrder.user_id)
+      ]);
+
       await session.commitTransaction();
+
+      try {
+        await createOrderSuccessNotification(user_id, savedOrder._id.toString());
+        await createNewOrderAdminNotification(savedOrder._id.toString(), total_amount);
+      } catch (notificationError) {
+        console.error('Error creating notifications:', notificationError);
+      }
 
       res.status(201).json({
         success: true,
         message: 'Order created successfully',
         data: {
           ...savedOrder.toObject(),
-          order_details: savedOrderDetails
+          user: user,
+          voucher: voucher,
+          address: address,
+          order_details: orderDetailsWithInfo
         }
       });
     } catch (error) {
@@ -222,7 +366,7 @@ class OrderController {
         });
       }
 
-      const validStatuses = ['pending', 'preparing', 'shipping', 'delivered', 'canceled'];
+      const validStatuses = ['pending', 'preparing', 'shipping', 'delivered', 'cancelled'];
       if (!status || !validStatuses.includes(status)) {
         return res.status(400).json({
           success: false,
@@ -248,10 +392,34 @@ class OrderController {
         });
       }
 
+      if (status == 'cancelled') {
+        await cancelledAdminNotification(updatedOrder._id.toString());
+      }
+
+      try {
+        await createOrderStatusNotification(updatedOrder.user_id.toString(), updatedOrder._id.toString(), status);
+      } catch (notificationError) {
+        console.error('Error creating status notification:', notificationError);
+      }
+
+      // Include voucher, address and user in response
+      const [voucher, address, user] = await Promise.all([
+        updatedOrder.voucher_id ? VoucherModel.findById(updatedOrder.voucher_id).lean() : null,
+        AddressModel.findById(updatedOrder.address_id).lean(),
+        OrderController.populateUserInfo(updatedOrder.user_id)
+      ]);
+
+      const orderWithDetails = {
+        ...updatedOrder,
+        user: user,
+        voucher: voucher,
+        address: address
+      };
+
       res.status(200).json({
         success: true,
         message: 'Order status updated successfully',
-        data: updatedOrder
+        data: orderWithDetails
       });
     } catch (error) {
       res.status(500).json({
@@ -322,6 +490,14 @@ class OrderController {
       const { user_id } = req.params;
       const { page = 1, limit = 10, status } = req.query;
 
+      const userExists = await UserModel.findById(user_id).lean();
+      if (!userExists) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
       const filter = { user_id };
       if (status) filter.status = status;
 
@@ -342,9 +518,33 @@ class OrderController {
           const orderDetails = await OrderDetailModel
             .find({ order_id: order._id })
             .lean();
+
+          const orderDetailsWithInfo = await Promise.all(
+            orderDetails.map(async (detail) => {
+              const [product, variant] = await Promise.all([
+                Product.findById(detail.product_id).lean(),
+                ProductVariant.findById(detail.variant_id).lean()
+              ]);
+
+              return {
+                ...detail,
+                product: product,
+                variant: variant
+              };
+            })
+          );
+
+          const [voucher, address] = await Promise.all([
+            order.voucher_id ? VoucherModel.findById(order.voucher_id).lean() : null,
+            AddressModel.findById(order.address_id).lean()
+          ]);
+
           return {
             ...order,
-            order_details: orderDetails
+            user: userExists,
+            voucher: voucher,
+            address: address,
+            order_details: orderDetailsWithInfo
           };
         })
       );
@@ -378,7 +578,6 @@ class OrderController {
    * @route   GET /api/orders/statistics
    * @access  Private
    */
-  //lọc đơn hàng
   async getOrderStatistics(req, res) {
     try {
       const { start_date, end_date } = req.query;
@@ -426,6 +625,32 @@ class OrderController {
         }
       ]);
 
+      // Thêm thống kê theo user
+      const topCustomers = await OrderModel.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: '$user_id',
+            total_orders: { $sum: 1 },
+            total_spent: { $sum: '$total_amount' },
+            average_order_value: { $avg: '$total_amount' }
+          }
+        },
+        { $sort: { total_spent: -1 } },
+        { $limit: 10 }
+      ]);
+
+      // Populate user info cho top customers
+      const topCustomersWithInfo = await Promise.all(
+        topCustomers.map(async (customer) => {
+          const user = await OrderController.populateUserInfo(customer._id);
+          return {
+            ...customer,
+            user: user
+          };
+        })
+      );
+
       res.status(200).json({
         success: true,
         message: 'Order statistics retrieved successfully',
@@ -437,7 +662,8 @@ class OrderController {
             total_quantity: 0
           },
           status_breakdown: statusBreakdown,
-          payment_method_breakdown: paymentMethodBreakdown
+          payment_method_breakdown: paymentMethodBreakdown,
+          top_customers: topCustomersWithInfo
         }
       });
     } catch (error) {
@@ -476,49 +702,57 @@ class OrderController {
 
       const sampleProducts = [
         {
-          variant_id: 'var_001',
+          product_id: new mongoose.Types.ObjectId(),
+          variant_id: new mongoose.Types.ObjectId(),
           name: 'iPhone 15 Pro Max 256GB',
           price: 29990000,
           image: 'https://example.com/images/iphone15promax.jpg'
         },
         {
-          variant_id: 'var_002',
+          product_id: new mongoose.Types.ObjectId(),
+          variant_id: new mongoose.Types.ObjectId(),
           name: 'Samsung Galaxy S24 Ultra 512GB',
           price: 31990000,
           image: 'https://example.com/images/galaxy-s24-ultra.jpg'
         },
         {
-          variant_id: 'var_003',
+          product_id: new mongoose.Types.ObjectId(),
+          variant_id: new mongoose.Types.ObjectId(),
           name: 'MacBook Pro 14" M3 Pro',
           price: 54990000,
           image: 'https://example.com/images/macbook-pro-14.jpg'
         },
         {
-          variant_id: 'var_004',
+          product_id: new mongoose.Types.ObjectId(),
+          variant_id: new mongoose.Types.ObjectId(),
           name: 'iPad Pro 12.9" M2 256GB',
           price: 26990000,
           image: 'https://example.com/images/ipad-pro-12.jpg'
         },
         {
-          variant_id: 'var_005',
+          product_id: new mongoose.Types.ObjectId(),
+          variant_id: new mongoose.Types.ObjectId(),
           name: 'AirPods Pro 2nd Gen',
           price: 6190000,
           image: 'https://example.com/images/airpods-pro-2.jpg'
         },
         {
-          variant_id: 'var_006',
+          product_id: new mongoose.Types.ObjectId(),
+          variant_id: new mongoose.Types.ObjectId(),
           name: 'Apple Watch Series 9 45mm',
           price: 10990000,
           image: 'https://example.com/images/apple-watch-s9.jpg'
         },
         {
-          variant_id: 'var_007',
+          product_id: new mongoose.Types.ObjectId(),
+          variant_id: new mongoose.Types.ObjectId(),
           name: 'Dell XPS 13 Plus',
           price: 35990000,
           image: 'https://example.com/images/dell-xps-13.jpg'
         },
         {
-          variant_id: 'var_008',
+          product_id: new mongoose.Types.ObjectId(),
+          variant_id: new mongoose.Types.ObjectId(),
           name: 'Sony WH-1000XM5',
           price: 8990000,
           image: 'https://example.com/images/sony-wh1000xm5.jpg'
@@ -527,7 +761,7 @@ class OrderController {
 
       const statuses = ['pending', 'preparing', 'shipping', 'delivered', 'canceled'];
       const paymentMethods = ['credit_card', 'debit_card', 'bank_transfer', 'e_wallet', 'cod'];
-      const discountCodes = ['SAVE10', 'WELCOME20', 'STUDENT15', null, null, null];
+      const voucherIds = ['voucher_001', 'voucher_002', 'voucher_003', null, null, null];
 
       const orders = [];
       const orderDetails = [];
@@ -536,7 +770,7 @@ class OrderController {
         const randomUser = sampleUsers[Math.floor(Math.random() * sampleUsers.length)];
         const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
         const randomPaymentMethod = paymentMethods[Math.floor(Math.random() * paymentMethods.length)];
-        const randomDiscountCode = discountCodes[Math.floor(Math.random() * discountCodes.length)];
+        const randomVoucherId = voucherIds[Math.floor(Math.random() * voucherIds.length)];
 
         const randomDate = new Date();
         randomDate.setDate(randomDate.getDate() - Math.floor(Math.random() * 90));
@@ -553,9 +787,11 @@ class OrderController {
 
           orderDetails.push({
             order_id: orderId,
+            product_id: randomProduct.product_id,
             variant_id: randomProduct.variant_id,
             name: randomProduct.name,
             price: randomProduct.price,
+            quantity: quantity,
             image: randomProduct.image
           });
 
@@ -563,8 +799,8 @@ class OrderController {
           totalQuantity += quantity;
         }
 
-        if (randomDiscountCode) {
-          const discountPercent = parseInt(randomDiscountCode.match(/\d+/)[0]);
+        if (randomVoucherId) {
+          const discountPercent = Math.floor(Math.random() * 20) + 5;
           totalAmount = totalAmount * (1 - discountPercent / 100);
         }
 
@@ -574,7 +810,7 @@ class OrderController {
           status: randomStatus,
           quantity: totalQuantity,
           total_amount: Math.round(totalAmount),
-          discount_code: randomDiscountCode,
+          voucher_id: randomVoucherId,
           payment_method: randomPaymentMethod,
           address_id: `addr_${String(Math.floor(Math.random() * 100) + 1).padStart(3, '0')}`,
           delivered_at: randomStatus === 'delivered' ? new Date(randomDate.getTime() + 86400000 * Math.floor(Math.random() * 7)) : null,

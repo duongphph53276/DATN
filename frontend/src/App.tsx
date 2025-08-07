@@ -42,6 +42,8 @@ import AddressManagement from './components/Client/Account/AddressManagement';
 import MyOrders from './components/Client/Account/MyOrders';
 import NewsPage from './components/Client/HomePage/pages/NewPage';
 import CategoryPage from './components/Client/HomePage/pages/CategoryPage';
+import PaymentReturn from './components/Client/Payment/PaymentReturn';
+import OrderDetailPage from './components/Client/Account/OrderDetailPage';
 
 const ProtectedRoute = ({ children, requiresAdmin = false }: { children: JSX.Element; requiresAdmin?: boolean }) => {
   const token = localStorage.getItem("token");
@@ -94,6 +96,9 @@ function App() {
         { path: "addresses", element: <ProtectedRoute><AddressManagement /></ProtectedRoute> },
         { path: "my-orders", element: <ProtectedRoute><MyOrders /></ProtectedRoute> },
         { path: "goc-cua-gau", element: <NewsPage /> },
+        { path: "payment-return", element: <ProtectedRoute><PaymentReturn /></ProtectedRoute> },
+        { path: "order-detail/:id", element: <OrderDetailPage /> },
+
       ],
     },
     {

@@ -3,13 +3,14 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/db.js';
-import { CreateVoucher, ListVoucher, UpdateVoucher, DeleteVoucher, GetVoucherById } from './controllers/voucher.js';
+import { CreateVoucher, ListVoucher, UpdateVoucher, DeleteVoucher, ApplyVoucher, GetVoucherById } from './controllers/voucher.js';
 import { AddCategory, DeleteCategory, EditCategory, GetCategoryById, ListCategory } from './controllers/category.js';
 import { createProduct, deleteProduct, getAllProducts, getProductById, updateProduct } from './controllers/product.js';
 import { createAttribute, getAttributeById, deleteAttribute, getAllAttributes, updateAttribute } from "./controllers/attribute.js";
 import { createAttributeValue, deleteAttributeValue, getAttributeValueById, getAttributeValues, updateAttributeValue } from './controllers/attributeValue.js';
 import { createVariant, deleteVariant, getVariantById, getVariantsByProduct, updateVariant } from './controllers/productVariant.js';
 import orderRoutes from './routes/order.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
 import { checkEmail, login, Profile, register, UpdateProfile, verifyEmail } from './controllers/auth.js';
 import { getUserAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from './controllers/address/address.js';
 import { authMiddleware, restrictTo } from './middleware/auth.js';
@@ -21,6 +22,8 @@ import upload from './middleware/upload.js';
 import { createPermission, deletePermission, getPermissionById, getPermissions, updatePermission } from './controllers/user/permission.js';
 import { createDefaultPermissions } from './data/permissions.js';
 import { createDefaultRoles } from './data/roles.js';
+import { initializeSocket } from './socket/socket.js';
+import notificationRoutes from './routes/notification.routes.js';
 
 import { AddToCart, ClearCart, GetCartByUser, RemoveFromCart } from './controllers/cart.js';
 import { createReview, deleteReview, getAllReviews, getReviewById, getUserReviewByProduct, updateReview } from './controllers/reviews.js';
@@ -31,12 +34,15 @@ import { createReview, deleteReview, getAllReviews, getReviewById, getUserReview
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-app.use(cors());
+app.use(cors({
+  origin: '*', 
+  credentials: true
+}));
 app.use(express.json());
 
 // Public routes
@@ -79,6 +85,7 @@ app.delete('/permissions/:id', deletePermission);
 
 app.get('/vouchers', ListVoucher);
 app.post('/vouchers', CreateVoucher);
+app.post('/vouchers/apply', ApplyVoucher);
 app.put('/vouchers/:id', UpdateVoucher);
 app.delete('/vouchers/:id', DeleteVoucher);
 app.get('/vouchers/:id', GetVoucherById); // ✅ Đúng: dùng controller của voucher
@@ -113,8 +120,11 @@ app.get("/product/:productId/variants", getVariantsByProduct);
 app.delete('/variant/:id', deleteVariant);
 app.put('/variant/edit/:id', updateVariant);
 // oder
-app.use('/api/orders', orderRoutes);
-
+app.use('/orders', orderRoutes);
+//payment
+app.use('/payment', paymentRoutes);
+//notification
+app.use('/notifications', notificationRoutes);
 app.get('/cart/:userId', GetCartByUser);          
 app.post('/cart/add', AddToCart);                  
 app.put('/cart/remove', RemoveFromCart);           
@@ -165,9 +175,13 @@ const startServer = async () => {
   // Tạo roles mặc định và gán permissions
   await createDefaultRoles();
   
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
   });
+  
+  // Khởi tạo Socket.IO
+  initializeSocket(server);
+  console.log('Socket.IO initialized');
 };
 
 startServer();

@@ -1,67 +1,46 @@
 import React, { useEffect, useState } from 'react';
-import { FaClipboardList, FaClock, FaCheckCircle, FaTimesCircle, FaTruck } from 'react-icons/fa';
-
-interface Order {
-  _id: string;
-  orderNumber: string;
-  status: string;
-  totalAmount: number;
-  createdAt: string;
-  items: Array<{
-    product: {
-      name: string;
-      image: string;
-    };
-    quantity: number;
-    price: number;
-  }>;
-}
+import { FaClipboardList, FaClock, FaCheckCircle, FaTimesCircle, FaTruck, FaFilter, FaSearch, FaHeart } from 'react-icons/fa';
+import { useAppDispatch } from '../../../hooks/useAppDispatch';
+import { useAppSelector } from '../../../hooks/useAppSelector';
+import { getOrderClient } from '../../../store/slices/orderSlice';
+import { GetOrderParams } from '../../../interfaces/orderApi';
+import { Link } from 'react-router-dom';
+import { formatVNDSymbol } from '../../../utils/currency';
 
 const MyOrders: React.FC = () => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
+  const { client, status } = useAppSelector((state) => state.order);
+  const dispatch = useAppDispatch();
+
+  const itemsPerPage = 6;
   useEffect(() => {
-    const fetchOrders = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Bạn cần đăng nhập để xem đơn hàng');
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch('http://localhost:5000/orders/my-orders', {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        const data = await response.json();
-        if (data.status) {
-          setOrders(data.data);
-        } else {
-          setError(data.message || 'Không thể tải đơn hàng');
-        }
-      } catch (err) {
-        setError('Lỗi khi tải đơn hàng');
-      } finally {
-        setLoading(false);
-      }
+    const params: GetOrderParams = {
+      page: currentPage,
+      limit: itemsPerPage,
+      status: statusFilter || undefined,
+      payment_method: paymentFilter || undefined,
+      sort_by: 'created_at',
+      sort_order: 'desc'
     };
 
-    fetchOrders();
-  }, []);
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      dispatch(getOrderClient({ id: user.id, params }));
+    }
+  }, [dispatch, currentPage, statusFilter, paymentFilter]);
 
-  const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
+  const getStatusIcon = (orderStatus: string) => {
+    switch (orderStatus.toLowerCase()) {
       case 'pending':
-        return <FaClock className="text-yellow-500" />;
-      case 'confirmed':
+        return <FaClock className="text-amber-500" />;
+      case 'processing':
         return <FaCheckCircle className="text-blue-500" />;
-      case 'shipped':
+      case 'shipping':
         return <FaTruck className="text-purple-500" />;
       case 'delivered':
         return <FaCheckCircle className="text-green-500" />;
@@ -72,37 +51,48 @@ const MyOrders: React.FC = () => {
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status.toLowerCase()) {
+  const getStatusText = (orderStatus: string) => {
+    switch (orderStatus.toLowerCase()) {
       case 'pending':
-        return 'Chờ xác nhận';
-      case 'confirmed':
-        return 'Đã xác nhận';
-      case 'shipped':
+        return 'Chờ xử lý';
+      case 'processing':
+        return 'Đang xử lý';
+      case 'shipping':
         return 'Đang giao hàng';
       case 'delivered':
         return 'Đã giao hàng';
       case 'cancelled':
         return 'Đã hủy';
       default:
-        return status;
+        return orderStatus;
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+  const getStatusColor = (orderStatus: string) => {
+    switch (orderStatus.toLowerCase()) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'confirmed':
-        return 'bg-blue-100 text-blue-800';
-      case 'shipped':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'processing':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'shipping':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'delivered':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 border-green-200';
       case 'cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 border-red-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getPaymentMethodText = (method: string) => {
+    switch (method.toLowerCase()) {
+      case 'VNPAY':
+        return 'Thanh toán bằng VNPAY';
+      case 'COD':
+        return 'Thanh toán khi nhận hàng';
+      default:
+        return method;
     }
   };
 
@@ -116,99 +106,269 @@ const MyOrders: React.FC = () => {
     });
   };
 
-  if (loading) {
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const resetFilters = () => {
+    setStatusFilter('');
+    setPaymentFilter('');
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
+
+  const filteredOrders = client?.orders?.filter(order => {
+    if (!order._id) return false;
+    
+    const matchesSearch = searchTerm == '' ||
+      order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.order_details && order.order_details.some(detail =>
+        detail.name && detail.name.toLowerCase().includes(searchTerm.toLowerCase())
+      ));
+    return matchesSearch;
+  }) || [];
+
+  if (status === 'loading') {
     return (
-      <div className="max-w-4xl mx-auto mt-14 px-4">
-        <div className="text-center py-10 text-gray-500 text-lg">Đang tải đơn hàng...</div>
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
+        <div className="max-w-6xl mx-auto pt-20 px-4">
+          <div className="text-center py-20">
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-pink-300 border-t-pink-500 mb-4"></div>
+            <div className="text-xl text-pink-600 font-medium">Đang tải đơn hàng của bạn... 🐻</div>
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (error) {
+  if (status === 'failed') {
     return (
-      <div className="max-w-4xl mx-auto mt-14 px-4">
-        <div className="text-center py-10 text-red-500 text-lg">{error}</div>
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
+        <div className="max-w-6xl mx-auto pt-20 px-4">
+          <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
+            <div className="text-6xl mb-4">😢</div>
+            <div className="text-xl text-red-500 font-medium">Không thể tải đơn hàng. Vui lòng thử lại!</div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto mt-14 px-4">
-      <div className="bg-white shadow-2xl rounded-3xl p-8">
-        <div className="flex items-center gap-3 mb-8">
-          <FaClipboardList className="text-2xl text-rose-500" />
-          <h1 className="text-3xl font-bold text-gray-800">Đơn hàng của tôi</h1>
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
+      <div className="max-w-6xl mx-auto pt-20 px-4 pb-10">
+        <div className="bg-white shadow-2xl rounded-3xl p-8 mb-8">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="bg-pink-100 p-3 rounded-2xl">
+              <FaClipboardList className="text-2xl text-pink-500" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">Đơn hàng của tôi</h1>
+              <p className="text-gray-600 mt-1">Theo dõi tất cả đơn hàng gấu bông yêu thích 🐻💕</p>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <FaFilter className="text-pink-500" />
+              <h3 className="font-semibold text-gray-800">Bộ lọc</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="relative">
+                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm đơn hàng..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-300 focus:border-transparent outline-none"
+                />
+              </div>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-4 py-2 border border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-300 focus:border-transparent outline-none bg-white"
+              >
+                <option value="">Tất cả trạng thái</option>
+                <option value="pending">Chờ xử lý</option>
+                <option value="processing">Đang xử lý</option>
+                <option value="shipping">Đang giao hàng</option>
+                <option value="delivered">Đã giao hàng</option>
+                <option value="cancelled">Đã hủy</option>
+              </select>
+
+              <select
+                value={paymentFilter}
+                onChange={(e) => setPaymentFilter(e.target.value)}
+                className="w-full px-4 py-2 border border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-300 focus:border-transparent outline-none bg-white"
+              >
+                <option value="">Tất cả thanh toán</option>
+                <option value="VNPAY">Thanh toán qua VNPAY</option>
+                <option value="COD">Thanh toán khi nhận hàng</option>
+              </select>
+
+              <button
+                onClick={resetFilters}
+                className="px-6 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-xl font-medium transition-all duration-200 transform hover:scale-105"
+              >
+                Đặt lại
+              </button>
+            </div>
+          </div>
         </div>
 
-        {orders.length === 0 ? (
-          <div className="text-center py-16">
-            <FaClipboardList className="text-6xl text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">Chưa có đơn hàng nào</h3>
-            <p className="text-gray-500 mb-6">Bạn chưa có đơn hàng nào. Hãy mua sắm để tạo đơn hàng đầu tiên!</p>
+        {!filteredOrders || filteredOrders.length === 0 ? (
+          <div className="bg-white shadow-2xl rounded-3xl p-12 text-center">
+            <div className="text-8xl mb-6">🐻</div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-3">Chưa có đơn hàng nào</h3>
+            <p className="text-gray-600 mb-8 text-lg">Hãy mua những chú gấu bông dễ thương để tạo đơn hàng đầu tiên!</p>
             <button
               onClick={() => window.location.href = '/'}
-              className="bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-full font-medium transition-colors duration-200"
+              className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
             >
-              Mua sắm ngay
+              Mua sắm ngay 🛍️
             </button>
           </div>
         ) : (
           <div className="space-y-6">
-            {orders.map((order) => (
-              <div key={order._id} className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow duration-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-gray-600">Đơn hàng:</span>
-                    <span className="text-lg font-semibold text-gray-800">{order.orderNumber}</span>
+            {filteredOrders.map((order) => (
+              <div key={order._id} className="bg-white shadow-xl rounded-3xl p-8 hover:shadow-2xl transition-all duration-300 border border-pink-100">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-pink-100 p-3 rounded-2xl">
+                      <FaHeart className="text-pink-500" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-600">Mã đơn hàng:</span>
+                        <Link to={`/order-detail/${order._id}`} className="text-lg font-bold text-gray-800">#{order._id ? order._id.slice(-6).toUpperCase() : 'N/A'}</Link>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">{formatDate(order.created_at)}</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
+
+                  <div className="flex items-center gap-3">
                     {getStatusIcon(order.status)}
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                    <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(order.status)}`}>
                       {getStatusText(order.status)}
                     </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <span className="text-sm text-gray-600">Ngày đặt:</span>
-                    <p className="font-medium">{formatDate(order.createdAt)}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-600">Tổng tiền:</span>
-                    <p className="font-semibold text-lg text-rose-600">
-                      {order.totalAmount.toLocaleString('vi-VN')} ₫
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 rounded-2xl">
+                    <span className="text-sm text-gray-600 block mb-1">Tổng tiền:</span>
+                    <p className="font-bold text-xl text-pink-600">
+                      {formatVNDSymbol(order.total_amount)}
                     </p>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl">
+                    <span className="text-sm text-gray-600 block mb-1">Số lượng:</span>
+                    <p className="font-bold text-xl text-blue-600">{order.quantity} sản phẩm</p>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-2xl">
+                    <span className="text-sm text-gray-600 block mb-1">Thanh toán:</span>
+                    <p className="font-bold text-green-600">{getPaymentMethodText(order.payment_method)}</p>
                   </div>
                 </div>
 
-                <div className="border-t border-gray-100 pt-4">
-                  <h4 className="font-medium text-gray-800 mb-3">Sản phẩm:</h4>
-                  <div className="space-y-3">
-                    {order.items.map((item, index) => (
-                      <div key={index} className="flex items-center gap-3">
+                <div className="border-t border-pink-100 pt-6">
+                  <h4 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <span>Sản phẩm trong đơn hàng:</span>
+                    <span className="text-pink-500">🐻</span>
+                  </h4>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {order.order_details.map((item, index) => (
+                      <div key={index} className="flex items-center gap-4 bg-gradient-to-r from-pink-50 to-purple-50 p-4 rounded-2xl">
                         <img
-                          src={item.product.image}
-                          alt={item.product.name}
-                          className="w-12 h-12 rounded-lg object-cover"
+                          src={item.image || '/placeholder-bear.jpg'}
+                          alt={item.name}
+                          className="w-16 h-16 rounded-2xl object-cover shadow-md"
                         />
                         <div className="flex-1">
-                          <p className="font-medium text-gray-800">{item.product.name}</p>
-                          <p className="text-sm text-gray-600">
-                            Số lượng: {item.quantity} x {item.price.toLocaleString('vi-VN')} ₫
+                          <p className="font-bold text-gray-800 mb-1">{item.name}</p>
+                          <p className="text-sm text-gray-600 mb-1">
+                            Giá: {formatVNDSymbol(item.price)}
                           </p>
+                          {item.variant_id && (
+                            <p className="text-xs text-purple-600">Phiên bản: {item.variant_id ? item.variant_id.slice(-4) : 'N/A'}</p>
+                          )}
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-gray-800">
-                            {(item.quantity * item.price).toLocaleString('vi-VN')} ₫
+                          <p className="font-bold text-lg text-pink-600">
+                            {formatVNDSymbol(item.price)}
                           </p>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
+
+                {order.delivered_at && (
+                  <div className="mt-6 bg-green-50 border border-green-200 rounded-2xl p-4">
+                    <div className="flex items-center gap-2 text-green-700">
+                      <FaCheckCircle />
+                      <span className="font-semibold">Đã giao hàng thành công</span>
+                    </div>
+                    <p className="text-sm text-green-600 mt-1">
+                      Thời gian giao: {formatDate(order.delivered_at)}
+                    </p>
+                  </div>
+                )}
               </div>
             ))}
+          </div>
+        )}
+
+        {client?.pagination && client.pagination.total_pages > 1 && (
+          <div className="bg-white shadow-xl rounded-3xl p-6 mt-8">
+            <div className="flex items-center justify-between">
+              <div className="text-gray-600">
+                Trang {client.pagination.current_page} / {client.pagination.total_pages}
+                <span className="ml-2">({client.pagination.total_orders} đơn hàng)</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handlePageChange(client.pagination.current_page - 1)}
+                  disabled={!client.pagination.has_prev}
+                  className="px-4 py-2 bg-pink-100 text-pink-600 rounded-xl hover:bg-pink-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-medium"
+                >
+                  Trước
+                </button>
+
+                {Array.from({ length: Math.min(5, client.pagination.total_pages) }, (_, i) => {
+                  const page = Math.max(1, client.pagination.current_page - 2) + i;
+                  if (page > client.pagination.total_pages) return null;
+
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`px-4 py-2 rounded-xl font-medium transition-colors duration-200 ${page === client.pagination.current_page
+                        ? 'bg-pink-500 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-600 hover:bg-pink-100 hover:text-pink-600'
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => handlePageChange(client.pagination.current_page + 1)}
+                  disabled={!client.pagination.has_next}
+                  className="px-4 py-2 bg-pink-100 text-pink-600 rounded-xl hover:bg-pink-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-medium"
+                >
+                  Sau
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -216,4 +376,4 @@ const MyOrders: React.FC = () => {
   );
 };
 
-export default MyOrders; 
+export default MyOrders;
