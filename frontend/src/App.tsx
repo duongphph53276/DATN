@@ -15,6 +15,7 @@ import AttributeList from './components/Admin/attribute/ListAttribute';
 import EditAttribute from './components/Admin/attribute/EditAttribute';
 import ProductDetailAdmin from './components/Admin/product/ProductDetailAdmin';
 import AdminLayout from './layout/Admin/Admin.layout';
+import ProtectedRoute from './components/Admin/ProtectedRoute';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import ForgotPassword from './components/Auth/ForgotPassword';
@@ -45,7 +46,7 @@ import CategoryPage from './components/Client/HomePage/pages/CategoryPage';
 import PaymentReturn from './components/Client/Payment/PaymentReturn';
 import OrderDetailPage from './components/Client/Account/OrderDetailPage';
 
-const ProtectedRoute = ({ children, requiresAdmin = false }: { children: JSX.Element; requiresAdmin?: boolean }) => {
+const SimpleProtectedRoute = ({ children, requiresAdmin = false }: { children: JSX.Element; requiresAdmin?: boolean }) => {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
 
@@ -87,47 +88,47 @@ function App() {
         { path: "", element: <Home /> },
         { path: "category/:slug", element: <CategoryPage /> },
         { path: "product/:id", element: <DetailsPage /> },
-        { path: "cart", element: <ProtectedRoute><Cart /></ProtectedRoute> },
-        { path: "checkout", element: <ProtectedRoute><Checkout /></ProtectedRoute> },
+        { path: "cart", element: <SimpleProtectedRoute><Cart /></SimpleProtectedRoute> },
+        { path: "checkout", element: <SimpleProtectedRoute><Checkout /></SimpleProtectedRoute> },
         { path: "all-products", element: <AllProducts /> },
-        { path: "profile", element: <ProtectedRoute><Profile /></ProtectedRoute> },
-        { path: "profile/edit", element: <ProtectedRoute><UpdateProfile /></ProtectedRoute> },
-        { path: "profile/change-password", element: <ProtectedRoute><ChangePassword /></ProtectedRoute> },
-        { path: "addresses", element: <ProtectedRoute><AddressManagement /></ProtectedRoute> },
-        { path: "my-orders", element: <ProtectedRoute><MyOrders /></ProtectedRoute> },
+        { path: "profile", element: <SimpleProtectedRoute><Profile /></SimpleProtectedRoute> },
+        { path: "profile/edit", element: <SimpleProtectedRoute><UpdateProfile /></SimpleProtectedRoute> },
+        { path: "profile/change-password", element: <SimpleProtectedRoute><ChangePassword /></SimpleProtectedRoute> },
+        { path: "addresses", element: <SimpleProtectedRoute><AddressManagement /></SimpleProtectedRoute> },
+        { path: "my-orders", element: <SimpleProtectedRoute><MyOrders /></SimpleProtectedRoute> },
         { path: "goc-cua-gau", element: <NewsPage /> },
-        { path: "payment-return", element: <ProtectedRoute><PaymentReturn /></ProtectedRoute> },
+        { path: "payment-return", element: <SimpleProtectedRoute><PaymentReturn /></SimpleProtectedRoute> },
         { path: "order-detail/:id", element: <OrderDetailPage /> },
 
       ],
     },
     {
       path: "/admin",
-      element: <ProtectedRoute requiresAdmin={true}><AdminLayout /></ProtectedRoute>,
+      element: <SimpleProtectedRoute requiresAdmin={true}><AdminLayout /></SimpleProtectedRoute>,
       children: [
         { path: "", element: <Dashboard /> },
-        { path: "category", element: <ListCategory /> },
-        { path: "category/add", element: <AddCategory /> },
-        { path: "category/edit/:id", element: <EditCategory /> },
-        { path: "product", element: <ProductList /> },
-        { path: "product/add", element: <AddProduct /> },
-        { path: "product/edit/:id", element: <EditProduct /> },
-        { path: "product/:id", element: <ProductDetailAdmin /> },
-        { path: "attribute", element: <AttributeList /> },
-        { path: "attribute/add", element: <AddAttribute /> },
-        { path: "attribute/edit/:id", element: <EditAttribute /> },
-        { path: "voucher", element: <ListVoucher /> },
-        { path: "voucher/add", element: <AddVoucher /> },
-        { path: "voucher/edit/:id", element: <EditVoucher /> },
-        { path: "users", element: <ListUser /> },
-        { path: "users/:id", element: <UserDetail /> },
-        { path: "users/edit/:id", element: <EditUser /> },
-        { path: "roles", element: <ListRole /> },
-        { path: "roles/create", element: <AddRole /> },
-        { path: "roles/edit/:id", element: <EditRole /> },
-        { path: "permissions", element: <PermissionManagement /> },
-        { path: "order-list", element: <ListOrderModule /> },
-        { path: "order-detail/:id", element: <OrderDetail /> },
+        { path: "category", element: <ProtectedRoute requiredPermission="view_categories"><ListCategory /></ProtectedRoute> },
+        { path: "category/add", element: <ProtectedRoute requiredPermission="create_category"><AddCategory /></ProtectedRoute> },
+        { path: "category/edit/:id", element: <ProtectedRoute requiredPermission="edit_category"><EditCategory /></ProtectedRoute> },
+        { path: "product", element: <ProtectedRoute requiredPermission="view_products"><ProductList /></ProtectedRoute> },
+        { path: "product/add", element: <ProtectedRoute requiredPermission="create_product"><AddProduct /></ProtectedRoute> },
+        { path: "product/edit/:id", element: <ProtectedRoute requiredPermission="edit_product"><EditProduct /></ProtectedRoute> },
+        { path: "product/:id", element: <ProtectedRoute requiredPermission="view_products"><ProductDetailAdmin /></ProtectedRoute> },
+        { path: "attribute", element: <ProtectedRoute requiredPermission="view_attributes"><AttributeList /></ProtectedRoute> },
+        { path: "attribute/add", element: <ProtectedRoute requiredPermission="create_attribute"><AddAttribute /></ProtectedRoute> },
+        { path: "attribute/edit/:id", element: <ProtectedRoute requiredPermission="edit_attribute"><EditAttribute /></ProtectedRoute> },
+        { path: "voucher", element: <ProtectedRoute requiredPermission="view_vouchers"><ListVoucher /></ProtectedRoute> },
+        { path: "voucher/add", element: <ProtectedRoute requiredPermission="create_voucher"><AddVoucher /></ProtectedRoute> },
+        { path: "voucher/edit/:id", element: <ProtectedRoute requiredPermission="edit_voucher"><EditVoucher /></ProtectedRoute> },
+        { path: "users", element: <ProtectedRoute requiredPermission="view_users"><ListUser /></ProtectedRoute> },
+        { path: "users/:id", element: <ProtectedRoute requiredPermission="view_users"><UserDetail /></ProtectedRoute> },
+        { path: "users/edit/:id", element: <ProtectedRoute requiredPermission="edit_user"><EditUser /></ProtectedRoute> },
+        { path: "roles", element: <ProtectedRoute requiredPermission="view_roles"><ListRole /></ProtectedRoute> },
+        { path: "roles/create", element: <ProtectedRoute requiredPermission="create_role"><AddRole /></ProtectedRoute> },
+        { path: "roles/edit/:id", element: <ProtectedRoute requiredPermission="edit_role"><EditRole /></ProtectedRoute> },
+        { path: "permissions", element: <ProtectedRoute requiredPermission="view_permissions"><PermissionManagement /></ProtectedRoute> },
+        { path: "order-list", element: <ProtectedRoute requiredPermission="view_orders"><ListOrderModule /></ProtectedRoute> },
+        { path: "order-detail/:id", element: <ProtectedRoute requiredPermission="view_orders"><OrderDetail /></ProtectedRoute> },
       ],
     },
     { path: "*", element: <NotFound /> },

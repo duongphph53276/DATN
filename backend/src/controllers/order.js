@@ -676,6 +676,65 @@ class OrderController {
   }
 
   /**
+   * @desc    Get monthly revenue
+   * @route   GET /api/orders/monthly-revenue
+   * @access  Private
+   */
+  async getMonthlyRevenue(req, res) {
+    try {
+      const { year = new Date().getFullYear() } = req.query;
+      
+      const monthlyStats = await OrderModel.aggregate([
+        {
+          $match: {
+            created_at: {
+              $gte: new Date(year, 0, 1),
+              $lt: new Date(parseInt(year) + 1, 0, 1)
+            },
+            status: { $in: ['completed', 'delivered'] }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              year: { $year: '$created_at' },
+              month: { $month: '$created_at' }
+            },
+            revenue: { $sum: '$total_amount' },
+            orders: { $sum: 1 }
+          }
+        },
+        {
+          $sort: { '_id.month': 1 }
+        }
+      ]);
+
+      // Create array with all 12 months
+      const monthNames = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
+      const result = monthNames.map((month, index) => {
+        const monthData = monthlyStats.find(stat => stat._id.month === index + 1);
+        return {
+          month,
+          revenue: monthData ? monthData.revenue : 0,
+          orders: monthData ? monthData.orders : 0
+        };
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Monthly revenue retrieved successfully',
+        data: result
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+      });
+    }
+  }
+
+  /**
    * @desc    Seed fake data for testing
    * @route   POST /api/orders/seed
    * @access  Private (Development only)
@@ -846,4 +905,5 @@ class OrderController {
   }
 }
 
-export default new OrderController();
+const orderController = new OrderController();
+export default orderController;

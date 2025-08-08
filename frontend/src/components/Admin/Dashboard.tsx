@@ -1,4 +1,4 @@
-import React from "react";
+import { useState, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -7,13 +7,12 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  BarChart,
-  Bar,
   PieChart,
   Pie,
   Cell
 } from "recharts";
 import { usePermissions } from '../../hooks/usePermissions';
+import { getDashboardData, DashboardStats } from '../../services/api/dashboard';
 import { 
   Shield, 
   User, 
@@ -24,35 +23,32 @@ import {
   Package,
   DollarSign,
   Activity,
-  ArrowUpRight,
-  ArrowDownRight
+  Loader2
 } from 'lucide-react';
-
-const revenueData = [
-  { month: "T1", revenue: 5000000, orders: 45 },
-  { month: "T2", revenue: 7200000, orders: 52 },
-  { month: "T3", revenue: 6100000, orders: 38 },
-  { month: "T4", revenue: 8900000, orders: 67 },
-  { month: "T5", revenue: 7600000, orders: 58 },
-  { month: "T6", revenue: 9200000, orders: 72 },
-];
-
-const categoryData = [
-  { name: 'Gấu bông', value: 35, color: '#3B82F6' },
-  { name: 'Thú nhồi bông', value: 25, color: '#10B981' },
-  { name: 'Đồ chơi', value: 20, color: '#F59E0B' },
-  { name: 'Khác', value: 20, color: '#EF4444' },
-];
-
-const recentOrders = [
-  { id: '#ORD001', customer: 'Nguyễn Văn A', amount: 250000, status: 'completed' },
-  { id: '#ORD002', customer: 'Trần Thị B', amount: 180000, status: 'pending' },
-  { id: '#ORD003', customer: 'Lê Văn C', amount: 320000, status: 'processing' },
-  { id: '#ORD004', customer: 'Phạm Thị D', amount: 150000, status: 'completed' },
-];
 
 const Dashboard = () => {
   const { userInfo, userPermissions, loading } = usePermissions();
+  const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await getDashboardData();
+        setDashboardData(data);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError('Không thể tải dữ liệu dashboard');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -79,6 +75,44 @@ const Dashboard = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Đang tải dữ liệu dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Activity className="w-8 h-8 text-red-600" />
+          </div>
+          <p className="text-red-600 font-medium">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-gray-600">Không có dữ liệu</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -101,10 +135,10 @@ const Dashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Tổng đơn hàng</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">1,234</p>
-              <div className="flex items-center mt-2 text-green-600">
-                <ArrowUpRight className="w-4 h-4 mr-1" />
-                <span className="text-sm font-medium">+12.5%</span>
+              <p className="text-3xl font-bold text-gray-900 mt-2">{dashboardData.totalOrders.toLocaleString('vi-VN')}</p>
+              <div className="flex items-center mt-2 text-blue-600">
+                <Activity className="w-4 h-4 mr-1" />
+                <span className="text-sm font-medium">Tổng số đơn hàng</span>
               </div>
             </div>
             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -117,10 +151,10 @@ const Dashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Doanh thu</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">₫35.2M</p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">{formatCurrency(dashboardData.totalRevenue)}</p>
               <div className="flex items-center mt-2 text-green-600">
-                <ArrowUpRight className="w-4 h-4 mr-1" />
-                <span className="text-sm font-medium">+8.2%</span>
+                <TrendingUp className="w-4 h-4 mr-1" />
+                <span className="text-sm font-medium">Tổng doanh thu</span>
               </div>
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
@@ -133,10 +167,10 @@ const Dashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Khách hàng</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">2,847</p>
-              <div className="flex items-center mt-2 text-green-600">
-                <ArrowUpRight className="w-4 h-4 mr-1" />
-                <span className="text-sm font-medium">+15.3%</span>
+              <p className="text-3xl font-bold text-gray-900 mt-2">{dashboardData.totalUsers.toLocaleString('vi-VN')}</p>
+              <div className="flex items-center mt-2 text-purple-600">
+                <Users className="w-4 h-4 mr-1" />
+                <span className="text-sm font-medium">Tổng khách hàng</span>
               </div>
             </div>
             <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
@@ -149,10 +183,10 @@ const Dashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Sản phẩm</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">156</p>
-              <div className="flex items-center mt-2 text-red-600">
-                <ArrowDownRight className="w-4 h-4 mr-1" />
-                <span className="text-sm font-medium">-2.1%</span>
+              <p className="text-3xl font-bold text-gray-900 mt-2">{dashboardData.totalProducts.toLocaleString('vi-VN')}</p>
+              <div className="flex items-center mt-2 text-orange-600">
+                <Package className="w-4 h-4 mr-1" />
+                <span className="text-sm font-medium">Tổng sản phẩm</span>
               </div>
             </div>
             <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
@@ -171,7 +205,7 @@ const Dashboard = () => {
             <TrendingUp className="w-5 h-5 text-blue-600" />
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={revenueData}>
+            <LineChart data={dashboardData.monthlyRevenue}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
               <YAxis stroke="#6b7280" fontSize={12} />
@@ -200,7 +234,7 @@ const Dashboard = () => {
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={categoryData}
+                data={dashboardData.categoryDistribution}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
@@ -208,7 +242,7 @@ const Dashboard = () => {
                 paddingAngle={5}
                 dataKey="value"
               >
-                {categoryData.map((entry, index) => (
+                {dashboardData.categoryDistribution.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
@@ -216,7 +250,7 @@ const Dashboard = () => {
             </PieChart>
           </ResponsiveContainer>
           <div className="grid grid-cols-2 gap-4 mt-4">
-            {categoryData.map((item, index) => (
+            {dashboardData.categoryDistribution.map((item, index) => (
               <div key={index} className="flex items-center space-x-2">
                 <div 
                   className="w-3 h-3 rounded-full" 
@@ -240,25 +274,32 @@ const Dashboard = () => {
             </button>
           </div>
           <div className="space-y-4">
-            {recentOrders.map((order, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-xl">
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <ShoppingCart className="w-5 h-5 text-blue-600" />
+            {dashboardData.recentOrders.length > 0 ? (
+              dashboardData.recentOrders.map((order, index) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-xl">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <ShoppingCart className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">#{order._id.slice(-8)}</p>
+                      <p className="text-sm text-gray-600">{order.user?.name || 'Khách hàng'}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{order.id}</p>
-                    <p className="text-sm text-gray-600">{order.customer}</p>
+                  <div className="text-right">
+                    <p className="font-semibold text-gray-900">{formatCurrency(order.total_amount)}</p>
+                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                      {getStatusText(order.status)}
+                    </span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-gray-900">{formatCurrency(order.amount)}</p>
-                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                    {getStatusText(order.status)}
-                  </span>
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>Chưa có đơn hàng nào</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
