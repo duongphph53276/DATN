@@ -24,14 +24,14 @@
     "moment": "^2.30.1",
     "mongoose": "^8.13.2",
     "multer": "^2.0.2",
-    "qs": "^6.14.0",
     "nodemailer": "^7.0.5",
+    "qs": "^6.14.0",
     "react-router-dom": "^7.6.3",
     "react-toastify": "^11.0.5",
     "recharts": "^3.1.0",
     "slugify": "^1.6.6",
-    "yup": "^1.6.1",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "yup": "^1.7.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

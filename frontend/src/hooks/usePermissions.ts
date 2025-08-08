@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../middleware/axios';
 
 interface Permission {
   _id: string;
@@ -40,11 +40,7 @@ export const usePermissions = () => {
         return;
       }
 
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/user/permissions`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const response = await api.get('/user/permissions');
 
       const data: UserWithPermissions = response.data;
       setUserPermissions(data.permissions);
