@@ -28,6 +28,8 @@ const Checkout: React.FC = () => {
   const [discountSuccess, setDiscountSuccess] = useState<string | null>(null);
   const { userInfo } = usePermissions();
   const dispatch = useAppDispatch();
+
+
   useEffect(() => {
     const stored = localStorage.getItem('cart');
     if (stored) {
@@ -255,8 +257,8 @@ const Checkout: React.FC = () => {
           user_id: userInfo._id,
           address_id: addressId,
           order_details: cartItems.map((item) => ({
-            product_id: item.variant?.product_id,
-            variant_id: item.variant?._id || null,
+            product_id: item.variant?.product_id || item.id,
+            variant_id: item.variant?._id || item.id,
             name: item.name,
             price: item.variant?.price || item.price,
             quantity: item.quantity,
@@ -265,9 +267,10 @@ const Checkout: React.FC = () => {
           total_amount: finalTotal,
           payment_method: paymentMethod,
           voucher_id: appliedDiscount?._id || null,
-          status: 'pending',
           quantity: cartItems.reduce((total, item) => total + item.quantity, 0),
         };
+
+        console.log('Sending order data:', orderData);
         if (orderData) {
           dispatch(createOrder(orderData));
         }

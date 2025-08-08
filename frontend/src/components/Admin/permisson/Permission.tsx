@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../middleware/axios';
 
 interface Role {
   _id: string;
@@ -43,7 +43,7 @@ const PermissionManagement: React.FC = () => {
 
   const fetchPermissions = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/permissions');
+      const response = await api.get('/permissions');
       setPermissions(response.data);
     } catch (error) {
       console.error('Error fetching permissions:', error);
@@ -52,7 +52,7 @@ const PermissionManagement: React.FC = () => {
 
   const fetchRoles = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/roles');
+      const response = await api.get('/roles');
       setRoles(response.data);
     } catch (error) {
       console.error('Error fetching roles:', error);
@@ -61,7 +61,7 @@ const PermissionManagement: React.FC = () => {
 
   const fetchRolePermissions = async (roleId: string) => {
     try {
-      const response = await axios.get(`http://localhost:5000/roles/${roleId}/permissions`);
+      const response = await api.get(`/roles/${roleId}/permissions`);
       setRolePermissions(response.data);
     } catch (error) {
       console.error('Error fetching role permissions:', error);
@@ -70,7 +70,7 @@ const PermissionManagement: React.FC = () => {
 
   const fetchAvailablePermissions = async (roleId: string) => {
     try {
-      const response = await axios.get(`http://localhost:5000/roles/${roleId}/available-permissions`);
+      const response = await api.get(`/roles/${roleId}/available-permissions`);
       setAvailablePermissions(response.data);
     } catch (error) {
       console.error('Error fetching available permissions:', error);
@@ -82,9 +82,9 @@ const PermissionManagement: React.FC = () => {
     const data = { name, description };
     try {
       if (editingId) {
-        await axios.put(`http://localhost:5000/permissions/${editingId}`, data);
+        await api.put(`/permissions/${editingId}`, data);
       } else {
-        await axios.post('http://localhost:5000/permissions/create', data);
+        await api.post('/permissions/create', data);
       }
       setName('');
       setDescription('');
@@ -103,7 +103,7 @@ const PermissionManagement: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await axios.delete(`http://localhost:5000/permissions/${id}`);
+      await api.delete(`/permissions/${id}`);
       fetchPermissions();
     } catch (error) {
       console.error('Error:', error);
@@ -112,7 +112,7 @@ const PermissionManagement: React.FC = () => {
 
   const handleAssignPermission = async (permissionId: string) => {
     try {
-      await axios.post('http://localhost:5000/roles/assign-permission', {
+      await api.post('/roles/assign-permission', {
         role_id: selectedRole,
         permission_id: permissionId
       });
@@ -125,7 +125,7 @@ const PermissionManagement: React.FC = () => {
 
   const handleRemovePermission = async (permissionId: string) => {
     try {
-      await axios.delete(`http://localhost:5000/roles/${selectedRole}/permissions/${permissionId}`);
+      await api.delete(`/roles/${selectedRole}/permissions/${permissionId}`);
       fetchRolePermissions(selectedRole);
       fetchAvailablePermissions(selectedRole);
     } catch (error) {

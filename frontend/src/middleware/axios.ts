@@ -18,4 +18,24 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Response interceptor để xử lý token hết hạn
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && error.response?.data?.expired) {
+      // Token hết hạn - xóa token và chuyển về trang đăng nhập
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      localStorage.removeItem('user');
+      
+      // Hiển thị thông báo cho người dùng
+      alert('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
+      
+      // Chuyển hướng về trang đăng nhập
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

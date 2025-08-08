@@ -65,6 +65,24 @@ export const authMiddleware = async (req, res, next) => {
     next();
   } catch (error) {
     console.error("Lỗi xác thực:", error);
+    
+    // Kiểm tra nếu token hết hạn
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).send({ 
+        message: "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại", 
+        status: false,
+        expired: true 
+      });
+    }
+    
+    // Kiểm tra token không hợp lệ
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).send({ 
+        message: "Token không hợp lệ", 
+        status: false 
+      });
+    }
+    
     res.status(401).send({ message: "Xác thực thất bại", status: false });
   }
 };
