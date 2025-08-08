@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { createAttribute } from "../../../../api/attribute.api";
 import { useNavigate } from "react-router-dom";
+import { ToastSucess, ToastError } from "../../../utils/toast";
 
 type FormData = {
   name: string;
@@ -20,11 +21,11 @@ const AddAttribute = () => {
   const onSubmit = async (data: FormData) => {
     try {
       await createAttribute(data);
-      alert("Thêm thuộc tính thành công!");
+      ToastSucess("Thêm thuộc tính thành công!");
       navigate("/admin/attribute");
     } catch (err) {
       console.error("Lỗi thêm thuộc tính:", err);
-      alert("Thêm thất bại");
+      ToastError("Thêm thất bại");
     }
   };
 

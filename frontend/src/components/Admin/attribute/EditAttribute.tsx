@@ -2,6 +2,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect } from "react";
 import { getAttributeById, updateAttribute } from "../../../../api/attribute.api";
+import { ToastSucess, ToastError } from "../../../utils/toast";
 
 type AttributeForm = {
   name: string;
@@ -23,7 +24,7 @@ const EditAttribute = () => {
         setValue("display_name", data.display_name);
         setValue("type", data.type);
       } catch (err) {
-        alert("Không tìm thấy thuộc tính");
+        ToastError("Không tìm thấy thuộc tính");
         navigate("/admin/attribute");
       }
     };
@@ -33,10 +34,10 @@ const EditAttribute = () => {
   const onSubmit = async (data: AttributeForm) => {
     try {
       await updateAttribute(id as string, data);
-      alert("Cập nhật thành công!");
+      ToastSucess("Cập nhật thành công!");
       navigate("/admin/attribute");
     } catch (err) {
-      alert("Cập nhật thất bại!");
+      ToastError("Cập nhật thất bại!");
     }
   };
 

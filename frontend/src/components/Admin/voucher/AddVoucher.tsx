@@ -54,7 +54,7 @@ const AddVoucher: React.FC = () => {
         end_date: new Date(formData.end_date).toISOString(),
         applicable_products: formData.applicable_products,
       };
-      const response = await axios.post('http://localhost:5001/vouchers', payload);
+      const response = await axios.post('http://localhost:5000/vouchers', payload);
       if (response.data.status) {
         alert('Thêm voucher thành công');
         navigate('/admin/voucher'); // Redirect to voucher list

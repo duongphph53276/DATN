@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import ProductFilters from "../../../layout/Client/ProductFilters";
 import { getAllProducts } from "../../../../api/product.api";
 import { getAllAttributes, getAttributeValues } from "../../../../api/attribute.api";
-import { ToastSucess } from "../../../utils/toast";
+import { ToastSucess, ToastError } from "../../../utils/toast";
 
 // Hàm chuyển chuỗi giá về số
 const parsePrice = (value: string | number | undefined | null): number => {
@@ -60,7 +60,7 @@ const AllProducts: React.FC = () => {
         setAttributeValues(allValues);
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu:", error);
-        alert("Không thể tải dữ liệu. Vui lòng kiểm tra kết nối và thử lại.");
+        ToastError("Không thể tải dữ liệu. Vui lòng kiểm tra kết nối và thử lại.");
       } finally {
         setLoading(false);
       }
@@ -168,7 +168,7 @@ const AllProducts: React.FC = () => {
     );
 
     if (product.variants?.length && (!selectedVariant || !allAttributesSelected)) {
-      alert("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
+      ToastError("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
       return;
     }
 
@@ -207,6 +207,8 @@ const AllProducts: React.FC = () => {
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
+    // Dispatch sự kiện cartUpdated
+    window.dispatchEvent(new Event("cartUpdated"));
     ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
     navigate("/cart");
   };
@@ -255,46 +257,50 @@ const AllProducts: React.FC = () => {
               return (
                 <div
                   key={product._id}
-                  className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 border border-gray-100"
+                  className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 border border-gray-100 flex flex-col"
                 >
                   <Link to={`/product/${product._id}`}>
                     {product.images ? (
                       <img
                         src={selectedVariant?.image || product.images}
                         alt={product.name}
-                        className="w-full h-52 object-cover"
+                        className="w-full h-52 object-cover rounded-lg mb-4"
                       />
                     ) : (
                       <span className="text-gray-400 italic">Không có ảnh</span>
                     )}
                   </Link>
-                  <div className="p-4">
+
+                  {/* Nội dung trong card */}
+                  <div className="p-4 flex flex-col h-full">
                     <h3 className="text-lg font-semibold text-gray-800 truncate">{product.name || "Sản phẩm không tên"}</h3>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="text-rose-600 font-bold text-lg">{displayedPrice.toLocaleString()}₫</span>
+
+                    <div className="text-rose-500 font-bold mt-2">
+                      {displayedPrice.toLocaleString()}₫
                       {product.oldPrice && (
-                        <span className="text-gray-400 line-through text-sm">
+                        <span className="text-gray-400 line-through text-sm ml-2">
                           {parsePrice(product.oldPrice).toLocaleString()}₫
                         </span>
                       )}
                     </div>
 
+                    {/* Các thuộc tính chọn */}
                     {product.variants?.length > 0 && (
-                      <div className="mt-4 space-y-3">
+                      <div className="mt-1 space-y-3">
                         {attributes.map((attr: any) => {
                           const valueIds = getValidAttributeValues(product, attr._id, selectedAttributes[product._id] || {});
                           if (valueIds.length === 0) return null;
 
                           return (
                             <div key={attr._id}>
-                              <div className="flex flex-wrap gap-2 mt-1">
+                              <div className="flex flex-wrap justify-center gap-2 my-2">
                                 {valueIds.map((valueId) => (
                                   <button
                                     key={String(valueId)}
                                     onClick={() => handleSelectAttribute(product._id, attr._id, valueId as string)}
                                     className={`px-3 py-1 rounded-full text-sm border transition ${selectedAttributes[product._id]?.[attr._id] === valueId
-                                      ? "bg-rose-500 text-white border-rose-500"
-                                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                        ? "bg-rose-500 text-white border-rose-500"
+                                        : "bg-pink-100 text-rose-500 hover:bg-rose-200"
                                       }`}
                                   >
                                     {getAttributeValue(valueId as string)}
@@ -307,9 +313,13 @@ const AllProducts: React.FC = () => {
                       </div>
                     )}
 
+                    {/* Spacer để đẩy nút xuống đáy */}
+                    <div className="flex-grow" />
+
+                    {/* Nút thêm vào giỏ */}
                     <button
                       onClick={() => handleAddToCart(product)}
-                      className="mt-4 w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-medium py-2 px-4 rounded-xl hover:brightness-110 transition"
+                      className="mt-1 w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-medium py-2 px-4 rounded-xl hover:brightness-110 transition"
                     >
                       Thêm vào giỏ hàng
                     </button>

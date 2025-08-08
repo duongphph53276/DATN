@@ -22,7 +22,7 @@ const ListVoucher: React.FC = () => {
   useEffect(() => {
     const fetchVouchers = async () => {
       try {
-        const response = await axios.get<IVoucherResponse>('http://localhost:5001/vouchers');
+        const response = await axios.get<IVoucherResponse>('http://localhost:5000/vouchers');
         if (response.data.status) {
           setVouchers(response.data.data);
           setFilteredVouchers(response.data.data);
@@ -114,7 +114,7 @@ const ListVoucher: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Bạn có chắc muốn xóa voucher này?')) {
       try {
-        const response = await axios.delete(`http://localhost:5001/vouchers/${id}`);
+        const response = await axios.delete(`http://localhost:5000/vouchers/${id}`);
         if (response.data.status) {
           setVouchers(vouchers.filter(voucher => voucher._id !== id));
           alert('Xóa voucher thành công');

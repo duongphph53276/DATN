@@ -12,6 +12,7 @@ import "react-quill/dist/quill.snow.css";
 import { useDropzone } from "react-dropzone";
 import ImageGallery from "react-image-gallery";
 import "react-image-gallery/styles/css/image-gallery.css";
+import { ToastSucess, ToastError } from "../../../utils/toast";
 
 type AddProductForm = {
   name: string;
@@ -188,7 +189,7 @@ const AddProduct = () => {
         setExistingVariants([]);
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu:", error);
-        alert("Không thể tải dữ liệu. Vui lòng kiểm tra kết nối hoặc thử lại sau.");
+        ToastError("Không thể tải dữ liệu. Vui lòng kiểm tra kết nối hoặc thử lại sau.");
       } finally {
         setLoading(false);
       }
@@ -223,7 +224,7 @@ const AddProduct = () => {
       if (acceptedFiles.length > 0) {
         setImageFile(acceptedFiles[0]);
       } else {
-        alert("Hình ảnh phải có định dạng jpg, png hoặc gif");
+        ToastError("Hình ảnh phải có định dạng jpg, png hoặc gif");
       }
     },
   });
@@ -239,7 +240,7 @@ const AddProduct = () => {
       if (acceptedFiles.every((file) => ["image/jpeg", "image/png", "image/gif"].includes(file.type))) {
         setAlbumFiles(acceptedFiles);
       } else {
-        alert("Tất cả hình ảnh trong album phải có định dạng jpg, png hoặc gif");
+        ToastError("Tất cả hình ảnh trong album phải có định dạng jpg, png hoặc gif");
       }
     },
   });
@@ -265,10 +266,10 @@ const AddProduct = () => {
           }
         } catch (error) {
           console.error("Lỗi khi tải ảnh lên:", error);
-          alert("Không thể tải ảnh lên. Vui lòng thử lại.");
+          ToastError("Không thể tải ảnh lên. Vui lòng thử lại.");
         }
       } else {
-        alert("Hình ảnh phải có định dạng jpg, png hoặc gif");
+        ToastError("Hình ảnh phải có định dạng jpg, png hoặc gif");
       }
     };
   };
@@ -311,14 +312,14 @@ const AddProduct = () => {
       };
 
       await postProduct(payload);
-      alert("Thêm sản phẩm thành công!");
+      ToastSucess("Thêm sản phẩm thành công!");
       navigate("/admin/product");
     } catch (error) {
       console.error("Lỗi khi tải dữ liệu:", error);
       if (error instanceof Error) {
-        alert("Không thể tải dữ liệu sản phẩm: " + error.message);
+        ToastError("Không thể tải dữ liệu sản phẩm: " + error.message);
       } else {
-        alert("Không thể tải dữ liệu sản phẩm: Lỗi không xác định");
+        ToastError("Không thể tải dữ liệu sản phẩm: Lỗi không xác định");
       }
     } finally {
       setIsSubmitting(false);
@@ -468,7 +469,7 @@ const AddProduct = () => {
                       onChange={(e) => {
                         const file = e.target.files?.[0] || null;
                         if (file && !["image/jpeg", "image/png", "image/gif"].includes(file.type)) {
-                          alert("Hình ảnh phải có định dạng jpg, png hoặc gif");
+                          ToastError("Hình ảnh phải có định dạng jpg, png hoặc gif");
                           return;
                         }
                         setVariantImages((prev) => {
