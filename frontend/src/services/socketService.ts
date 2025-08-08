@@ -12,7 +12,7 @@ class SocketService {
         return;
       }
 
-      this.socket = io('http://localhost:5001', {
+      this.socket = io('http://localhost:5000', {
         auth: {
           token: token
         }

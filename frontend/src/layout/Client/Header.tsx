@@ -31,7 +31,7 @@ const Header = () => {
       if (isLoggedIn) {
         try {
           const token = localStorage.getItem("token");
-          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/profile`, {
+          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/profile`, {
             method: 'GET',
             headers: {
               Authorization: `Bearer ${token}`,
