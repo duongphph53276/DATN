@@ -78,3 +78,59 @@ export const GetCategoryById = async (req, res) => {
     res.status(500).send({ message: 'Lấy id danh mục thất bại', status: false, error: error.message });
   }
 };
+
+// Lấy phân bố danh mục
+export const getCategoryDistribution = async (req, res) => {
+  try {
+    const Product = (await import('../models/product.js')).default;
+    
+    const categoryStats = await Product.aggregate([
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'category_id',
+          foreignField: '_id',
+          as: 'category'
+        }
+      },
+      {
+        $unwind: {
+          path: '$category',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $group: {
+          _id: '$category._id',
+          name: { $first: '$category.name' },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { count: -1 }
+      }
+    ]);
+
+    const totalProducts = await Product.countDocuments();
+    
+    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16', '#F97316'];
+    const result = categoryStats.map((cat, index) => ({
+      name: cat.name || 'Chưa phân loại',
+      value: totalProducts > 0 ? Math.round((cat.count / totalProducts) * 100) : 0,
+      color: colors[index % colors.length]
+    }));
+
+    res.status(200).json({
+      success: true,
+      message: 'Category distribution retrieved successfully',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error getting category distribution:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+    });
+  }
+};

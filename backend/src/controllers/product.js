@@ -336,3 +336,86 @@ export const deleteProduct = async (req, res) => {
     return res.status(500).json({ message: "Lỗi xóa sản phẩm", error: err });
   }
 };
+
+// Lấy thống kê sản phẩm
+export const getProductStatistics = async (req, res) => {
+  try {
+    const totalProducts = await Product.countDocuments();
+    
+    // Thống kê sản phẩm theo danh mục
+    const categoryStats = await Product.aggregate([
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'category_id',
+          foreignField: '_id',
+          as: 'category'
+        }
+      },
+      {
+        $unwind: {
+          path: '$category',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $group: {
+          _id: '$category._id',
+          name: { $first: '$category.name' },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { count: -1 }
+      }
+    ]);
+
+    // Tính phần trăm cho mỗi danh mục
+    const categoryDistribution = categoryStats.map(cat => ({
+      name: cat.name || 'Chưa phân loại',
+      count: cat.count,
+      percentage: totalProducts > 0 ? Math.round((cat.count / totalProducts) * 100) : 0
+    }));
+
+    // Top sản phẩm có nhiều biến thể nhất
+    const topVariantProducts = await Product.aggregate([
+      {
+        $lookup: {
+          from: 'productvariants',
+          localField: '_id',
+          foreignField: 'product_id',
+          as: 'variants'
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          variant_count: { $size: '$variants' }
+        }
+      },
+      {
+        $sort: { variant_count: -1 }
+      },
+      {
+        $limit: 5
+      }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: 'Product statistics retrieved successfully',
+      data: {
+        total_products: totalProducts,
+        category_distribution: categoryDistribution,
+        top_variant_products: topVariantProducts
+      }
+    });
+  } catch (error) {
+    console.error('Error getting product statistics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+    });
+  }
+};
