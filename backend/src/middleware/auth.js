@@ -11,7 +11,7 @@ export const authMiddleware = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await UserModel.findById(decoded.id);
+    const user = await UserModel.findById(decoded.id).populate('role_id');
     if (!user) {
       return res.status(401).send({ message: "Người dùng không tồn tại", status: false });
     }
@@ -61,6 +61,10 @@ export const authMiddleware = async (req, res, next) => {
       role: user.role_id?.name || 'client',
       email: user.email
     };
+
+    // Debug log để kiểm tra
+    console.log("Auth Debug - User role:", user.role_id?.name);
+    console.log("Auth Debug - req.user.role:", req.user.role);
 
     next();
   } catch (error) {

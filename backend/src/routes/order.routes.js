@@ -9,6 +9,9 @@ router.get('/', OrderController.getAllOrders);
 // Thống kê đơn hàng
 router.get('/statistics', OrderController.getOrderStatistics);
 
+// Doanh thu theo tháng
+router.get('/monthly-revenue', OrderController.getMonthlyRevenue);
+
 //Seed fake data
 router.post('/seed', OrderController.seedFakeData);
 

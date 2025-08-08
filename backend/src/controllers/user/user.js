@@ -270,3 +270,121 @@ export const changePassword = async (req, res) => {
     });
   }
 };
+
+// Lấy thống kê user
+export const getUserStatistics = async (req, res) => {
+  try {
+    const totalUsers = await UserModel.countDocuments();
+    
+    // Thống kê theo role
+    const roleStats = await UserModel.aggregate([
+      {
+        $lookup: {
+          from: 'roles',
+          localField: 'role_id',
+          foreignField: '_id',
+          as: 'role'
+        }
+      },
+      {
+        $unwind: {
+          path: '$role',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $group: {
+          _id: '$role._id',
+          role_name: { $first: '$role.name' },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { count: -1 }
+      }
+    ]);
+
+    // Thống kê user theo tháng
+    const monthlyUserStats = await UserModel.aggregate([
+      {
+        $match: {
+          created_at: {
+            $gte: new Date(new Date().getFullYear(), 0, 1) // Từ đầu năm
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$created_at' },
+            month: { $month: '$created_at' }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { '_id.year': 1, '_id.month': 1 }
+      }
+    ]);
+
+    // Top user có nhiều đơn hàng nhất (nếu có model Order)
+    let topActiveUsers = [];
+    try {
+      const { OrderModel } = await import('../../models/OrderModel.js');
+      topActiveUsers = await OrderModel.aggregate([
+        {
+          $group: {
+            _id: '$user_id',
+            total_orders: { $sum: 1 },
+            total_spent: { $sum: '$total_amount' }
+          }
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'user'
+          }
+        },
+        {
+          $unwind: '$user'
+        },
+        {
+          $project: {
+            user_name: '$user.name',
+            user_email: '$user.email',
+            total_orders: 1,
+            total_spent: 1
+          }
+        },
+        {
+          $sort: { total_orders: -1 }
+        },
+        {
+          $limit: 10
+        }
+      ]);
+    } catch (error) {
+      console.log('Order model not available for top users stats');
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'User statistics retrieved successfully',
+      data: {
+        total_users: totalUsers,
+        role_breakdown: roleStats,
+        monthly_user_growth: monthlyUserStats,
+        top_active_users: topActiveUsers
+      }
+    });
+  } catch (error) {
+    console.error('Error getting user statistics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+    });
+  }
+};

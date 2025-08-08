@@ -4,8 +4,8 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/db.js';
 import { CreateVoucher, ListVoucher, UpdateVoucher, DeleteVoucher, ApplyVoucher, GetVoucherById } from './controllers/voucher.js';
-import { AddCategory, DeleteCategory, EditCategory, GetCategoryById, ListCategory } from './controllers/category.js';
-import { createProduct, deleteProduct, getAllProducts, getProductById, updateProduct } from './controllers/product.js';
+import { AddCategory, DeleteCategory, EditCategory, GetCategoryById, ListCategory, getCategoryDistribution } from './controllers/category.js';
+import { createProduct, deleteProduct, getAllProducts, getProductById, updateProduct, getProductStatistics } from './controllers/product.js';
 import { createAttribute, getAttributeById, deleteAttribute, getAllAttributes, updateAttribute } from "./controllers/attribute.js";
 import { createAttributeValue, deleteAttributeValue, getAttributeValueById, getAttributeValues, updateAttributeValue } from './controllers/attributeValue.js';
 import { createVariant, deleteVariant, getVariantById, getVariantsByProduct, updateVariant } from './controllers/productVariant.js';
@@ -14,7 +14,7 @@ import paymentRoutes from './routes/payment.routes.js';
 import { checkEmail, login, Profile, register, UpdateProfile, verifyEmail } from './controllers/auth.js';
 import { getUserAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from './controllers/address/address.js';
 import { authMiddleware, restrictTo } from './middleware/auth.js';
-import { getUserById, getUsers, updateUser, getUserWithPermissions, checkUserPermission, changePassword } from './controllers/user/user.js';
+import { getUserById, getUsers, updateUser, getUserWithPermissions, checkUserPermission, changePassword, getUserStatistics } from './controllers/user/user.js';
 import { createRole, getRoleById, getRoles, updateRole, deleteRole, getRolePermissions, assignPermissionToRole, removePermissionFromRole, getAvailablePermissions } from './controllers/user/role.js';
 import path from "path";
 import { fileURLToPath } from "url";
@@ -96,11 +96,13 @@ app.post('/product/add', upload.fields([
   { name: "album[]", maxCount: 10 }
 ]), createProduct);
 app.get('/category', ListCategory);
+app.get('/categories/distribution', getCategoryDistribution);
 
 app.get('/product', getAllProducts);
 app.get('/product/:id', getProductById);
 app.put('/product/edit/:id', updateProduct);
 app.delete('/product/:id', deleteProduct);
+app.get('/products/statistics', getProductStatistics);
 // Attribute routes
 app.post("/attribute/add", createAttribute);
 app.get("/attribute", getAllAttributes);
@@ -149,6 +151,7 @@ adminRouter.use(authMiddleware, restrictTo('admin', 'employee'));
 adminRouter.get('/users', getUsers);
 adminRouter.get('/users/:id', getUserById);
 adminRouter.put('/users/:id', updateUser);
+adminRouter.get('/users/statistics', getUserStatistics);
 
 adminRouter.get('/category', ListCategory);
 adminRouter.post('/category/add', AddCategory);
