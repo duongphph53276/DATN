@@ -1,9 +1,9 @@
 import Banner from "../../../layout/Client/Banner";
 // import ProductFilters from "../../../layout/Client/ProductFilters";
-import BlindboxSection from "./sections/BlindboxSection";
+import NewProduct from "./sections/NewProduct";
 import CategorySection from "./sections/CategorySection";
-import CoupleSection from "./sections/CoupleSection";
-import GiantSection from "./sections/GiantSection";
+import BestSelling from "./sections/BestSelling";
+import OtherProduct from "./sections/OtherProduct";
 import GoodSection from "./sections/GoodSection";
 import HottrendSection from "./sections/HottrendSection";
 import KidSection from "./sections/KidSection";
@@ -15,14 +15,14 @@ const Home = () => {
     <>
       <Banner />
       {/* <ProductFilters onFilter={() => {}} /> */}
-    <CategorySection/>
-    <CoupleSection />
-    <HottrendSection/>
-    <KidSection />
-    <SaleSection/>
-    <GiantSection/>
-    <GoodSection/>
-    <BlindboxSection/>
+      <CategorySection />
+      <BestSelling />
+      <NewProduct />
+      <OtherProduct />
+      {/* <HottrendSection /> */}
+      {/* <KidSection /> */}
+      {/* <SaleSection/> */}
+      {/* <GoodSection/>    */}
       {/* Thêm section khác nếu có */}
     </>
   );

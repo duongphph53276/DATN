@@ -5,6 +5,7 @@ import { getAllAttributes, getAttributeValues } from "../../../../api/attribute.
 import ReactStars from "react-stars";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
+import { ToastSucess, ToastError } from "../../../utils/toast";
 
 // Hàm chuyển chuỗi giá về số
 const parsePrice = (value: string | number | undefined | null): number => {
@@ -175,7 +176,7 @@ const DetailsPage = () => {
       );
       const allAttributesSelected = requiredAttributes.every((attr: any) => selectedAttributes[attr._id]);
       if (!selectedVariant || !allAttributesSelected) {
-        alert("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
+        ToastError("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
         return;
       }
     }
@@ -228,7 +229,7 @@ const DetailsPage = () => {
     // Dispatch sự kiện cartUpdated
     window.dispatchEvent(new Event("cartUpdated"));
     console.log("Cart saved to localStorage:", cart)
-    alert("Đã thêm sản phẩm vào giỏ hàng!");
+    ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
     navigate("/cart");
   };
 

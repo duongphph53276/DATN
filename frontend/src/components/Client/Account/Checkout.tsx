@@ -112,7 +112,7 @@ const Checkout: React.FC = () => {
     }
 
     let amount = 0;
-    if (discount.type === 'percentage') { 
+    if (discount.type === 'percentage') {
       amount = (totalPrice * discount.value) / 100;
     } else if (discount.type === 'fixed') {
       amount = discount.value;
@@ -123,7 +123,7 @@ const Checkout: React.FC = () => {
   };
 
   useEffect(() => {
-    if (appliedDiscount) {  
+    if (appliedDiscount) {
       calculateDiscountAmount(appliedDiscount);
     }
   }, [totalPrice, appliedDiscount]);
@@ -656,9 +656,6 @@ const Checkout: React.FC = () => {
                   </label>
                 </div>
               </div>
-
-
-
               <button
                 type="submit"
                 disabled={loading || cartItems.length === 0 || !addressId}

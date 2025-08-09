@@ -1,6 +1,3 @@
-
-
-
 import { Link } from 'react-router-dom';
 import { allProducts } from '../../../../mock/allProduct';
 import saleProduct from '../../../../mock/saleProducts';
