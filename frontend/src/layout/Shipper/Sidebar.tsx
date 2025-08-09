@@ -4,6 +4,7 @@ import {
   Package,
   Truck,
   CheckCircle,
+  X,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react'
@@ -36,6 +37,11 @@ const Sidebar = () => {
           name: 'Đã giao hàng', 
           path: '/shipper/delivered', 
           icon: <CheckCircle size={20} />,
+        },
+        { 
+          name: 'Đơn hàng đã hủy', 
+          path: '/shipper/cancelled', 
+          icon: <X size={20} />,
         }
       ]
     }

@@ -15,6 +15,7 @@ const OrderSchema = new Schema(
     address_id: { type: String, required: true },
     shipper_id: { type: String, default: null }, // ID của shipper được giao hàng
     delivered_at: { type: Date, default: null },
+    cancel_reason: { type: String, default: null }, // Lý do hủy đơn hàng
   },
   {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },

@@ -14,6 +14,7 @@ interface Order {
   total_amount: number;
   created_at: string;
   delivered_at: string | null;
+  cancel_reason: string | null;
   user: {
     name: string;
     email: string;
@@ -29,7 +30,7 @@ interface Order {
 }
 
 interface Props {
-  status?: 'shipping' | 'delivered';
+  status?: 'shipping' | 'delivered' | 'cancelled';
 }
 
 const ShipperOrders = ({ status }: Props) => {
@@ -38,6 +39,9 @@ const ShipperOrders = ({ status }: Props) => {
   const [updating, setUpdating] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string>('');
+  const [cancelReason, setCancelReason] = useState<string>('');
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const shipperId = user.id;
@@ -65,15 +69,22 @@ const ShipperOrders = ({ status }: Props) => {
     }
   };
 
-  const updateOrderStatus = async (orderId: string) => {
+  const updateOrderStatus = async (orderId: string, newStatus: string = 'delivered', reason?: string) => {
     try {
       setUpdating(orderId);
-      const response = await instance.patch(`/orders/shipper/${shipperId}/${orderId}/status`, {
-        status: 'delivered'
-      });
+      const requestData: any = { status: newStatus };
+      
+      if (reason) {
+        requestData.cancel_reason = reason;
+      }
+      
+      const response = await instance.patch(`/orders/shipper/${shipperId}/${orderId}/status`, requestData);
       
       if (response.data.success) {
-        toast.success('Cập nhật trạng thái thành công');
+        const message = newStatus === 'delivered' 
+          ? 'Cập nhật trạng thái thành công' 
+          : 'Hủy giao hàng thành công';
+        toast.success(message);
         fetchOrders(currentPage); // Refresh danh sách
       }
     } catch (error: any) {
@@ -82,6 +93,29 @@ const ShipperOrders = ({ status }: Props) => {
     } finally {
       setUpdating(null);
     }
+  };
+
+  const handleCancelDelivery = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setShowCancelModal(true);
+  };
+
+  const handleConfirmCancel = () => {
+    if (!cancelReason.trim()) {
+      toast.error('Vui lòng nhập lý do hủy giao hàng');
+      return;
+    }
+    
+    updateOrderStatus(selectedOrderId, 'cancelled', cancelReason);
+    setShowCancelModal(false);
+    setSelectedOrderId('');
+    setCancelReason('');
+  };
+
+  const handleCancelModalClose = () => {
+    setShowCancelModal(false);
+    setSelectedOrderId('');
+    setCancelReason('');
   };
 
   useEffect(() => {
@@ -112,6 +146,8 @@ const ShipperOrders = ({ status }: Props) => {
             ? 'Chưa có đơn hàng nào đang giao'
             : status === 'delivered' 
             ? 'Chưa có đơn hàng nào đã giao'
+            : status === 'cancelled'
+            ? 'Chưa có đơn hàng nào đã hủy'
             : 'Chưa có đơn hàng nào được giao'
           }
         </p>
@@ -152,21 +188,32 @@ const ShipperOrders = ({ status }: Props) => {
                       ? 'bg-blue-100 text-blue-800'
                       : order.status === 'delivered'
                       ? 'bg-green-100 text-green-800'
+                      : order.status === 'cancelled'
+                      ? 'bg-red-100 text-red-800'
                       : 'bg-gray-100 text-gray-800'
                   }`}>
                     {getVietnameseStatus(order.status)}
                   </span>
                   {order.status === 'shipping' && (
-                    <button
-                      onClick={() => updateOrderStatus(order._id)}
-                      disabled={updating === order._id}
-                      className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <CheckCircle size={16} />
-                      <span>
-                        {updating === order._id ? 'Đang cập nhật...' : 'Đã giao hàng'}
-                      </span>
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => updateOrderStatus(order._id)}
+                        disabled={updating === order._id}
+                        className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <CheckCircle size={16} />
+                        <span>
+                          {updating === order._id ? 'Đang cập nhật...' : 'Đã giao hàng'}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => handleCancelDelivery(order._id)}
+                        disabled={updating === order._id}
+                        className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <span>Hủy giao hàng</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -228,6 +275,15 @@ const ShipperOrders = ({ status }: Props) => {
                   </div>
                 </div>
               )}
+
+              {order.status === 'cancelled' && order.cancel_reason && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="text-sm">
+                    <span className="font-medium text-red-700">Lý do hủy:</span>{' '}
+                    <span className="text-red-600">{order.cancel_reason}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -265,6 +321,42 @@ const ShipperOrders = ({ status }: Props) => {
           >
             Sau
           </button>
+        </div>
+      )}
+
+      {/* Cancel Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Hủy giao hàng</h3>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Lý do hủy giao hàng *
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                rows={4}
+                placeholder="Nhập lý do hủy giao hàng..."
+              />
+            </div>
+            <div className="flex items-center gap-3 justify-end">
+              <button
+                onClick={handleCancelModalClose}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Đóng
+              </button>
+              <button
+                onClick={handleConfirmCancel}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                disabled={!cancelReason.trim()}
+              >
+                Xác nhận hủy
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

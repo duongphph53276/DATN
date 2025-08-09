@@ -50,6 +50,7 @@ import ProtectedShipperRoute from './components/Shipper/ProtectedShipperRoute';
 import AllOrders from './components/Shipper/AllOrders';
 import ShippingOrders from './components/Shipper/ShippingOrders';
 import DeliveredOrders from './components/Shipper/DeliveredOrders';
+import CancelledOrders from './components/Shipper/CancelledOrders';
 
 const SimpleProtectedRoute = ({ children, requiresAdmin = false }: { children: JSX.Element; requiresAdmin?: boolean }) => {
   const token = localStorage.getItem("token");
@@ -143,6 +144,7 @@ function App() {
         { path: "", element: <AllOrders /> },
         { path: "shipping", element: <ShippingOrders /> },
         { path: "delivered", element: <DeliveredOrders /> },
+        { path: "cancelled", element: <CancelledOrders /> },
       ],
     },
     { path: "*", element: <NotFound /> },
