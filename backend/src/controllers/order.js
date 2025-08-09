@@ -9,7 +9,8 @@ import {
   createOrderSuccessNotification,
   createOrderStatusNotification,
   createNewOrderAdminNotification,
-  cancelledAdminNotification
+  cancelledAdminNotification,
+  createShipperAssignmentNotification
 } from '../services/notificationService.js';
 
 import mongoose from 'mongoose';
@@ -223,6 +224,8 @@ class OrderController {
     session.startTransaction();
 
     try {
+      console.log('Create order request body:', JSON.stringify(req.body, null, 2));
+      
       const {
         user_id,
         quantity,
@@ -234,6 +237,14 @@ class OrderController {
       } = req.body;
 
       if (!user_id || !quantity || !total_amount || !payment_method || !address_id || !order_details) {
+        console.log('Missing required fields:', {
+          user_id: !!user_id,
+          quantity: !!quantity,
+          total_amount: !!total_amount,
+          payment_method: !!payment_method,
+          address_id: !!address_id,
+          order_details: !!order_details
+        });
         return res.status(400).json({
           success: false,
           message: 'Missing required data'
@@ -257,6 +268,14 @@ class OrderController {
 
       for (const detail of order_details) {
         if (!detail.product_id || !detail.variant_id || !detail.name || !detail.price || !detail.quantity) {
+          console.log('Invalid order detail:', detail);
+          console.log('Missing fields:', {
+            product_id: !!detail.product_id,
+            variant_id: !!detail.variant_id,
+            name: !!detail.name,
+            price: !!detail.price,
+            quantity: !!detail.quantity
+          });
           return res.status(400).json({
             success: false,
             message: 'Each order detail must include product_id, variant_id, name, price, and quantity'
@@ -357,7 +376,7 @@ class OrderController {
   async updateOrderStatus(req, res) {
     try {
       const { id } = req.params;
-      const { status } = req.body;
+      const { status, shipper_id } = req.body;
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({
@@ -374,9 +393,33 @@ class OrderController {
         });
       }
 
+      // Kiểm tra nếu status là shipping thì phải có shipper_id
+      if (status === 'shipping' && !shipper_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Shipper ID is required when status is shipping'
+        });
+      }
+
+      // Nếu có shipper_id, kiểm tra shipper có tồn tại không
+      if (shipper_id) {
+        const shipperExists = await UserModel.findById(shipper_id).lean();
+        if (!shipperExists) {
+          return res.status(404).json({
+            success: false,
+            message: 'Shipper not found'
+          });
+        }
+      }
+
       const updateData = { status };
       if (status === 'delivered') {
         updateData.delivered_at = new Date();
+      }
+      
+      // Gán shipper_id khi status là shipping
+      if (status === 'shipping' && shipper_id) {
+        updateData.shipper_id = shipper_id;
       }
 
       const updatedOrder = await OrderModel.findByIdAndUpdate(
@@ -398,6 +441,13 @@ class OrderController {
 
       try {
         await createOrderStatusNotification(updatedOrder.user_id.toString(), updatedOrder._id.toString(), status);
+        
+        // Nếu status là shipping và có shipper_id, gửi notification cho shipper
+        if (status === 'shipping' && shipper_id) {
+          const customer = await OrderController.populateUserInfo(updatedOrder.user_id);
+          const customerName = customer ? customer.name : 'Khách hàng';
+          await createShipperAssignmentNotification(shipper_id, updatedOrder._id.toString(), customerName);
+        }
       } catch (notificationError) {
         console.error('Error creating status notification:', notificationError);
       }
@@ -724,6 +774,203 @@ class OrderController {
         success: true,
         message: 'Monthly revenue retrieved successfully',
         data: result
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+      });
+    }
+  }
+
+  /**
+   * @desc    Get orders for shipper
+   * @route   GET /api/orders/shipper/:shipper_id
+   * @access  Private (Shipper only)
+   */
+  async getOrdersForShipper(req, res) {
+    try {
+      const { shipper_id } = req.params;
+      const { page = 1, limit = 10, status } = req.query;
+
+      // Kiểm tra shipper có tồn tại không
+      const shipperExists = await UserModel.findById(shipper_id).lean();
+      if (!shipperExists) {
+        return res.status(404).json({
+          success: false,
+          message: 'Shipper not found'
+        });
+      }
+
+      const filter = { shipper_id };
+      
+      // Nếu có status filter, thêm vào query
+      if (status) {
+        filter.status = status;
+      } else {
+        // Mặc định chỉ lấy đơn hàng có status shipping hoặc delivered
+        filter.status = { $in: ['shipping', 'delivered'] };
+      }
+
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+
+      const orders = await OrderModel
+        .find(filter)
+        .sort({ updated_at: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean();
+
+      const totalOrders = await OrderModel.countDocuments(filter);
+      const totalPages = Math.ceil(totalOrders / parseInt(limit));
+
+      const ordersWithDetails = await Promise.all(
+        orders.map(async (order) => {
+          const orderDetails = await OrderDetailModel
+            .find({ order_id: order._id })
+            .lean();
+
+          const orderDetailsWithInfo = await Promise.all(
+            orderDetails.map(async (detail) => {
+              const [product, variant] = await Promise.all([
+                Product.findById(detail.product_id).lean(),
+                ProductVariant.findById(detail.variant_id).lean()
+              ]);
+
+              return {
+                ...detail,
+                product: product,
+                variant: variant
+              };
+            })
+          );
+
+          const [voucher, address, user, shipper] = await Promise.all([
+            order.voucher_id ? VoucherModel.findById(order.voucher_id).lean() : null,
+            AddressModel.findById(order.address_id).lean(),
+            OrderController.populateUserInfo(order.user_id),
+            OrderController.populateUserInfo(order.shipper_id)
+          ]);
+
+          return {
+            ...order,
+            user: user,
+            voucher: voucher,
+            address: address,
+            shipper: shipper,
+            order_details: orderDetailsWithInfo
+          };
+        })
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Get shipper orders successfully',
+        data: {
+          orders: ordersWithDetails,
+          pagination: {
+            current_page: parseInt(page),
+            total_pages: totalPages,
+            total_orders: totalOrders,
+            per_page: parseInt(limit),
+            has_next: parseInt(page) < totalPages,
+            has_prev: parseInt(page) > 1
+          }
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+      });
+    }
+  }
+
+  /**
+   * @desc    Update order status by shipper (shipping to delivered only)
+   * @route   PATCH /api/orders/shipper/:shipper_id/:order_id/status
+   * @access  Private (Shipper only)
+   */
+  async updateOrderStatusByShipper(req, res) {
+    try {
+      const { shipper_id, order_id } = req.params;
+      const { status } = req.body;
+
+      if (!mongoose.Types.ObjectId.isValid(order_id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid order ID format'
+        });
+      }
+
+      // Shipper chỉ được phép thay đổi từ shipping sang delivered
+      if (status !== 'delivered') {
+        return res.status(400).json({
+          success: false,
+          message: 'Shipper can only update status to delivered'
+        });
+      }
+
+      // Kiểm tra đơn hàng có tồn tại và thuộc về shipper này không
+      const order = await OrderModel.findOne({
+        _id: order_id,
+        shipper_id: shipper_id,
+        status: 'shipping'
+      }).lean();
+
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found or you are not authorized to update this order'
+        });
+      }
+
+      const updateData = { 
+        status: 'delivered',
+        delivered_at: new Date()
+      };
+
+      const updatedOrder = await OrderModel.findByIdAndUpdate(
+        order_id,
+        updateData,
+        { new: true, runValidators: true }
+      ).lean();
+
+      if (!updatedOrder) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+
+      try {
+        await createOrderStatusNotification(updatedOrder.user_id.toString(), updatedOrder._id.toString(), 'delivered');
+      } catch (notificationError) {
+        console.error('Error creating status notification:', notificationError);
+      }
+
+      // Include voucher, address, user and shipper in response
+      const [voucher, address, user, shipper] = await Promise.all([
+        updatedOrder.voucher_id ? VoucherModel.findById(updatedOrder.voucher_id).lean() : null,
+        AddressModel.findById(updatedOrder.address_id).lean(),
+        OrderController.populateUserInfo(updatedOrder.user_id),
+        OrderController.populateUserInfo(updatedOrder.shipper_id)
+      ]);
+
+      const orderWithDetails = {
+        ...updatedOrder,
+        user: user,
+        voucher: voucher,
+        address: address,
+        shipper: shipper
+      };
+
+      res.status(200).json({
+        success: true,
+        message: 'Order status updated to delivered successfully',
+        data: orderWithDetails
       });
     } catch (error) {
       res.status(500).json({

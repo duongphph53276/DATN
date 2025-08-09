@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCamera, FaCalendar, FaShieldAlt, FaEdit } from 'react-icons/fa';
 import { User, Address } from '../../../interfaces/user';
+import instance from '../../../../api/instance';
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
@@ -21,14 +22,8 @@ const Profile: React.FC = () => {
       }
 
       try {
-        const response = await fetch('http://localhost:5001/profile', {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        const data = await response.json();
+        const response = await instance.get('/profile');
+        const data = response.data;
         if (data.status) {
           setUser(data.user);
         } else {
@@ -46,14 +41,8 @@ const Profile: React.FC = () => {
       if (!token) return;
 
       try {
-        const response = await fetch('http://localhost:5001/addresses', {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        const data = await response.json();
+        const response = await instance.get('/addresses');
+        const data = response.data;
         if (data.status) {
           setAddresses(data.data);
         }

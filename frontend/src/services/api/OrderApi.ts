@@ -8,7 +8,14 @@ export const getAllOrderClient = async (params: GetOrderParams) => {
   return response.data;
 };
 export const updateOrderStatus = async (data: orderUpdateStatusData) => {
-  const response = await api.patch(`${URL}/${data._id}/status`, {status:data.order_status});
+  const requestBody: any = { status: data.order_status };
+  
+  // Nếu có shipper_id, thêm vào request body
+  if (data.shipper_id) {
+    requestBody.shipper_id = data.shipper_id;
+  }
+  
+  const response = await api.patch(`${URL}/${data._id}/status`, requestBody);
   return response.data;
 };
 export const getOrderById = async(id:string)=>{

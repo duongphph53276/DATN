@@ -7,6 +7,7 @@ import { updateOrder } from '../../../store/slices/orderSlice';
 import { getOrderById } from '../../../services/api/OrderApi';
 import { ToastSucess } from '../../../utils/toast';
 import { calculateDiscountedAmount } from '../../../utils/currency';
+import { getVietnameseStatus, paymentMethodVietnamese } from '../../../utils/constant';
 
 const OrderDetailPage = () => {
     const [showCancelModal, setShowCancelModal] = useState(false);
@@ -64,20 +65,7 @@ const OrderDetailPage = () => {
     };
 
     const getStatusText = (status: string | undefined) => {
-        switch (status) {
-            case 'pending':
-                return 'Chờ xác nhận';
-            case 'confirmed':
-                return 'Đã xác nhận';
-            case 'shipping':
-                return 'Đang giao hàng';
-            case 'delivered':
-                return 'Đã giao hàng';
-            case 'cancelled':
-                return 'Đã hủy';
-            default:
-                return status;
-        }
+        return status ? getVietnameseStatus(status) : 'Không xác định';
     };
 
     const handleCancelOrder = async () => {
@@ -151,7 +139,7 @@ const OrderDetailPage = () => {
                             </div>
                             <div className="flex items-center gap-3 text-gray-600">
                                 <CreditCard className="w-5 h-5 text-pink-400" />
-                                <span>Phương thức thanh toán: <strong>{orderData?.payment_method}</strong></span>
+                                <span>Phương thức thanh toán: <strong>{paymentMethodVietnamese[orderData?.payment_method || ''] || orderData?.payment_method}</strong></span>
                             </div>
                         </div>
                         <div className="space-y-3">

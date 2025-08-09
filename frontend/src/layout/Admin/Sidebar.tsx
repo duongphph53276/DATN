@@ -1,29 +1,33 @@
-import React, { useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { NavLink } from 'react-router-dom'
 import {
-  Home,
   Folder,
   Plus,
   Package,
   Settings,
-  User,
   ShieldCheck,
-  PercentCircle,
-  Truck,
   BarChart3,
   ShoppingCart,
   Users,
   Key,
   Tag,
-  Menu,
-  X
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import { usePermissions } from '../../hooks/usePermissions'
 
 const Sidebar = () => {
   const { hasPermission, loading } = usePermissions();
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    // Lấy trạng thái từ localStorage
+    const saved = localStorage.getItem('sidebar-collapsed');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  // Lưu trạng thái vào localStorage khi thay đổi
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', JSON.stringify(isCollapsed));
+  }, [isCollapsed]);
 
   const menuItems = [
     {
@@ -147,7 +151,7 @@ const Sidebar = () => {
   }
 
   return (
-    <aside className={`${isCollapsed ? 'w-16' : 'w-64'} h-screen bg-white/90 backdrop-blur-md border-r border-gray-200/50 sticky top-0 transition-all duration-300 ease-in-out`}>
+    <aside className={`${isCollapsed ? 'w-16' : 'w-64'} h-screen bg-white/90 backdrop-blur-md border-r border-gray-200/50 sticky top-0 transition-all duration-300 ease-in-out group`}>
       {/* Header */}
       <div className="p-4 border-b border-gray-200/50">
         <div className="flex items-center justify-between">
@@ -164,14 +168,24 @@ const Sidebar = () => {
               </div>
             </div>
           )}
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-          >
-            {isCollapsed ? <Menu size={16} /> : <X size={16} />}
-          </button>
+          {isCollapsed && (
+            <div className="flex items-center justify-center w-full">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                <BarChart3 className="text-white text-sm" />
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Toggle Button - Floating */}
+      <button
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="absolute -right-3 top-20 z-10 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-all duration-200 shadow-md hover:shadow-lg"
+        title={isCollapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}
+      >
+        {isCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+      </button>
 
       {/* Navigation */}
       <nav className="p-4 space-y-6 overflow-y-auto h-[calc(100vh-80px)]">
@@ -184,34 +198,42 @@ const Sidebar = () => {
             )}
             <div className="space-y-1">
               {section.items.map((item) => (
-                <NavLink
-                  key={item.name}
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 group relative
-                    ${
-                      isActive
-                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25'
-                        : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'
+                <div key={item.name} className="relative group/item">
+                  <NavLink
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 relative
+                      ${
+                        isActive
+                          ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25'
+                          : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'
+                      }
+                      ${isCollapsed ? 'justify-center' : ''}`
                     }
-                    ${isCollapsed ? 'justify-center' : ''}`
-                  }
-                  title={isCollapsed ? item.name : ''}
-                >
-                  {({ isActive }) => (
-                    <>
-                      <div className={`${isCollapsed ? 'w-5 h-5' : 'w-5 h-5'} flex items-center justify-center`}>
-                        {item.icon}
-                      </div>
-                      {!isCollapsed && (
-                        <span className="flex-1">{item.name}</span>
-                      )}
-                      {isActive && !isCollapsed && (
-                        <div className="absolute right-2 w-2 h-2 bg-white rounded-full"></div>
-                      )}
-                    </>
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <div className={`${isCollapsed ? 'w-5 h-5' : 'w-5 h-5'} flex items-center justify-center`}>
+                          {item.icon}
+                        </div>
+                        {!isCollapsed && (
+                          <span className="flex-1">{item.name}</span>
+                        )}
+                        {isActive && !isCollapsed && (
+                          <div className="absolute right-2 w-2 h-2 bg-white rounded-full"></div>
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                  
+                  {/* Tooltip khi thu gọn */}
+                  {isCollapsed && (
+                    <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                      {item.name}
+                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-900"></div>
+                    </div>
                   )}
-                </NavLink>
+                </div>
               ))}
             </div>
           </div>
@@ -219,13 +241,19 @@ const Sidebar = () => {
       </nav>
 
       {/* Footer */}
-      {!isCollapsed && (
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200/50 bg-white/50 backdrop-blur-sm">
+      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200/50 bg-white/50 backdrop-blur-sm">
+        {!isCollapsed ? (
           <div className="text-xs text-gray-500 text-center">
             © Admin Panel
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="flex items-center justify-center">
+            <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-md flex items-center justify-center" title="Admin Panel">
+              <BarChart3 className="text-white" size={12} />
+            </div>
+          </div>
+        )}
+      </div>
     </aside>
   )
 }

@@ -6,6 +6,7 @@ import { getOrderClient } from '../../../store/slices/orderSlice';
 import { GetOrderParams } from '../../../interfaces/orderApi';
 import { Link } from 'react-router-dom';
 import { formatVNDSymbol } from '../../../utils/currency';
+import { getVietnameseStatus, paymentMethodVietnamese } from '../../../utils/constant';
 
 const MyOrders: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,20 +53,7 @@ const MyOrders: React.FC = () => {
   };
 
   const getStatusText = (orderStatus: string) => {
-    switch (orderStatus.toLowerCase()) {
-      case 'pending':
-        return 'Chờ xử lý';
-      case 'processing':
-        return 'Đang xử lý';
-      case 'shipping':
-        return 'Đang giao hàng';
-      case 'delivered':
-        return 'Đã giao hàng';
-      case 'cancelled':
-        return 'Đã hủy';
-      default:
-        return orderStatus;
-    }
+    return getVietnameseStatus(orderStatus);
   };
 
   const getStatusColor = (orderStatus: string) => {
@@ -192,11 +180,11 @@ const MyOrders: React.FC = () => {
                 className="w-full px-4 py-2 border border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-300 focus:border-transparent outline-none bg-white"
               >
                 <option value="">Tất cả trạng thái</option>
-                <option value="pending">Chờ xử lý</option>
-                <option value="processing">Đang xử lý</option>
-                <option value="shipping">Đang giao hàng</option>
-                <option value="delivered">Đã giao hàng</option>
-                <option value="cancelled">Đã hủy</option>
+                <option value="pending">{getVietnameseStatus('pending')}</option>
+                <option value="preparing">{getVietnameseStatus('preparing')}</option>
+                <option value="shipping">{getVietnameseStatus('shipping')}</option>
+                <option value="delivered">{getVietnameseStatus('delivered')}</option>
+                <option value="cancelled">{getVietnameseStatus('cancelled')}</option>
               </select>
 
               <select

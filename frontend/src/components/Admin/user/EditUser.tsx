@@ -148,14 +148,26 @@ const EditUser: React.FC = () => {
         email: user.email,
         name: user.name,
         phone: user.phone,
-        role_id: user.role_id,
-        address_id: user.address_id,
-        avatar: user.avatar,
         status: user.status,
       };
 
+      // Chỉ gửi role_id nếu có giá trị hợp lệ
+      if (user.role_id && user.role_id.trim() !== '') {
+        updateData.role_id = user.role_id;
+      }
+
+      // Chỉ gửi address_id nếu có giá trị hợp lệ
+      if (user.address_id && user.address_id.trim() !== '') {
+        updateData.address_id = user.address_id;
+      }
+
+      // Chỉ gửi avatar nếu có giá trị
+      if (user.avatar && user.avatar.trim() !== '') {
+        updateData.avatar = user.avatar;
+      }
+
       // Chỉ gửi password nếu có giá trị mới và là admin
-      if (user.password && currentUser?.role_id?.name === 'admin') {
+      if (user.password && user.password.trim() !== '' && currentUser?.role_id?.name === 'admin') {
         updateData.password = user.password;
       }
 
@@ -171,10 +183,14 @@ const EditUser: React.FC = () => {
         updateData.banUntil = null;
       }
 
-      await api.put(`/admin/users/${id}`, updateData);
+      console.log('Sending update data:', updateData);
+      const response = await api.put(`/admin/users/${id}`, updateData);
+      console.log('Update response:', response.data);
       alert('Cập nhật người dùng thành công');
     } catch (err: any) {
-      setError('Failed to update user: ' + (err.response?.data?.message || err.message));
+      console.error('Update user error:', err);
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || 'Unknown error';
+      setError('Failed to update user: ' + errorMessage);
     }
   };
 
