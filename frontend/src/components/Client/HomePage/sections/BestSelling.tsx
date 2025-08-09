@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { getAllProducts } from "../../../../../api/product.api";
 import { getAllAttributes, getAttributeValues } from "../../../../../api/attribute.api";
 import { ToastSucess, ToastError } from "../../../../utils/toast";
+import { addToUserCart } from "../../../../utils/cartUtils";
 
 
 interface Product {
@@ -160,7 +161,6 @@ const BestSelling: React.FC = () => {
       return;
     }
 
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]") as any[];
     const variantAttributes = selectedVariant
       ? Object.entries(productAttributes)
         .map(([attrId, valueId]) => `${getAttributeName(attrId)}: ${getAttributeValue(valueId)}`)
@@ -169,6 +169,7 @@ const BestSelling: React.FC = () => {
 
     const cartItem = {
       _id: product._id,
+      id: product._id,
       name: product.name,
       price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
       image: selectedVariant?.image || product.image || product.images,
@@ -177,23 +178,8 @@ const BestSelling: React.FC = () => {
       quantity: 1,
     };
 
-    const existingIndex = cart.findIndex(
-      (item) =>
-        item._id === product._id &&
-        JSON.stringify(item.variant?.attributes?.map((a: any) => [a.attribute_id, a.value_id]).sort()) ===
-        JSON.stringify(selectedVariant?.attributes?.map((a: any) => [a.attribute_id, a.value_id]).sort())
-    );
-
-    if (existingIndex !== -1) {
-      cart[existingIndex].quantity += 1;
-    } else {
-      cart.push(cartItem);
-    }
-
-    localStorage.setItem("cart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("cartUpdated"));
+    addToUserCart(cartItem);
     ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
-    navigate("/cart");
   };
 
   const getValidAttributeValues = (product: Product, attributeId: string, selectedAttributes: { [key: string]: string }) => {

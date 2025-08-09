@@ -7,12 +7,10 @@ import { calculateDiscountedAmount } from '../../../../../utils/currency'
 const cx = classNames.bind(styles)
 
 interface Props {
-  vat: number
-  vatPercent: number
   order: stateOrder
 }
 
-export default function OrderTotalBox({ vat, vatPercent, order }: Props) {
+export default function OrderTotalBox({ order }: Props) {
   function calculateTotal(orderDetails?: any): number {
     const list = orderDetails ?? []
     return list.reduce((total: number, item: any) => total + item.price * item.quantity, 0)
@@ -23,10 +21,7 @@ export default function OrderTotalBox({ vat, vatPercent, order }: Props) {
         <span>Tổng phụ:</span>
         <span>{formatCurrency(calculateTotal(order.order_details))}</span>
       </div>
-      <div className={cx('line')}>
-        <span>Vat: {vatPercent}%</span>
-        <span>{formatCurrency(vat)}</span>
-      </div>
+
       <div className={cx('line')}>
         <span>Giảm giá: </span>
         {order.voucher ? (
@@ -45,7 +40,7 @@ export default function OrderTotalBox({ vat, vatPercent, order }: Props) {
       </div>
       <div className={cx('line', 'grand')}>
         <span>Tổng đơn hàng:</span>
-        <span>{formatCurrency(order.total_amount - vat)}</span>
+        <span>{formatCurrency(order.total_amount)}</span>
       </div>
     </div>
   )

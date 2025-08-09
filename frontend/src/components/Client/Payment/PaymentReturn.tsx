@@ -6,6 +6,7 @@ import { CartItem } from '../../../interfaces/checkout';
 import { useAppDispatch } from '../../../hooks/useAppDispatch';
 import { createOrder } from '../../../store/slices/orderSlice';
 import { Vnp_Response } from '../../../utils/constant';
+import { loadUserCart, clearUserCart } from '../../../utils/cartUtils';
 
 const getErrorMessage = (responseCode: string): string => {
   switch (responseCode) {
@@ -54,13 +55,11 @@ function PaymentReturn() {
       return;
     }
 
-    const stored = localStorage.getItem('cart');
-    if (stored) {
-      try {
-        setCartItems(JSON.parse(stored));
-      } catch (error) {
-        console.error('Lỗi khi parse giỏ hàng từ localStorage:', error);
-      }
+    try {
+      const userCartItems = loadUserCart();
+      setCartItems(userCartItems);
+    } catch (error) {
+      console.error('Lỗi khi tải giỏ hàng của user:', error);
     }
 
   }, [location.search]);
@@ -80,9 +79,12 @@ function PaymentReturn() {
     if (processedPayment === location.search) {
       return;
     }
+    
     if (allParams.vnp_ResponseCode === Vnp_Response.PAYMENT_SUCCESS) {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
       const orderData = {
-        user_id: JSON.parse(localStorage.getItem('user') || '{}').id,
+        user_id: user.id,
         address_id: localStorage.getItem('address_id'),
         order_details: cartItems.map((item) => ({
           product_id: item.variant?.product_id,
@@ -99,11 +101,12 @@ function PaymentReturn() {
         quantity: cartItems.reduce((total, item) => total + item.quantity, 0),
       };
 
-      if (orderData) {
+      if (orderData && orderData.user_id && orderData.address_id) {
         dispatch(createOrder(orderData));
-        localStorage.removeItem('cart');
+        
+        // Clear user cart instead of old 'cart' key
+        clearUserCart();
         localStorage.removeItem('appliedDiscount');
-        window.dispatchEvent(new Event('cartUpdated'));
 
         sessionStorage.setItem('processedPayment', location.search);
       }

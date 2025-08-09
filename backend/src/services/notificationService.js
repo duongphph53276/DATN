@@ -148,6 +148,25 @@ export const getUnreadNotificationCount = async (userId) => {
   }
 };
 
+export const markAllNotificationsAsRead = async (userId) => {
+  try {
+    const result = await NotiModel.updateMany(
+      { 
+        user_id: userId, 
+        is_read: false 
+      },
+      { 
+        $set: { is_read: true } 
+      }
+    );
+
+    return result;
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    throw error;
+  }
+};
+
 // Tạo thông báo cho shipper khi có đơn hàng mới cần giao
 export const createShipperAssignmentNotification = async (shipperId, orderId, customerName) => {
   const content = `Bạn có đơn hàng mới cần giao #${orderId.slice(-6)} từ khách hàng ${customerName}`;

@@ -5,6 +5,7 @@ import CartCountBadge from "./CartCountBadge";
 import NotificationBell from '../../components/common/NotificationBell';
 import api from "../../middleware/axios";
 import { User } from "../../interfaces/user";
+import { clearCartDisplay } from "../../utils/cartUtils";
 
 const Header = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -67,6 +68,8 @@ const Header = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("user");
+    clearCartDisplay(); // Chỉ clear hiển thị, GIỮ cart trong localStorage
+
     setShowUserMenu(false);
     navigate("/");
   };

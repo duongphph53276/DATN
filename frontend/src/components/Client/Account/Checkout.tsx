@@ -9,6 +9,7 @@ import { applyVoucher } from '../../../services/api/voucher';
 import { getAddress } from '../../../services/api/address';
 import { usePermissions } from '../../../hooks/usePermissions';
 import AddressModal from './AddressModal';
+import { clearUserCart, migrateOldCart, loadUserCart } from '../../../utils/cartUtils';
 
 const Checkout: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -36,15 +37,16 @@ const Checkout: React.FC = () => {
 
 
   useEffect(() => {
-    const stored = localStorage.getItem('cart');
-    if (stored) {
-      try {
-        setCartItems(JSON.parse(stored));
-      } catch (error) {
-        console.error('Lỗi khi parse giỏ hàng từ localStorage:', error);
-        setErrorMessage('Lỗi khi tải giỏ hàng. Vui lòng thử lại.');
-        setTimeout(() => setErrorMessage(null), 3000);
-      }
+    // Migrate cart cũ nếu có
+    migrateOldCart();
+    
+    try {
+      const userCartItems = loadUserCart();
+      setCartItems(userCartItems);
+    } catch (error) {
+      console.error('Lỗi khi tải giỏ hàng của user:', error);
+      setErrorMessage('Lỗi khi tải giỏ hàng. Vui lòng thử lại.');
+      setTimeout(() => setErrorMessage(null), 3000);
     }
 
     const savedDiscount = localStorage.getItem('appliedDiscount');
@@ -295,9 +297,8 @@ const Checkout: React.FC = () => {
         if (orderData) {
           dispatch(createOrder(orderData));
         }
-        localStorage.removeItem('cart');
+        clearUserCart();
         localStorage.removeItem('appliedDiscount');
-        window.dispatchEvent(new Event('cartUpdated'));
 
         setTimeout(() => {
           setSuccessMessage(null);

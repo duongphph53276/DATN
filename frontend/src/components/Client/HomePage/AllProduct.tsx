@@ -4,6 +4,7 @@ import ProductFilters from "../../../layout/Client/ProductFilters";
 import { getAllProducts } from "../../../../api/product.api";
 import { getAllAttributes, getAttributeValues } from "../../../../api/attribute.api";
 import { ToastSucess, ToastError } from "../../../utils/toast";
+import { addToUserCart } from "../../../utils/cartUtils";
 
 // Hàm chuyển chuỗi giá về số
 const parsePrice = (value: string | number | undefined | null): number => {
@@ -178,47 +179,26 @@ const AllProducts: React.FC = () => {
         .join(", ")
       : "Không có thuộc tính";
 
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    const existingIndex = cart.findIndex(
-      (item: any) =>
-        item._id === product._id &&
-        (!item.variant ||
-          JSON.stringify(
-            item.variant?.attributes?.map((attr: any) => [attr.attribute_id, attr.value_id]).sort()
-          ) ===
-          JSON.stringify(
-            selectedVariant?.attributes?.map((attr: any) => [attr.attribute_id, attr.value_id]).sort()
-          )
-        )
-    );
+    const cartItem = {
+      ...product,
+      id: product._id,
+      _id: product._id,
+      price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
+      image: selectedVariant ? selectedVariant.image || product.image : product.image,
+      variant: selectedVariant 
+        ? {
+            _id: selectedVariant._id,
+            product_id: selectedVariant.product_id,
+            price: selectedVariant.price,
+            attributes: selectedVariant.attributes
+          }
+        : undefined,
+      variantAttributes,
+      quantity: 1,
+    };
 
-    if (existingIndex !== -1) {
-      cart[existingIndex].quantity += 1;
-    } else {
-      cart.push({
-        ...product,
-        id: product._id,
-        _id: product._id,
-        price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
-        image: selectedVariant ? selectedVariant.image || product.image : product.image,
-        variant: selectedVariant 
-          ? {
-              _id: selectedVariant._id,
-              product_id: selectedVariant.product_id,
-              price: selectedVariant.price,
-              attributes: selectedVariant.attributes
-            }
-          : undefined,
-        variantAttributes,
-        quantity: 1,
-      });
-    }
-
-    localStorage.setItem("cart", JSON.stringify(cart));
-    // Dispatch sự kiện cartUpdated
-    window.dispatchEvent(new Event("cartUpdated"));
+    addToUserCart(cartItem);
     ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
-    navigate("/cart");
   };
 
   const getValidAttributeValues = (product: any, attributeId: string, selectedAttributes: { [key: string]: string }) => {

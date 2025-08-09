@@ -6,6 +6,7 @@ import ReactStars from "react-stars";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import { ToastSucess, ToastError } from "../../../utils/toast";
+import { addToUserCart } from "../../../utils/cartUtils";
 
 // Hàm chuyển chuỗi giá về số
 const parsePrice = (value: string | number | undefined | null): number => {
@@ -167,6 +168,8 @@ const DetailsPage = () => {
     return parsePrice(product?.price);
   };
 
+
+
   const handleAddToCart = () => {
     if (!product) return;
 
@@ -205,32 +208,8 @@ const DetailsPage = () => {
       quantity,
     };
 
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    const existingIndex = cart.findIndex(
-      (item: any) =>
-        item._id === cartItem._id &&
-        (!item.variant ||
-          JSON.stringify(item.variant?.attributes?.map((attr: any) => [attr.attribute_id, attr.value_id]).sort()) ===
-          JSON.stringify(cartItem.variant?.attributes?.map((attr: any) => [attr.attribute_id, attr.value_id]).sort()))
-    );
-
-    console.log("Sản phẩm:", product);
-    console.log("Giỏ hàng hiện tại:", cart);
-    console.log("Kiểm tra sản phẩm hiện có:", cart[existingIndex], "với cartItem:", cartItem);
-
-    if (existingIndex !== -1) {
-      cart[existingIndex].quantity += cartItem.quantity;
-    } else {
-      cart.push(cartItem);
-    }
-
-    localStorage.setItem("cart", JSON.stringify(cart));
-    console.log("Giỏ hàng đã lưu vào localStorage:", cart);
-    // Dispatch sự kiện cartUpdated
-    window.dispatchEvent(new Event("cartUpdated"));
-    console.log("Cart saved to localStorage:", cart)
+    addToUserCart(cartItem);
     ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
-    navigate("/cart");
   };
 
   const handleReviewSubmit = async () => {
