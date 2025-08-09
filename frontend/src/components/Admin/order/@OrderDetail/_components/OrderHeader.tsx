@@ -9,13 +9,15 @@ import { getShippers, Shipper } from '../../../../../services/api/shipper'
 interface Props {
   orderId: string
   orderStatus: stateOrder['status']
-  onChangeStatus: (e: React.ChangeEvent<HTMLSelectElement>, shipperId?: string) => void
+  onChangeStatus: (e: React.ChangeEvent<HTMLSelectElement>, shipperId?: string, cancelReason?: string) => void
 }
 
 export default function OrderHeader({ orderId, orderStatus, onChangeStatus }: Props) {
   const [shippers, setShippers] = useState<Shipper[]>([])
   const [selectedShipper, setSelectedShipper] = useState<string>('')
   const [showShipperSelect, setShowShipperSelect] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancelReason, setCancelReason] = useState<string>('')
   
   const availableStatuses = getAvailableStatuses(orderStatus, [...statusOptions])
 
@@ -49,7 +51,13 @@ export default function OrderHeader({ orderId, orderStatus, onChangeStatus }: Pr
       return
     }
     
-    // Nếu không phải shipping, gọi onChangeStatus ngay
+    // Nếu chọn cancelled, hiển thị modal lý do hủy
+    if (newStatus === 'cancelled') {
+      setShowCancelModal(true)
+      return
+    }
+    
+    // Nếu không phải shipping hoặc cancelled, gọi onChangeStatus ngay
     onChangeStatus(e)
   }
 
@@ -72,6 +80,28 @@ export default function OrderHeader({ orderId, orderStatus, onChangeStatus }: Pr
   const handleCancelShipperSelect = () => {
     setShowShipperSelect(false)
     setSelectedShipper('')
+  }
+
+  const handleCancelOrder = () => {
+    if (!cancelReason.trim()) {
+      alert('Vui lòng nhập lý do hủy đơn hàng')
+      return
+    }
+    
+    // Tạo một event giả lập với value là 'cancelled' và lý do hủy
+    const fakeEvent = {
+      target: { value: 'cancelled' }
+    } as React.ChangeEvent<HTMLSelectElement>
+    
+    // Cập nhật hàm onChangeStatus để nhận thêm cancelReason
+    onChangeStatus(fakeEvent, undefined, cancelReason)
+    setShowCancelModal(false)
+    setCancelReason('')
+  }
+
+  const handleCancelModalClose = () => {
+    setShowCancelModal(false)
+    setCancelReason('')
   }
 
   return (
@@ -128,6 +158,42 @@ export default function OrderHeader({ orderId, orderStatus, onChangeStatus }: Pr
           </div>
         )}
       </div>
+
+      {/* Cancel Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Hủy đơn hàng</h3>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Lý do hủy đơn hàng *
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                rows={4}
+                placeholder="Nhập lý do hủy đơn hàng..."
+              />
+            </div>
+            <div className="flex items-center gap-3 justify-end">
+              <button
+                onClick={handleCancelModalClose}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Đóng
+              </button>
+              <button
+                onClick={handleCancelOrder}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                disabled={!cancelReason.trim()}
+              >
+                Xác nhận hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

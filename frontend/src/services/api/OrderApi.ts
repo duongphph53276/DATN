@@ -15,6 +15,12 @@ export const updateOrderStatus = async (data: orderUpdateStatusData) => {
     requestBody.shipper_id = data.shipper_id;
   }
   
+  // Nếu có cancel_reason, thêm vào request body
+  if (data.cancel_reason) {
+    requestBody.cancel_reason = data.cancel_reason;
+  }
+  
+  
   const response = await api.patch(`${URL}/${data._id}/status`, requestBody);
   return response.data;
 };
