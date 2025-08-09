@@ -85,6 +85,52 @@ export const register = async (req, res) => {
   }
 };
 
+export const registerAdmin = async (req, res) => {
+  const { name, email, password } = req.body;
+  try {
+    // Tìm hoặc tạo role admin
+    let adminRole = await RoleModel.findOne({ name: "admin" });
+    if (!adminRole) {
+      adminRole = new RoleModel({
+        name: "admin",
+        description: "Administrator role",
+      });
+      await adminRole.save();
+    }
+
+    // Bỏ qua kiểm tra admin đã tồn tại - cho phép tạo nhiều admin
+    // const existingAdmin = await UserModel.findOne({ role_id: adminRole._id });
+    // if (existingAdmin) {
+    //   return res.status(400).json({ 
+    //     message: "Hệ thống đã có admin. Không thể tạo thêm admin mới.", 
+    //     status: false 
+    //   });
+    // }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = new UserModel({
+      name,
+      email,
+      password: hashedPassword,
+      role_id: adminRole._id,
+      isVerified: true, // Admin được xác thực ngay
+      status: "active"
+    });
+    await user.save();
+
+    res.status(201).send({
+      message: "Tạo tài khoản admin thành công.",
+      status: true,
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      res.status(400).json({ message: "Email đã tồn tại", status: false });
+    } else {
+      res.status(500).json({ message: error.message, status: false });
+    }
+  }
+};
+
 export const checkEmail = async (req, res) => {
   const { email } = req.query;
   try {

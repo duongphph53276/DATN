@@ -11,7 +11,7 @@ import { createAttributeValue, deleteAttributeValue, getAttributeValueById, getA
 import { createVariant, deleteVariant, getVariantById, getVariantsByProduct, updateVariant } from './controllers/productVariant.js';
 import orderRoutes from './routes/order.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
-import { checkEmail, login, Profile, register, UpdateProfile, verifyEmail } from './controllers/auth.js';
+import { checkEmail, login, Profile, register, registerAdmin, UpdateProfile, verifyEmail } from './controllers/auth.js';
 import { getUserAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from './controllers/address/address.js';
 import { authMiddleware, restrictTo } from './middleware/auth.js';
 import { getUserById, getUsers, updateUser, getUserWithPermissions, checkUserPermission, changePassword, getUserStatistics, getShippers } from './controllers/user/user.js';
@@ -47,6 +47,7 @@ app.use(express.json());
 
 // Public routes
 app.post('/register', register);
+app.post('/register/admin', registerAdmin);
 app.post('/login', login);
 app.get('/check-email', checkEmail);
 app.get('/user', authMiddleware, getUserById);

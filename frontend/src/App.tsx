@@ -18,6 +18,7 @@ import AdminLayout from './layout/Admin/Admin.layout';
 import ProtectedRoute from './components/Admin/ProtectedRoute';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
+import RegisterAdmin from './components/Auth/RegisterAdmin';
 import ForgotPassword from './components/Auth/ForgotPassword';
 import ListUser from './components/Admin/user/ListUser';
 import UserDetail from './components/Admin/user/UserDetail';
@@ -82,6 +83,10 @@ function App() {
     {
       path: "/register",
       element: <AuthGuard><Register /></AuthGuard>,
+    },
+    {
+      path: "/register/admin",
+      element: <AuthGuard><RegisterAdmin /></AuthGuard>,
     },
     {
       path: "/forgotpassword",
