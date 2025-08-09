@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCamera, FaCalendar, FaShieldAlt } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { User } from '../../../interfaces/user';
+import instance from '../../../../api/instance';
 
 const UpdateProfile: React.FC = () => {
   const [formData, setFormData] = useState<User | null>(null);
@@ -22,7 +23,7 @@ const UpdateProfile: React.FC = () => {
       }
 
       try {
-        const response = await fetch('http://localhost:5001/profile', {
+        const response = await fetch('http://localhost:5000/profile', {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,
@@ -70,7 +71,7 @@ const UpdateProfile: React.FC = () => {
     if (!formData) return;
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch('http://localhost:5001/profile', {
+      const response = await fetch('http://localhost:5000/profile', {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,

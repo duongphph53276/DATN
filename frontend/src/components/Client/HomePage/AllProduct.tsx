@@ -198,9 +198,17 @@ const AllProducts: React.FC = () => {
       cart.push({
         ...product,
         id: product._id,
+        _id: product._id,
         price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
         image: selectedVariant ? selectedVariant.image || product.image : product.image,
-        variant: selectedVariant || undefined,
+        variant: selectedVariant 
+          ? {
+              _id: selectedVariant._id,
+              product_id: selectedVariant.product_id,
+              price: selectedVariant.price,
+              attributes: selectedVariant.attributes
+            }
+          : undefined,
         variantAttributes,
         quantity: 1,
       });

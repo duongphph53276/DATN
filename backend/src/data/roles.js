@@ -24,6 +24,16 @@ export const createDefaultRoles = async () => {
       console.log('Created employee role');
     }
 
+    // Tạo role shipper nếu chưa có
+    let shipperRole = await RoleModel.findOne({ name: 'shipper' });
+    if (!shipperRole) {
+      shipperRole = await RoleModel.create({
+        name: 'shipper',
+        description: 'Người giao hàng'
+      });
+      console.log('Created shipper role');
+    }
+
     // Gán tất cả permissions cho admin
     const allPermissions = await PermissionModel.find();
     for (const permission of allPermissions) {
@@ -59,6 +69,29 @@ export const createDefaultRoles = async () => {
         if (!existingEmployeePermission) {
           await RolePermissionModel.create({
             role_id: employeeRole._id,
+            permission_id: permission._id
+          });
+        }
+      }
+    }
+
+    // Gán permissions cho shipper
+    const shipperPermissions = [
+      'view_shipper_orders',
+      'update_delivery_status'
+    ];
+
+    for (const permissionName of shipperPermissions) {
+      const permission = await PermissionModel.findOne({ name: permissionName });
+      if (permission) {
+        const existingShipperPermission = await RolePermissionModel.findOne({
+          role_id: shipperRole._id,
+          permission_id: permission._id
+        });
+        
+        if (!existingShipperPermission) {
+          await RolePermissionModel.create({
+            role_id: shipperRole._id,
             permission_id: permission._id
           });
         }

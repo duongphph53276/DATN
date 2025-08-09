@@ -26,7 +26,7 @@ const AddressManagement: React.FC = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5001/addresses', {
+      const response = await fetch('http://localhost:5000/addresses', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -77,7 +77,7 @@ const AddressManagement: React.FC = () => {
     e.preventDefault();
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch('http://localhost:5001/addresses', {
+      const response = await fetch('http://localhost:5000/addresses', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -105,7 +105,7 @@ const AddressManagement: React.FC = () => {
     
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`http://localhost:5001/addresses/${editingAddress._id}`, {
+      const response = await fetch(`http://localhost:5000/addresses/${editingAddress._id}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -134,7 +134,7 @@ const AddressManagement: React.FC = () => {
     
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`http://localhost:5001/addresses/${addressId}`, {
+      const response = await fetch(`http://localhost:5000/addresses/${addressId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -157,7 +157,7 @@ const AddressManagement: React.FC = () => {
   const handleSetDefault = async (addressId: string) => {
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`http://localhost:5001/addresses/${addressId}/default`, {
+      const response = await fetch(`http://localhost:5000/addresses/${addressId}/default`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,

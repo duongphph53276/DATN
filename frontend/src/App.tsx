@@ -45,6 +45,11 @@ import NewsPage from './components/Client/HomePage/pages/NewPage';
 import CategoryPage from './components/Client/HomePage/pages/CategoryPage';
 import PaymentReturn from './components/Client/Payment/PaymentReturn';
 import OrderDetailPage from './components/Client/Account/OrderDetailPage';
+import ShipperLayout from './layout/Shipper/Shipper.layout';
+import ProtectedShipperRoute from './components/Shipper/ProtectedShipperRoute';
+import AllOrders from './components/Shipper/AllOrders';
+import ShippingOrders from './components/Shipper/ShippingOrders';
+import DeliveredOrders from './components/Shipper/DeliveredOrders';
 
 const SimpleProtectedRoute = ({ children, requiresAdmin = false }: { children: JSX.Element; requiresAdmin?: boolean }) => {
   const token = localStorage.getItem("token");
@@ -129,6 +134,15 @@ function App() {
         { path: "permissions", element: <ProtectedRoute requiredPermission="view_permissions"><PermissionManagement /></ProtectedRoute> },
         { path: "order-list", element: <ProtectedRoute requiredPermission="view_orders"><ListOrderModule /></ProtectedRoute> },
         { path: "order-detail/:id", element: <ProtectedRoute requiredPermission="view_orders"><OrderDetail /></ProtectedRoute> },
+      ],
+    },
+    {
+      path: "/shipper",
+      element: <ProtectedShipperRoute><ShipperLayout /></ProtectedShipperRoute>,
+      children: [
+        { path: "", element: <AllOrders /> },
+        { path: "shipping", element: <ShippingOrders /> },
+        { path: "delivered", element: <DeliveredOrders /> },
       ],
     },
     { path: "*", element: <NotFound /> },

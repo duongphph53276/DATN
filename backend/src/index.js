@@ -14,7 +14,7 @@ import paymentRoutes from './routes/payment.routes.js';
 import { checkEmail, login, Profile, register, UpdateProfile, verifyEmail } from './controllers/auth.js';
 import { getUserAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from './controllers/address/address.js';
 import { authMiddleware, restrictTo } from './middleware/auth.js';
-import { getUserById, getUsers, updateUser, getUserWithPermissions, checkUserPermission, changePassword, getUserStatistics } from './controllers/user/user.js';
+import { getUserById, getUsers, updateUser, getUserWithPermissions, checkUserPermission, changePassword, getUserStatistics, getShippers } from './controllers/user/user.js';
 import { createRole, getRoleById, getRoles, updateRole, deleteRole, getRolePermissions, assignPermissionToRole, removePermissionFromRole, getAvailablePermissions } from './controllers/user/role.js';
 import path from "path";
 import { fileURLToPath } from "url";
@@ -149,9 +149,10 @@ app.get('/reviews/user/product/:product_id', authMiddleware, getUserReviewByProd
 const adminRouter = express.Router();
 adminRouter.use(authMiddleware, restrictTo('admin', 'employee'));
 adminRouter.get('/users', getUsers);
+adminRouter.get('/users/statistics', getUserStatistics);
+adminRouter.get('/users/shippers', getShippers);
 adminRouter.get('/users/:id', getUserById);
 adminRouter.put('/users/:id', updateUser);
-adminRouter.get('/users/statistics', getUserStatistics);
 
 adminRouter.get('/category', ListCategory);
 adminRouter.post('/category/add', AddCategory);
@@ -162,6 +163,12 @@ adminRouter.get('/category/:id', GetCategoryById);
 // adminRouter.
 
 app.use('/admin', adminRouter);
+
+// Shipper routes - chỉ cho role shipper
+const shipperRouter = express.Router();
+shipperRouter.use(authMiddleware, restrictTo('shipper'));
+
+app.use('/shipper', shipperRouter);
 
 app.get('/verify-email', verifyEmail);
 

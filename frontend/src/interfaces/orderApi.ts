@@ -96,6 +96,7 @@ export interface OrderState {
 export interface orderUpdateStatusData {
   _id: string | undefined;
   order_status: string;
+  shipper_id?: string;
 }
 
 export interface OrderListResponse {
