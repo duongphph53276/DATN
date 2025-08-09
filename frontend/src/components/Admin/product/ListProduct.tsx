@@ -8,6 +8,7 @@ import { AiOutlineDoubleLeft, AiOutlineDoubleRight } from "react-icons/ai";
 import { FaEdit, FaFilter, FaSearch, FaUndo, FaEye } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
 import { X, ChevronDown, ChevronUp } from "lucide-react";
+import { ToastSucess, ToastError } from "../../../utils/toast";
 
 const ListProduct: React.FC = () => {
   const navigate = useNavigate();
@@ -48,7 +49,7 @@ const ListProduct: React.FC = () => {
         setCategories(categoriesData);
       } catch (error) {
         console.error("Lỗi lấy dữ liệu:", error);
-        alert("Không thể tải dữ liệu. Vui lòng kiểm tra kết nối hoặc API.");
+        ToastError("Không thể tải dữ liệu. Vui lòng kiểm tra kết nối hoặc API.");
       }
     };
     fetchData();
@@ -160,6 +161,7 @@ const ListProduct: React.FC = () => {
       if (currentProducts.length === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       }
+      ToastSucess("Xóa sản phẩm thành công")
     } catch (error) {
       console.error("Lỗi xóa sản phẩm:", error);
     }
@@ -172,7 +174,7 @@ const ListProduct: React.FC = () => {
       setOpenModalId(productId);
     } catch (error) {
       console.error("Lỗi khi mở modal sản phẩm:", error);
-      alert("Không thể tải thông tin sản phẩm");
+      ToastError("Không thể tải thông tin sản phẩm");
     }
   };
 

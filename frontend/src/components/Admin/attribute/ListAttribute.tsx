@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { FaFilter, FaSearch, FaUndo, FaEdit, FaTrash, FaPlus, FaEye, FaFolder } from "react-icons/fa";
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
+import { ToastSucess, ToastError } from "../../../utils/toast";
 
 interface AttributeValue {
   _id: string;
@@ -116,7 +117,7 @@ const AttributeList: React.FC = () => {
     try {
       await deleteAttribute(id);
       setAttributes(attributes.filter((attr) => attr._id !== id));
-      alert("Xóa thành công");
+      ToastSucess("Xóa thành công");
     } catch (err) {
       console.error("Lỗi khi xóa:", err);
       setError("Xóa thuộc tính thất bại");
@@ -127,17 +128,17 @@ const AttributeList: React.FC = () => {
     try {
       if (editingValueId) {
         await updateAttributeValue(editingValueId, data);
-        alert("Cập nhật thành công");
+        ToastSucess("Cập nhật thành công");
       } else {
         await createAttributevalue({ attribute_id: attributeId, value: data.value });
-        alert("Thêm thành công");
+        ToastSucess("Thêm thành công");
       }
       await fetchAttributeValues(attributeId);
       reset();
       setEditingValueId(null);
     } catch (err) {
       console.error(err);
-      alert("Thao tác thất bại!");
+      ToastError("Thao tác thất bại!");
     }
   };
 

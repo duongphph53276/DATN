@@ -6,6 +6,7 @@ import { IProduct } from "../../../interfaces/product";
 import { IVariant, IVariantAttribute } from "../../../interfaces/variant";
 import ImageGallery from "react-image-gallery";
 import "react-image-gallery/styles/css/image-gallery.css";
+import { ToastSucess, ToastError } from "../../../utils/toast";
 
 const ProductDetailAdmin = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,7 +24,7 @@ const ProductDetailAdmin = () => {
         setProduct(res.data.data.product);
         setVariants(variantRes.data.data);
       } catch (err) {
-        alert("Không tìm thấy sản phẩm");
+        ToastError("Không tìm thấy sản phẩm");
       }
     };
 

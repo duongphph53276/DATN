@@ -3,7 +3,7 @@ import { OrderDetailModel } from '../models/OrderDetailModel.js';
 import { VoucherModel } from '../models/Voucher.js';
 import { AddressModel } from '../models/User/address.js';
 import { UserModel } from '../models/User/user.js';
-import ProductVariant from '../models/ProductVariant.js';
+import ProductVariant from '../models/productVariant.js';
 import Product from "../models/product.js";
 import {
   createOrderSuccessNotification,

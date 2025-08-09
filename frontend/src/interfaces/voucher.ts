@@ -1,5 +1,6 @@
 // Voucher
 export interface IVoucher {
+  description: any;
   _id?: string;
   code: string;
   discount_type: 'percentage' | 'fixed'; // dùng discount_type như BE mới

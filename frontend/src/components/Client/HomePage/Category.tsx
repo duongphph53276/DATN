@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCategories } from '../../../../api/category.api';
+import { ToastSucess, ToastError } from "../../../utils/toast";
 
 interface CategoryItem {
   _id: string;
@@ -24,7 +25,7 @@ const Category: React.FC = () => {
         setCategories(response.data?.data.filter((cat: CategoryItem) => !cat.parent_id) || []);
       } catch (error) {
         console.error('Lỗi khi tải danh mục:', error);
-        alert('Không thể tải danh mục. Vui lòng thử lại.');
+        ToastError('Không thể tải danh mục. Vui lòng thử lại.');
       } finally {
         setLoading(false);
       }
