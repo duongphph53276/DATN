@@ -1,5 +1,6 @@
 import { NotiModel } from '../models/notification.js';
-import { sendNotificationToUser, sendNotificationToAdmins } from '../socket/socket.js';
+import { sendNotificationToUser, sendNotificationToAdmins, sendNotificationToShippers } from '../socket/socket.js';
+import { RoleModel } from '../models/User/role.js';
 
 export const createNotification = async (userId, content, type, roleId = null) => {
   try {
@@ -143,6 +144,35 @@ export const getUnreadNotificationCount = async (userId) => {
     return count;
   } catch (error) {
     console.error('Error getting unread notification count:', error);
+    throw error;
+  }
+};
+
+// Tạo thông báo cho shipper khi có đơn hàng mới cần giao
+export const createShipperAssignmentNotification = async (shipperId, orderId, customerName) => {
+  const content = `Bạn có đơn hàng mới cần giao #${orderId.slice(-6)} từ khách hàng ${customerName}`;
+  
+  try {
+    // Tạo notification cá nhân cho shipper
+    const personalNotification = await createNotification(shipperId, content, 'shipper_assignment');
+    
+    // Tạo notification chung cho role shipper
+    const shipperRole = await RoleModel.findOne({ name: 'shipper' });
+    if (shipperRole) {
+      const notification = new NotiModel({
+        user_id: null,
+        content,
+        type: 'shipper_assignment',
+        role_id: shipperRole._id
+      });
+
+      const savedNotification = await notification.save();
+      sendNotificationToShippers(savedNotification);
+    }
+
+    return personalNotification;
+  } catch (error) {
+    console.error('Error creating shipper assignment notification:', error);
     throw error;
   }
 }; 

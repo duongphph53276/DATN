@@ -8,6 +8,7 @@ import { RingLoader } from "react-spinners";
 import ReactPaginate from "react-paginate";
 import { useLocation, useNavigate } from "react-router-dom";
 import OrderFilterModule from "../@FilterOrder/OrderFilterModule";
+import { getVietnameseStatus, paymentMethodVietnamese } from "../../../../utils/constant";
 
 const cx = classnames.bind(styles);
 
@@ -104,12 +105,12 @@ function ListOrderModule() {
                       <td>{index + 1 + currentPage * pagination.per_page}</td>
                       <td>{order.user_id}</td>
                       <td className={cx("status", order.status)}>
-                        {order.status}
+                        {getVietnameseStatus(order.status)}
                       </td>
                       <td>{order.quantity}</td>
                       <td>{order.total_amount.toLocaleString()}₫</td>
                       <td>{order.discount_code || "—"}</td>
-                      <td>{order.payment_method.replace(/_/g, " ")}</td>
+                      <td>{paymentMethodVietnamese[order.payment_method] || order.payment_method}</td>
                       <td>
                         {new Date(order.created_at).toLocaleDateString()}
                       </td>

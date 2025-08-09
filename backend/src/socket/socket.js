@@ -38,6 +38,10 @@ export const initializeSocket = (server) => {
     } else if (socket.role == 'client') {
       socket.join(`user_${socket.userId}`);
       console.log(`Client ${socket.userId} joined 'user_${socket.userId}' room`);
+    } else if (socket.role == 'shipper') {
+      socket.join('shippers');
+      socket.join(`user_${socket.userId}`);
+      console.log(`Shipper ${socket.userId} joined 'shippers' room`);
     } else {
       console.log(`User ${socket.userId} has unknown role: ${socket.role}`);
     }
@@ -60,6 +64,12 @@ export const sendNotificationToUser = (userId, notification) => {
 export const sendNotificationToAdmins = (notification) => {
   if (io) {
     io.to('admins').emit('new_notification', notification);
+  }
+};
+
+export const sendNotificationToShippers = (notification) => {
+  if (io) {
+    io.to('shippers').emit('new_notification', notification);
   }
 };
 

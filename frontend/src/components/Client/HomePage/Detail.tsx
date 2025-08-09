@@ -194,7 +194,12 @@ const DetailsPage = () => {
       image: selectedVariant?.image || product.images || product.image || "https://via.placeholder.com/420",
       price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
       variant: selectedVariant
-        ? { attributes: selectedVariant.attributes.map((attr: any) => ({ attribute_id: attr.attribute_id, value_id: attr.value_id })) }
+        ? {
+            _id: selectedVariant._id,
+            product_id: selectedVariant.product_id,
+            price: selectedVariant.price,
+            attributes: selectedVariant.attributes.map((attr: any) => ({ attribute_id: attr.attribute_id, value_id: attr.value_id }))
+          }
         : undefined,
       variantAttributes,
       quantity,

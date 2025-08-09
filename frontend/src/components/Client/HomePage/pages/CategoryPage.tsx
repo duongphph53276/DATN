@@ -170,10 +170,17 @@ const CategoryPage: React.FC = () => {
       cart.push({
         ...product,
         id: product._id,
+        _id: product._id,
         price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
-        image: selectedVariant ? selectedVariant.image || product.image : product.image,
-        variant: selectedVariant || undefined,
-        variantAttributes,
+        image: selectedVariant ? selectedVariant.image || product.images : product.images,
+        variant: selectedVariant 
+          ? {
+              _id: selectedVariant._id,
+              product_id: selectedVariant.product_id,
+              price: selectedVariant.price,
+              attributes: selectedVariant.attributes
+            }
+          : undefined,
         quantity: 1,
       });
     }

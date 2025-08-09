@@ -29,6 +29,9 @@ export const defaultPermissions = [
   { name: 'view_orders', description: 'Xem danh sách đơn hàng' },
   { name: 'edit_order', description: 'Chỉnh sửa đơn hàng' },
   { name: 'delete_order', description: 'Xóa đơn hàng' },
+  { name: 'assign_shipper', description: 'Gán đơn hàng cho shipper' },
+  { name: 'view_shipper_orders', description: 'Xem đơn hàng được giao (dành cho shipper)' },
+  { name: 'update_delivery_status', description: 'Cập nhật trạng thái giao hàng' },
 
   // Role permissions
   { name: 'view_roles', description: 'Xem danh sách vai trò' },

@@ -8,6 +8,15 @@ export const ORDER_STATUS_FLOW = {
   CANCELLED: 4,
 } as const
 
+// Mapping status tên để dễ đọc
+export const ORDER_STATUS_NAMES = {
+  pending: 'PENDING',
+  preparing: 'PREPARING', 
+  shipping: 'SHIPPING',
+  delivered: 'DELIVERED',
+  cancelled: 'CANCELLED'
+} as const
+
 export const getStatusLevel = (status: stateOrder['status']): number => {
   const statusMap: Record<string, number> = {
     'pending': ORDER_STATUS_FLOW.PENDING,

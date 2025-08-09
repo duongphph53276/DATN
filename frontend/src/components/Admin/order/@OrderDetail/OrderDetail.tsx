@@ -1,6 +1,4 @@
 // OrderDetail/index.tsx
-import classNames from 'classnames/bind'
-import styles from './OrderDetail.module.scss'
 import { useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { getOrderById } from '../../../../services/api/OrderApi'
@@ -15,8 +13,6 @@ import OrderInfoGrid from './_components/OrderInfoGrid'
 import OrderTable from './_components/OrderTable'
 import OrderTotalBox from './_components/OrderTotalBox'
 import { canChangeStatus, getStatusChangeErrorMessage } from '../../../../utils/orderStatusValidation'
-
-const cx = classNames.bind(styles)
 
 export default function OrderDetail() {
     const dispatch = useAppDispatch()
@@ -35,13 +31,17 @@ export default function OrderDetail() {
         })()
     }, [id])
 
-    if (!order) return <div className={cx('loading-page')}><RingLoader color="#36d7b7" size={60} /></div>
+    if (!order) return (
+        <div className="flex items-center justify-center min-h-screen">
+            <RingLoader color="#36d7b7" size={60} />
+        </div>
+    )
 
     const subtotal = order.order_details.reduce((sum: number, item: any) => sum + item.price, 0)
     const vat = (subtotal * vatPercent) / 100
     const grandTotal = subtotal + vat
 
-    const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>, shipperId?: string) => {
         const newStatus = e.target.value as stateOrder['status']
         if (!order) return
 
@@ -53,7 +53,14 @@ export default function OrderDetail() {
         }
 
         try {
-            const updated: any = await dispatch(updateOrder({ _id: order._id, order_status: newStatus })).unwrap()
+            const updateData: any = { _id: order._id, order_status: newStatus }
+            
+            // Nếu có shipper_id, thêm vào updateData
+            if (shipperId) {
+                updateData.shipper_id = shipperId
+            }
+            
+            const updated: any = await dispatch(updateOrder(updateData)).unwrap()
             ToastSucess(updated.message)
             setOrder({ ...order, status: updated.data.status })
         } catch (err) {
@@ -64,9 +71,9 @@ export default function OrderDetail() {
     }
 
     return (
-        <div className={cx('wrapper')}>
+        <div className="min-h-screen bg-gray-50 p-6">
             <OrderBanner />
-            <div className={cx('card')}>
+            <div className="bg-white rounded-lg shadow-sm border p-6">
                 <OrderHeader orderId={order._id} orderStatus={order.status} onChangeStatus={handleStatusChange} />
                 <OrderInfoGrid order={order} />
                 <OrderTable items={order.order_details} />

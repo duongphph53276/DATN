@@ -8,6 +8,7 @@ import { callVnpaySanboxPayUrl } from '../../../services/api/payment';
 import { applyVoucher } from '../../../services/api/voucher';
 import { getAddress } from '../../../services/api/address';
 import { usePermissions } from '../../../hooks/usePermissions';
+import AddressModal from './AddressModal';
 
 const Checkout: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -28,6 +29,10 @@ const Checkout: React.FC = () => {
   const [discountSuccess, setDiscountSuccess] = useState<string | null>(null);
   const { userInfo } = usePermissions();
   const dispatch = useAppDispatch();
+
+  // Address modal state
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [availableAddresses, setAvailableAddresses] = useState<Address[]>([]);
 
 
   useEffect(() => {
@@ -70,10 +75,15 @@ const Checkout: React.FC = () => {
 
       if (response.status === 200) {
         const addresses: Address[] = response.data.data;
+        setAvailableAddresses(addresses);
         const defaultAddress = addresses.find(addr => addr.is_default);
         if (defaultAddress) {
           setAddress(defaultAddress);
           setAddressId(defaultAddress._id);
+        } else if (addresses.length > 0) {
+          // If no default address, select the first one
+          setAddress(addresses[0]);
+          setAddressId(addresses[0]._id);
         }
       } else {
         setErrorMessage('Không thể tải địa chỉ. Vui lòng thêm địa chỉ giao hàng.');
@@ -82,6 +92,12 @@ const Checkout: React.FC = () => {
       console.error('Lỗi khi fetch địa chỉ:', error);
       setErrorMessage('Lỗi khi tải địa chỉ. Vui lòng thử lại.');
     }
+  };
+
+  const handleSelectAddress = (selectedAddress: Address) => {
+    setAddress(selectedAddress);
+    setAddressId(selectedAddress._id);
+    setErrorMessage(null);
   };
 
   const totalPrice = cartItems.reduce(
@@ -257,10 +273,10 @@ const Checkout: React.FC = () => {
           user_id: userInfo._id,
           address_id: addressId,
           order_details: cartItems.map((item) => ({
-            product_id: item.variant?.product_id || item.id,
-            variant_id: item.variant?._id || item.id,
+            product_id: item.variant?.product_id || item._id || item.id,
+            variant_id: item.variant?._id || 'default-variant',
             name: item.name,
-            price: item.variant?.price || item.price,
+            price: item.price,
             quantity: item.quantity,
             image: item.image,
           })),
@@ -271,6 +287,11 @@ const Checkout: React.FC = () => {
         };
 
         console.log('Sending order data:', orderData);
+        console.log('Order details breakdown:');
+        orderData.order_details.forEach((detail, index) => {
+          console.log(`Item ${index + 1}:`, detail);
+        });
+        
         if (orderData) {
           dispatch(createOrder(orderData));
         }
@@ -437,31 +458,60 @@ const Checkout: React.FC = () => {
             </div>
 
             <div className="bg-white rounded-3xl shadow-xl p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                🏠 <span className="ml-2">Địa chỉ giao hàng</span>
-              </h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                  🏠 <span className="ml-2">Địa chỉ giao hàng</span>
+                </h2>
+                <button
+                  onClick={() => setShowAddressModal(true)}
+                  className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 py-2 rounded-full font-semibold transition-all transform hover:scale-105"
+                >
+                  {address ? 'Thay đổi' : 'Chọn địa chỉ'}
+                </button>
+              </div>
 
               {address ? (
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border-2 border-green-200">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center mb-3">
-                        <span className="bg-green-500 text-white text-xs px-3 py-1 rounded-full font-bold">
-                          📍 Địa chỉ mặc định
-                        </span>
+                      <div className="flex items-center gap-2 mb-3">
+                        {address.is_default ? (
+                          <span className="bg-green-500 text-white text-xs px-3 py-1 rounded-full font-bold">
+                            📍 Địa chỉ mặc định
+                          </span>
+                        ) : (
+                          <span className="bg-blue-500 text-white text-xs px-3 py-1 rounded-full font-bold">
+                            📍 Địa chỉ đã chọn
+                          </span>
+                        )}
                       </div>
                       <p className="text-lg font-semibold text-gray-800 mb-2">{address.street}</p>
                       <p className="text-gray-600">{address.city}, {address.country}</p>
-                      <p className="text-gray-500 text-sm">Mã bưu điện: {address.postal_code}</p>
+                      {address.postal_code && (
+                        <p className="text-gray-500 text-sm">Mã bưu điện: {address.postal_code}</p>
+                      )}
                     </div>
                     <div className="text-4xl">🎯</div>
                   </div>
+
+                  <div className="mt-4 pt-4 border-t border-green-200">
+                    <p className="text-sm text-green-700 flex items-center">
+                      <span className="mr-2">✅</span>
+                      Địa chỉ đã được xác nhận
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <div className="text-center py-8 bg-gray-50 rounded-2xl">
+                <div className="text-center py-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300">
                   <div className="text-4xl mb-4">📍</div>
-                  <p className="text-gray-500">Không tìm thấy địa chỉ mặc định</p>
-                  <p className="text-sm text-gray-400 mt-2">Vui lòng thêm địa chỉ giao hàng</p>
+                  <p className="text-gray-500 text-lg font-medium">Chưa chọn địa chỉ giao hàng</p>
+                  <p className="text-sm text-gray-400 mt-2 mb-4">Vui lòng chọn hoặc thêm địa chỉ giao hàng</p>
+                  <button
+                    onClick={() => setShowAddressModal(true)}
+                    className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white px-6 py-3 rounded-full font-semibold transition-all transform hover:scale-105"
+                  >
+                    Chọn địa chỉ ngay
+                  </button>
                 </div>
               )}
             </div>
@@ -640,6 +690,14 @@ const Checkout: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Address Management Modal */}
+      <AddressModal
+        isOpen={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        onSelectAddress={handleSelectAddress}
+        currentAddress={address}
+      />
     </div>
   );
 };

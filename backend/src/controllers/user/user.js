@@ -2,6 +2,7 @@ import { UserModel } from '../../models/User/user.js'; // Điều chỉnh đư�
 import { RoleModel } from '../../models/User/role.js';
 import { RolePermissionModel } from '../../models/User/role_permission.js';
 import { PermissionModel } from '../../models/User/permission.js';
+import bcrypt from 'bcrypt';
 
 export const getUsers = async (req, res) => {
   try {
@@ -81,41 +82,46 @@ export const updateUser = async (req, res) => {
   } = req.body;
   
   try {
+    console.log('Update user request:', { id, ...req.body });
+
     // Kiểm tra xem user có tồn tại không
     const existingUser = await UserModel.findById(id);
     if (!existingUser) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ 
+        status: false,
+        message: 'User not found' 
+      });
     }
 
-    // Chuẩn bị dữ liệu cập nhật
-    const updateData = {
-      email,
-      name,
-      phone,
-      role_id,
-      address_id,
-      avatar,
-      status,
-      updatedAt: Date.now()
-    };
+    // Chuẩn bị dữ liệu cập nhật - chỉ cập nhật các field được gửi lên
+    const updateData = {};
+    
+    if (email !== undefined) updateData.email = email;
+    if (name !== undefined) updateData.name = name;
+    if (phone !== undefined) updateData.phone = phone;
+    if (role_id !== undefined) updateData.role_id = role_id;
+    if (address_id !== undefined) updateData.address_id = address_id;
+    if (avatar !== undefined) updateData.avatar = avatar;
+    if (status !== undefined) updateData.status = status;
 
-    // Chỉ cập nhật password nếu có
-    if (password) {
-      const bcrypt = await import('bcrypt');
-      updateData.password = await bcrypt.default.hash(password, 10);
+    // Chỉ cập nhật password nếu có và không rỗng
+    if (password && password.trim() !== '') {
+      updateData.password = await bcrypt.hash(password, 10);
     }
 
     // Xử lý thông tin cấm
     if (status === 'block') {
-      updateData.banDuration = banDuration;
-      updateData.banReason = banReason;
-      updateData.banUntil = banUntil;
-    } else {
+      if (banDuration) updateData.banDuration = banDuration;
+      if (banReason) updateData.banReason = banReason;
+      if (banUntil) updateData.banUntil = banUntil;
+    } else if (status === 'active') {
       // Nếu status là active, xóa thông tin cấm
       updateData.banDuration = null;
       updateData.banReason = null;
       updateData.banUntil = null;
     }
+
+    console.log('Final update data:', updateData);
 
     const user = await UserModel.findByIdAndUpdate(
       id,
@@ -123,12 +129,20 @@ export const updateUser = async (req, res) => {
       { new: true, runValidators: true }
     ).populate('role_id address_id').select('-password');
     
+    if (!user) {
+      return res.status(404).json({ 
+        status: false,
+        message: 'User not found after update' 
+      });
+    }
+    
     res.status(200).json({
       status: true,
       message: 'Cập nhật người dùng thành công',
       data: user
     });
   } catch (error) {
+    console.error('Update user error:', error);
     res.status(400).json({ 
       status: false,
       message: 'Lỗi khi cập nhật người dùng',
@@ -230,8 +244,7 @@ export const changePassword = async (req, res) => {
     }
 
     // Kiểm tra mật khẩu hiện tại
-    const bcrypt = await import('bcrypt');
-    const isCurrentPasswordValid = await bcrypt.default.compare(currentPassword, user.password);
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
     
     if (!isCurrentPasswordValid) {
       return res.status(400).json({
@@ -241,7 +254,7 @@ export const changePassword = async (req, res) => {
     }
 
     // Kiểm tra mật khẩu mới không được trùng với mật khẩu hiện tại
-    const isNewPasswordSame = await bcrypt.default.compare(newPassword, user.password);
+    const isNewPasswordSame = await bcrypt.compare(newPassword, user.password);
     if (isNewPasswordSame) {
       return res.status(400).json({
         status: false,
@@ -250,7 +263,7 @@ export const changePassword = async (req, res) => {
     }
 
     // Hash mật khẩu mới
-    const hashedNewPassword = await bcrypt.default.hash(newPassword, 10);
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
     // Cập nhật mật khẩu
     await UserModel.findByIdAndUpdate(userId, {
@@ -385,6 +398,63 @@ export const getUserStatistics = async (req, res) => {
       success: false,
       message: 'Internal server error',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+    });
+  }
+};
+
+// Lấy danh sách users có role shipper
+export const getShippers = async (req, res) => {
+  try {
+    console.log('Getting shippers...');
+    
+    // Tìm role shipper
+    const shipperRole = await RoleModel.findOne({ name: 'shipper' });
+    console.log('Shipper role found:', shipperRole);
+    
+    if (!shipperRole) {
+      return res.status(404).json({
+        status: false,
+        message: 'Role shipper không tồn tại'
+      });
+    }
+
+    // Debug: Lấy tất cả users để kiểm tra
+    const allUsers = await UserModel.find().populate('role_id').select('_id name email role_id status').lean();
+    console.log('All users:', allUsers);
+    
+    // Lấy danh sách users có role shipper (không filter status để debug)
+    const allShippers = await UserModel.find({ 
+      role_id: shipperRole._id
+    })
+    .populate('role_id')
+    .select('_id name email phone avatar status')
+    .lean();
+    
+    console.log('All users with shipper role (any status):', allShippers);
+    
+    // Lấy danh sách users có role shipper và status active
+    const shippers = await UserModel.find({ 
+      role_id: shipperRole._id,
+      status: 'active'
+    })
+    .populate('role_id')
+    .select('_id name email phone avatar')
+    .lean();
+
+    console.log('Found shippers:', shippers);
+    console.log('Shippers count:', shippers.length);
+
+    res.status(200).json({
+      status: true,
+      message: 'Lấy danh sách shipper thành công',
+      data: shippers
+    });
+  } catch (error) {
+    console.log('Error in getShippers:', error);
+    res.status(500).json({
+      status: false,
+      message: 'Lỗi server khi lấy danh sách shipper',
+      error: error.message
     });
   }
 };

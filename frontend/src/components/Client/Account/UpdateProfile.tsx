@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCamera, FaCalendar, FaShieldAlt } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { User } from '../../../interfaces/user';
+import instance from '../../../../api/instance';
 
 const UpdateProfile: React.FC = () => {
   const [formData, setFormData] = useState<User | null>(null);

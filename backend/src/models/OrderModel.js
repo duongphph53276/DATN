@@ -13,6 +13,7 @@ const OrderSchema = new Schema(
     voucher_id: { type: String, default: null },
     payment_method: { type: String, required: true },
     address_id: { type: String, required: true },
+    shipper_id: { type: String, default: null }, // ID của shipper được giao hàng
     delivered_at: { type: Date, default: null },
   },
   {

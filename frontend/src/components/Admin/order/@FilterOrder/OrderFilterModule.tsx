@@ -2,7 +2,7 @@ import { FC, useState, useEffect } from "react";
 import styles from "./OrderFilterModule.module.scss";
 import classnames from "classnames/bind";
 import { OrderFilterProps } from "../../../../interfaces/props";
-import { paymentMethods, statuses } from "../../../../utils/constant";
+import { paymentMethods, statuses, getVietnameseStatus, paymentMethodVietnamese } from "../../../../utils/constant";
 import { FaFilter, FaSearch, FaUndo } from "react-icons/fa";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 
@@ -106,7 +106,7 @@ const OrderFilterModule: FC<OrderFilterProps> = ({ filters, onFiltersChange }) =
             <span className="text-sm text-gray-600">Bộ lọc đang hoạt động:</span>
             {filters.status && (
               <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
-                Trạng thái: {filters.status.replace(/_/g, " ")}
+                Trạng thái: {getVietnameseStatus(filters.status)}
                 <button
                   onClick={() => handleFilterChange("status", "")}
                   className="ml-1 hover:text-green-600"
@@ -117,7 +117,7 @@ const OrderFilterModule: FC<OrderFilterProps> = ({ filters, onFiltersChange }) =
             )}
             {filters.payment_method && (
               <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full">
-                Thanh toán: {filters.payment_method.replace(/_/g, " ")}
+                Thanh toán: {paymentMethodVietnamese[filters.payment_method] || filters.payment_method}
                 <button
                   onClick={() => handleFilterChange("payment_method", "")}
                   className="ml-1 hover:text-purple-600"
@@ -169,7 +169,7 @@ const OrderFilterModule: FC<OrderFilterProps> = ({ filters, onFiltersChange }) =
                 <option value="">Tất cả trạng thái</option>
                 {statuses.map((s) => (
                   <option key={s} value={s}>
-                    {s.replace(/_/g, " ")}
+                    {getVietnameseStatus(s)}
                   </option>
                 ))}
               </select>
@@ -188,7 +188,7 @@ const OrderFilterModule: FC<OrderFilterProps> = ({ filters, onFiltersChange }) =
                 <option value="">Tất cả thanh toán</option>
                 {paymentMethods.map((p) => (
                   <option key={p} value={p}>
-                    {p.replace(/_/g, " ")}
+                    {paymentMethodVietnamese[p] || p}
                   </option>
                 ))}
               </select>

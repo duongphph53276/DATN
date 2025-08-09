@@ -18,6 +18,12 @@ router.post('/seed', OrderController.seedFakeData);
 //Lấy đơn hàng theo ID người dùng
 router.get('/user/:user_id', OrderController.getOrdersByUserId);
 
+//Lấy đơn hàng cho shipper
+router.get('/shipper/:shipper_id', OrderController.getOrdersForShipper);
+
+//Cập nhật trạng thái đơn hàng bởi shipper
+router.patch('/shipper/:shipper_id/:order_id/status', OrderController.updateOrderStatusByShipper);
+
 //Lấy đơn hàng theo ID
 router.get('/:id', OrderController.getOrderById);
 
