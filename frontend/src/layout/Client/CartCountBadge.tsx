@@ -1,29 +1,30 @@
 import React, { useEffect, useState } from "react";
 import { FaShoppingCart } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import { getCartItemCount } from "../../utils/cartUtils";
 
 const CartCountBadge: React.FC = () => {
   const [totalQuantity, setTotalQuantity] = useState(0);
 
   const updateQuantity = () => {
-    const stored = localStorage.getItem("cart");
-    if (stored) {
-      const cart = JSON.parse(stored);
-      const total = cart.reduce((sum: number, item: any) => sum + item.quantity, 0);
-      setTotalQuantity(total);
-    } else {
-      setTotalQuantity(0);
-    }
+    const total = getCartItemCount();
+    setTotalQuantity(total);
   };
 
   useEffect(() => {
     updateQuantity(); // load ban đầu
 
     const handler = () => updateQuantity();
+    
+    // Listen cho user changes (login/logout)
+    const handleUserChange = () => updateQuantity();
+
     window.addEventListener("cartUpdated", handler);
+    window.addEventListener("storage", handleUserChange); // Listen storage changes
 
     return () => {
       window.removeEventListener("cartUpdated", handler);
+      window.removeEventListener("storage", handleUserChange);
     };
   }, []);
 

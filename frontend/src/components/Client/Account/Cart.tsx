@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { IVariant } from "../../../interfaces/variant"; 
+import { IVariant } from "../../../interfaces/variant";
+import { 
+  loadUserCart, 
+  updateCartItemQuantity, 
+  removeFromUserCart, 
+  migrateOldCart,
+  getCartTotal 
+} from "../../../utils/cartUtils"; 
 
 interface CartItem {
   id: string;
@@ -17,64 +24,56 @@ const Cart: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Load từ localStorage và lắng nghe sự kiện cartUpdated
+  // Load cart của user và lắng nghe sự kiện cartUpdated
   useEffect(() => {
-    const stored = localStorage.getItem("cart");
-    if (stored) {
-      setCartItems(JSON.parse(stored));
-    }
+    // Migrate cart cũ nếu có
+    migrateOldCart();
+    
+    // Load cart của user hiện tại
+    const userCart = loadUserCart();
+    setCartItems(userCart);
 
     const handleCartUpdated = () => {
-      const updatedCart = JSON.parse(localStorage.getItem("cart") || "[]");
+      const updatedCart = loadUserCart();
       setCartItems(updatedCart);
       setSuccessMessage("Đã thêm sản phẩm vào giỏ hàng!");
       setTimeout(() => setSuccessMessage(null), 3000);
     };
 
-    window.addEventListener("cartUpdated", handleCartUpdated);
-    return () => window.removeEventListener("cartUpdated", handleCartUpdated);
-  }, []);
+    // Listen cho user changes (login/logout)
+    const handleUserChange = () => {
+      const updatedCart = loadUserCart();
+      setCartItems(updatedCart);
+    };
 
-  // Cập nhật + phát sự kiện
-  const updateCart = (items: CartItem[]) => {
-    setCartItems(items);
-    localStorage.setItem("cart", JSON.stringify(items));
-    window.dispatchEvent(new Event("cartUpdated"));
-  };
+    window.addEventListener("cartUpdated", handleCartUpdated);
+    window.addEventListener("storage", handleUserChange); // Listen storage changes
+    
+    return () => {
+      window.removeEventListener("cartUpdated", handleCartUpdated);
+      window.removeEventListener("storage", handleUserChange);
+    };
+  }, []);
 
   // Tăng số lượng
   const increaseQty = (item: CartItem) => {
-    const updated = cartItems.map((i) =>
-      i.id === item.id && (!i.variant || JSON.stringify(i.variant?.attributes) === JSON.stringify(item.variant?.attributes))
-        ? { ...i, quantity: i.quantity + 1 }
-        : i
-    );
-    updateCart(updated);
+    updateCartItemQuantity(item._id, item.variant, item.quantity + 1);
   };
 
   // Giảm số lượng
   const decreaseQty = (item: CartItem) => {
-    const updated = cartItems.map((i) =>
-      i.id === item.id && (!i.variant || JSON.stringify(i.variant?.attributes) === JSON.stringify(item.variant?.attributes)) && i.quantity > 1
-        ? { ...i, quantity: i.quantity - 1 }
-        : i
-    );
-    updateCart(updated);
+    if (item.quantity > 1) {
+      updateCartItemQuantity(item._id, item.variant, item.quantity - 1);
+    }
   };
 
   // Xoá sản phẩm
   const removeItem = (item: CartItem) => {
-    const updated = cartItems.filter(
-      (i) => !(i.id === item.id && (!i.variant || JSON.stringify(i.variant?.attributes) === JSON.stringify(item.variant?.attributes)))
-    );
-    updateCart(updated);
+    removeFromUserCart(item._id, item.variant);
   };
 
   // Tổng tiền
-  const total = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  const total = getCartTotal();
 
   // Hiển thị thuộc tính từ variantAttributes
   const getVariantAttributesDisplay = (item: CartItem) => {

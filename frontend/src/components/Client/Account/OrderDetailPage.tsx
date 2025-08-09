@@ -68,6 +68,22 @@ const OrderDetailPage = () => {
         return status ? getVietnameseStatus(status) : 'Không xác định';
     };
 
+    const getVariantAttributesDisplay = (variant: any) => {
+        if (!variant || !variant.attributes || variant.attributes.length === 0) {
+            return <span className="text-gray-400 text-sm">Phiên bản cơ bản</span>;
+        }
+
+        return (
+            <div className="mt-2">
+                {variant.attributes.map((attr: any, index: number) => (
+                    <span key={index} className="inline-block bg-purple-100 text-purple-600 text-sm px-3 py-1 rounded-full mr-2 mb-1">
+                        🎀 {attr.attribute_name}: {attr.value}
+                    </span>
+                ))}
+            </div>
+        );
+    };
+
     const handleCancelOrder = async () => {
         setIsLoading(true);
         try {
@@ -193,7 +209,8 @@ const OrderDetailPage = () => {
                                 <div className="flex-1">
                                     <h3 className="font-bold text-gray-800 text-lg mb-1">{item.name}</h3>
                                     <p className="text-gray-500 text-sm mb-2">{item.product.description}</p>
-                                    <div className="flex items-center justify-between">
+                                    {getVariantAttributesDisplay(item.variant)}
+                                    <div className="flex items-center justify-between mt-3">
                                         <div className="flex items-center gap-4">
                                             <span className="text-pink-600 font-semibold">{formatPrice(item.price)}</span>
                                             <span className="text-gray-500">x {item.quantity}</span>

@@ -49,4 +49,15 @@ export const getUnreadNotificationCount = async (): Promise<number> => {
     console.error('Error fetching unread notification count:', error);
     throw error;
   }
+};
+
+// Đánh dấu tất cả notifications đã đọc
+export const markAllNotificationsAsRead = async (): Promise<{ updatedCount: number }> => {
+  try {
+    const response = await api.put('/notifications/mark-all-read');
+    return response.data.data;
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    throw error;
+  }
 }; 

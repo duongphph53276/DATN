@@ -169,7 +169,6 @@ const OtherProduct: React.FC = () => {
     localStorage.setItem("cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("cartUpdated"));
     ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
-    navigate("/cart");
   };
 
   const getValidAttributeValues = (product: Product, attributeId: string, selectedAttributes: { [key: string]: string }) => {

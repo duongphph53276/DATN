@@ -26,6 +26,15 @@ interface Order {
     price: number;
     quantity: number;
     image: string;
+    variant?: {
+      _id: string;
+      attributes: Array<{
+        attribute_id: string;
+        value_id: string;
+        attribute_name: string;
+        value: string;
+      }>;
+    };
   }>;
 }
 
@@ -45,6 +54,22 @@ const ShipperOrders = ({ status }: Props) => {
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const shipperId = user.id;
+
+  const getVariantAttributesDisplay = (variant: any) => {
+    if (!variant || !variant.attributes || variant.attributes.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="mt-1">
+        {variant.attributes.map((attr: any, index: number) => (
+          <span key={index} className="inline-block bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded mr-1">
+            {attr.attribute_name}: {attr.value}
+          </span>
+        ))}
+      </div>
+    );
+  };
 
   const fetchOrders = async (page = 1) => {
     try {
@@ -255,8 +280,11 @@ const ShipperOrders = ({ status }: Props) => {
                           className="w-8 h-8 rounded object-cover"
                         />
                         <div className="flex-1">
-                          <span className="text-gray-900">{item.name}</span>
-                          <span className="text-gray-500 ml-2">x{item.quantity}</span>
+                          <div>
+                            <span className="text-gray-900">{item.name}</span>
+                            <span className="text-gray-500 ml-2">x{item.quantity}</span>
+                          </div>
+                          {getVariantAttributesDisplay(item.variant)}
                         </div>
                         <span className="text-gray-600">
                           {formatCurrency(item.price * item.quantity)}

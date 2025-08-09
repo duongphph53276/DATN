@@ -2,7 +2,8 @@ import {
   getUserNotifications, 
   markNotificationAsRead, 
   getUnreadNotificationCount, 
-  getAdminNotifications
+  getAdminNotifications,
+  markAllNotificationsAsRead
 } from '../services/notificationService.js';
 
 export const getUserNotificationsController = async (req, res) => {
@@ -89,6 +90,27 @@ export const getUnreadNotificationCountController = async (req, res) => {
     });
   } catch (error) {
     console.error('Error in getUnreadNotificationCountController:', error);
+    res.status(500).json({
+      status: false,
+      message: 'Lỗi server',
+      error: error.message
+    });
+  }
+};
+
+export const markAllNotificationsAsReadController = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const result = await markAllNotificationsAsRead(userId);
+    
+    res.json({
+      status: true,
+      message: 'Đã đánh dấu tất cả thông báo đã đọc',
+      data: { updatedCount: result.modifiedCount }
+    });
+  } catch (error) {
+    console.error('Error in markAllNotificationsAsReadController:', error);
     res.status(500).json({
       status: false,
       message: 'Lỗi server',

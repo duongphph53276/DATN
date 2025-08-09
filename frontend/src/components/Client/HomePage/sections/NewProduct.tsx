@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { getAllProducts } from "../../../../../api/product.api";
 import { getAllAttributes, getAttributeValues } from "../../../../../api/attribute.api";
 import { ToastSucess, ToastError } from "../../../../utils/toast";
+import { addToUserCart } from "../../../../utils/cartUtils";
 
 interface Product {
   _id: string;
@@ -190,10 +191,8 @@ const NewProduct: React.FC = () => {
       cart.push(cartItem);
     }
 
-    localStorage.setItem("cart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("cartUpdated"));
+    addToUserCart(cartItem);
     ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
-    navigate("/cart");
   };
 
   const getValidAttributeValues = (product: Product, attributeId: string, selectedAttributes: { [key: string]: string }) => {

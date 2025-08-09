@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Bell } from 'lucide-react';
-import { getAdminNotifications, getUnreadNotificationCount, getUserNotifications, markNotificationAsRead, Notification } from '../../../services/api/notification';
+import { getAdminNotifications, getUnreadNotificationCount, getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead, Notification } from '../../../services/api/notification';
 import { socketService } from '../../../services/socketService';
 
 interface NotificationBellProps {
@@ -91,6 +91,20 @@ export default function NotificationAdmin({ isLoggedIn }: NotificationBellProps)
     }
   };
 
+  const handleMarkAllAsRead = async () => {
+    if (unreadCount === 0) return;
+    
+    try {
+      await markAllNotificationsAsRead();
+      setNotifications(prev => 
+        prev.map(n => ({ ...n, is_read: true }))
+      );
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
+
   if (!isLoggedIn) return null;
 
   return (
@@ -112,8 +126,20 @@ export default function NotificationAdmin({ isLoggedIn }: NotificationBellProps)
           ref={dropdownRef}
           className="absolute right-0 mt-2 w-80 max-h-96 bg-white shadow-xl rounded-xl border border-pink-100 z-50 overflow-hidden"
         >
-          <div className="p-4 border-b font-bold text-gray-800 bg-pink-50">
-            Thông báo {unreadCount > 0 && `(${unreadCount} mới)`}
+          <div className="p-4 border-b bg-pink-50">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-gray-800">
+                Thông báo {unreadCount > 0 && `(${unreadCount} mới)`}
+              </h3>
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllAsRead}
+                  className="text-xs bg-[#4f46e5] text-white px-2 py-1 rounded hover:bg-indigo-700 transition"
+                >
+                  Đánh dấu tất cả đã đọc
+                </button>
+              )}
+            </div>
           </div>
           <div className="max-h-72 overflow-y-auto">
             {loading ? (

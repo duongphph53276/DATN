@@ -187,7 +187,6 @@ const CategoryPage: React.FC = () => {
     localStorage.setItem("cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("cartUpdated"));
     ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
-    navigate("/cart");
   };
 
   const filteredProducts = products.filter((product) => {

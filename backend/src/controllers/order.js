@@ -5,6 +5,7 @@ import { AddressModel } from '../models/User/address.js';
 import { UserModel } from '../models/User/user.js';
 import ProductVariant from '../models/productVariant.js';
 import Product from "../models/product.js";
+import VariantAttributeValue from '../models/variantAttributeValue.js';
 import {
   createOrderSuccessNotification,
   createOrderStatusNotification,
@@ -95,10 +96,27 @@ class OrderController {
                 ProductVariant.findById(detail.variant_id).lean()
               ]);
 
+              // Lấy variant attributes với thông tin chi tiết
+              const variantAttributes = await VariantAttributeValue
+                .find({ variant_id: detail.variant_id })
+                .populate('attribute_id', 'name')
+                .populate('value_id', 'value')
+                .lean();
+
+              const variantWithAttributes = variant ? {
+                ...variant,
+                attributes: variantAttributes.map(attr => ({
+                  attribute_id: attr.attribute_id._id,
+                  value_id: attr.value_id._id,
+                  attribute_name: attr.attribute_id.name,
+                  value: attr.value_id.value
+                }))
+              } : null;
+
               return {
                 ...detail,
                 product: product,
-                variant: variant
+                variant: variantWithAttributes
               };
             })
           );
@@ -178,10 +196,27 @@ class OrderController {
             ProductVariant.findById(detail.variant_id).lean()
           ]);
 
+          // Lấy variant attributes với thông tin chi tiết
+          const variantAttributes = await VariantAttributeValue
+            .find({ variant_id: detail.variant_id })
+            .populate('attribute_id', 'name')
+            .populate('value_id', 'value')
+            .lean();
+
+          const variantWithAttributes = variant ? {
+            ...variant,
+            attributes: variantAttributes.map(attr => ({
+              attribute_id: attr.attribute_id._id,
+              value_id: attr.value_id._id,
+              attribute_name: attr.attribute_id.name,
+              value: attr.value_id.value
+            }))
+          } : null;
+
           return {
             ...detail,
             product: product,
-            variant: variant
+            variant: variantWithAttributes
           };
         })
       );
@@ -335,7 +370,6 @@ class OrderController {
       } catch (notificationError) {
         console.error('Error creating notifications:', notificationError);
       }
-
       res.status(201).json({
         success: true,
         message: 'Order created successfully',
@@ -620,10 +654,27 @@ class OrderController {
                 ProductVariant.findById(detail.variant_id).lean()
               ]);
 
+              // Lấy variant attributes với thông tin chi tiết
+              const variantAttributes = await VariantAttributeValue
+                .find({ variant_id: detail.variant_id })
+                .populate('attribute_id', 'name')
+                .populate('value_id', 'value')
+                .lean();
+
+              const variantWithAttributes = variant ? {
+                ...variant,
+                attributes: variantAttributes.map(attr => ({
+                  attribute_id: attr.attribute_id._id,
+                  value_id: attr.value_id._id,
+                  attribute_name: attr.attribute_id.name,
+                  value: attr.value_id.value
+                }))
+              } : null;
+
               return {
                 ...detail,
                 product: product,
-                variant: variant
+                variant: variantWithAttributes
               };
             })
           );
@@ -908,10 +959,27 @@ class OrderController {
                 ProductVariant.findById(detail.variant_id).lean()
               ]);
 
+              // Lấy variant attributes với thông tin chi tiết
+              const variantAttributes = await VariantAttributeValue
+                .find({ variant_id: detail.variant_id })
+                .populate('attribute_id', 'name')
+                .populate('value_id', 'value')
+                .lean();
+
+              const variantWithAttributes = variant ? {
+                ...variant,
+                attributes: variantAttributes.map(attr => ({
+                  attribute_id: attr.attribute_id._id,
+                  value_id: attr.value_id._id,
+                  attribute_name: attr.attribute_id.name,
+                  value: attr.value_id.value
+                }))
+              } : null;
+
               return {
                 ...detail,
                 product: product,
-                variant: variant
+                variant: variantWithAttributes
               };
             })
           );
