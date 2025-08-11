@@ -102,7 +102,7 @@ const ProductDetailAdmin = () => {
                 <span className="font-medium">Đánh giá trung bình:</span> {product.average_rating ?? "0"}/5
               </p>
               <p>
-                <span className="font-medium">Số lượng đã bán:</span> {product.sold_quantity ?? "0"}
+                <span className="font-medium">Tổng số lượng đã bán:</span> {product.total_sold ?? "0"}
               </p>
               {product.description && (
                 <div>
@@ -126,6 +126,7 @@ const ProductDetailAdmin = () => {
                     <th className="px-4 py-3 border-b font-medium">Ảnh</th>
                     <th className="px-4 py-3 border-b font-medium">Giá</th>
                     <th className="px-4 py-3 border-b font-medium">Số lượng</th>
+                    <th className="px-4 py-3 border-b font-medium">Số lượng đã bán</th>
                     <th className="px-4 py-3 border-b font-medium">Thuộc tính</th>
                   </tr>
                 </thead>
@@ -147,6 +148,7 @@ const ProductDetailAdmin = () => {
                         {variant.price.toLocaleString()}đ
                       </td>
                       <td className="px-4 py-3 border-b">{variant.quantity}</td>
+                      <td className="px-4 py-3 border-b">{variant.sold_quantity}</td>
                       <td className="px-4 py-3 border-b space-y-1">
                         {variant.attributes!.map((attr: IVariantAttribute, idx: number) => (
                           <div key={idx} className="text-gray-700">

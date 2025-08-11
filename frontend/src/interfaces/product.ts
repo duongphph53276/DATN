@@ -11,7 +11,7 @@ export interface IProduct {
   attributes?: string[]; // danh sách ObjectId của Attribute
   sku?: string;
   average_rating?: number;
-  sold_quantity?: number;
+  total_sold?: number;
   variants?: IVariant[];
   quantity?: number;
 }

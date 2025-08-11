@@ -6,6 +6,7 @@ import ReactStars from "react-stars";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import { ToastSucess, ToastError } from "../../../utils/toast";
+import { addToUserCart, loadUserCart } from "../../../utils/cartUtils";  // Đảm bảo import loadUserCart
 
 // Hàm chuyển chuỗi giá về số
 const parsePrice = (value: string | number | undefined | null): number => {
@@ -89,7 +90,44 @@ const DetailsPage = () => {
         const allValues = valuesRes.flatMap((res) => res.data?.data || []);
         setAttributeValues(allValues);
 
+        // Kiểm tra giỏ hàng để lấy số lượng và biến thể đã chọn
+        const cart = loadUserCart();
+        const cartItem = cart.find(
+          (item: CartItem) =>
+            item.id === id &&
+            item.variant?.attributes.every((attr: any) =>
+              fetchedProduct.variants.some((v: any) =>
+                v.attributes.some(
+                  (va: any) => va.attribute_id === attr.attribute_id && va.value_id === attr.value_id
+                )
+              )
+            )
+        );
+
+        if (cartItem) {
+          // Cập nhật số lượng
+          setQuantity(cartItem.quantity);
+
+          // Cập nhật thuộc tính đã chọn
+          const selectedAttrs: { [key: string]: string } = {};
+          if (cartItem.variant?.attributes) {
+            cartItem.variant.attributes.forEach((attr: any) => {
+              selectedAttrs[attr.attribute_id] = attr.value_id;
+            });
+            setSelectedAttributes(selectedAttrs);
+
+            // Cập nhật biến thể đã chọn
+            const matchedVariant = fetchedProduct.variants.find((variant: any) =>
+              variant.attributes.every(
+                (attr: any) => selectedAttrs[attr.attribute_id] === attr.value_id
+              )
+            );
+            setSelectedVariant(matchedVariant || null);
+          }
+        }
+
         const token = localStorage.getItem("token");
+        console.log(token);
         if (token) {
           const decoded: any = jwtDecode(token);
           setUserId(decoded.user_id || decoded.id);
@@ -115,6 +153,50 @@ const DetailsPage = () => {
 
     fetchData();
   }, [id]);
+
+  useEffect(() => {
+    const handleCartUpdated = () => {
+      const cart = loadUserCart();
+      const cartItem = cart.find(
+        (item: CartItem) =>
+          item.id === id &&
+          item.variant?.attributes.every((attr: any) =>
+            product?.variants.some((v: any) =>
+              v.attributes.some(
+                (va: any) => va.attribute_id === attr.attribute_id && va.value_id === attr.value_id
+              )
+            )
+          )
+      );
+
+      if (cartItem) {
+        setQuantity(cartItem.quantity);
+        const selectedAttrs: { [key: string]: string } = {};
+        if (cartItem.variant?.attributes) {
+          cartItem.variant.attributes.forEach((attr: any) => {
+            selectedAttrs[attr.attribute_id] = attr.value_id;
+          });
+          setSelectedAttributes(selectedAttrs);
+
+          const matchedVariant = product?.variants.find((variant: any) =>
+            variant.attributes.every(
+              (attr: any) => selectedAttrs[attr.attribute_id] === attr.value_id
+            )
+          );
+          setSelectedVariant(matchedVariant || null);
+        }
+      } else {
+        setQuantity(1);
+        setSelectedAttributes({});
+        setSelectedVariant(null);
+      }
+    };
+
+    window.addEventListener("cartUpdated", handleCartUpdated);
+    return () => {
+      window.removeEventListener("cartUpdated", handleCartUpdated);
+    };
+  }, [id, product]);
 
   const getAttributeName = (attributeId: string): string => {
     const attribute = attributes.find((attr: any) => attr._id === attributeId);
@@ -167,16 +249,69 @@ const DetailsPage = () => {
     return parsePrice(product?.price);
   };
 
-  const handleAddToCart = () => {
+
+
+  const handleAddToCart = async () => {
     if (!product) return;
+
+    // Lấy giỏ hàng hiện tại
+  const cart = loadUserCart();
+
+  // Xác định key để tìm đúng sản phẩm/biến thể
+  const cartItemA = cart.find((item: any) =>
+    item.id === product._id &&
+    (
+      selectedVariant
+        ? item.variant?._id === selectedVariant._id
+        : !item.variant
+    )
+  );
+
+  // Số lượng đã có sẵn trong giỏ hàng
+  const existingQty = cartItemA ? cartItemA.quantity : 0;
+
+  // Số lượng còn lại trong kho
+  const stockQty = selectedVariant
+    ? selectedVariant.quantity
+    : product.quantity;
+
+  // Nếu tổng số lượng sau khi thêm > tồn kho → chặn
+  if (existingQty + quantity > stockQty) {
+    ToastError(`Chỉ còn ${stockQty} sản phẩm trong kho!`);
+    return;
+  }
 
     if (product.variants?.length) {
       const requiredAttributes = attributes.filter((attr: any) =>
-        product.variants.some((variant: any) => variant.attributes.some((a: any) => a.attribute_id === attr._id))
+        product.variants.some((variant: any) =>
+          variant.attributes.some((a: any) => a.attribute_id === attr._id)
+        )
       );
-      const allAttributesSelected = requiredAttributes.every((attr: any) => selectedAttributes[attr._id]);
+      const allAttributesSelected = requiredAttributes.every(
+        (attr: any) => selectedAttributes[attr._id]
+      );
       if (!selectedVariant || !allAttributesSelected) {
         ToastError("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
+        return;
+      }
+
+      // Kiểm tra số lượng của biến thể
+      if (selectedVariant.quantity === 0) {
+        ToastError("Sản phẩm này đã hết hàng!");
+        return;
+      }
+      if (selectedVariant.quantity < quantity) {
+        ToastError(`Chỉ còn ${selectedVariant.quantity} sản phẩm trong kho!`);
+        return;
+      }
+    } else {
+      // Kiểm tra số lượng của sản phẩm (không có biến thể)
+      if (product.quantity === 0) {
+        ToastError("Sản phẩm này đã hết hàng!");
+        return;
+      }
+      if (product.quantity < quantity) {
+        ToastError(`Chỉ còn ${product.quantity} sản phẩm trong kho!`);
         return;
       }
     }
@@ -191,15 +326,23 @@ const DetailsPage = () => {
       id: product._id || id,
       _id: product._id || id,
       name: product.name || "Sản phẩm không tên",
-      image: selectedVariant?.image || product.images || product.image || "https://via.placeholder.com/420",
+      image:
+        selectedVariant?.image ||
+        product.images ||
+        product.image ||
+        "https://via.placeholder.com/420",
       price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
       variant: selectedVariant
         ? {
-            _id: selectedVariant._id,
-            product_id: selectedVariant.product_id,
-            price: selectedVariant.price,
-            attributes: selectedVariant.attributes.map((attr: any) => ({ attribute_id: attr.attribute_id, value_id: attr.value_id }))
-          }
+          _id: selectedVariant._id,
+          product_id: selectedVariant.product_id,
+          price: selectedVariant.price,
+          quantity: selectedVariant.quantity, // Lưu quantity của biến thể
+          attributes: selectedVariant.attributes.map((attr: any) => ({
+            attribute_id: attr.attribute_id,
+            value_id: attr.value_id,
+          })),
+        }
         : undefined,
       variantAttributes,
       quantity,
@@ -244,19 +387,13 @@ const DetailsPage = () => {
     }
 
     const token = localStorage.getItem("token");
+    console.log('Gửi yêu cầu đánh giá: product_id =', id, 'rating =', rating, 'token =', token); // id là product_id
     try {
       const response = await axios.post("http://localhost:5000/reviews", { product_id: id, rating }, { headers: { Authorization: `Bearer ${token}` } });
-      setReviewMessage(response.data.message);
-      setRating(null);
-      setUserReview(rating);
-      if (response.data.average_rating) {
-        setProduct((prev: any) => ({
-          ...prev,
-          average_rating: response.data.average_rating,
-          review_count: response.data.review_count,
-        }));
-      }
+      ToastSucess("Đánh giá thành công!")
+      console.log('Phản hồi thành công:', response.data);
     } catch (error) {
+      setReviewMessage("Bạn phải mua sản phẩm mới được đanh giá!");
       if (axios.isAxiosError(error)) {
         setReviewMessage(error.response?.data?.message || "Lỗi khi gửi đánh giá. Vui lòng thử lại!");
       } else {
@@ -321,8 +458,8 @@ const DetailsPage = () => {
                 <div
                   key={index}
                   className={`relative w-16 h-16 rounded-lg overflow-hidden border-2 cursor-pointer transition-all duration-300 ${(selectedVariant?.image || product.images) === image
-                      ? "border-pink-500 shadow-lg scale-105"
-                      : "border-gray-200 hover:border-pink-300 hover:shadow-md"
+                    ? "border-pink-500 shadow-lg scale-105"
+                    : "border-gray-200 hover:border-pink-300 hover:shadow-md"
                     }`}
                   onClick={() => {
                     setProduct((prev: any) => ({ ...prev, images: image }));
@@ -365,8 +502,8 @@ const DetailsPage = () => {
                           key={valueId}
                           onClick={() => handleSelectAttribute(attr._id, valueId)}
                           className={`px-4 py-1 text-sm rounded-full border transition ${selectedAttributes[attr._id] === valueId
-                              ? "bg-pink-500 text-white border-pink-500"
-                              : "bg-pink-100 text-pink-600 border-pink-300 hover:bg-pink-200"
+                            ? "bg-pink-500 text-white border-pink-500"
+                            : "bg-pink-100 text-pink-600 border-pink-300 hover:bg-pink-200"
                             }`}
                         >
                           {getAttributeValue(valueId)}
@@ -404,12 +541,12 @@ const DetailsPage = () => {
             >
               ➕ Thêm vào giỏ hàng
             </button>
-            <button
-              onClick={() => navigate("/checkout")}
-              className="group relative inline-flex items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-r from-pink-400 to-rose-500 px-6 py-3 font-semibold text-white shadow-md transition-all duration-300 hover:from-pink-500 hover:to-rose-600 focus:outline-none"
-            >
-              Mua ngay
-            </button>
+            {selectedVariant && selectedVariant.quantity === 0 && (
+              <p className="text-red-500 text-sm mt-2">Sản phẩm này đã hết hàng!</p>
+            )}
+            {!selectedVariant && product.quantity === 0 && (
+              <p className="text-red-500 text-sm mt-2">Sản phẩm này đã hết hàng!</p>
+            )}            
           </div>
           <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm shadow-inner border">
             {benefits.map((item, i) => (
@@ -444,15 +581,16 @@ const DetailsPage = () => {
                     count={5}
                     value={rating || 0}
                     onChange={setRating}
-                    size={36}
+                    size={38}
                     color2="#ffd700"
                     color1="#d3d3d3"
-                    half={true}
+                    half={false}
                     edit={true}
                   />
                 </div>
                 <p className="text-lg text-gray-500 mt-4">
-                  {rating && rating >= 4 ? "Rất tốt" : rating === 3 ? "Ổn" : rating && rating <= 2 ? "Kém" : ""}
+                  {rating && rating === 5 ? "Sản phẩm và dịch vụ tuyệt vời" : rating === 4 ? "Sản phẩm chất lượng tốt"
+                    : rating === 3 ? "Sản phẩm tạm ổn" : rating === 2 ? "Sản phẩm có vài lỗi nhỏ" : rating && rating === 1 ? "Chất lượng sản phẩm không đúng mô tả" : ""}
                 </p>
               </div>
               <button
@@ -461,7 +599,7 @@ const DetailsPage = () => {
               >
                 Gửi đánh giá
               </button>
-              {reviewMessage && <p className="mt-6 text-xl text-center text-gray-600">{reviewMessage}</p>}
+              {reviewMessage && <p className="mt-6  text-xl text-center text-red-600">{reviewMessage}</p>}
             </div>
           </div>
 

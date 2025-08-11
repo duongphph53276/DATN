@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { IVariant } from "../../../interfaces/variant"; 
+import { IVariant } from "../../../interfaces/variant";
+import { 
+  loadUserCart, 
+  updateCartItemQuantity, 
+  removeFromUserCart, 
+  migrateOldCart,
+  getCartTotal 
+} from "../../../utils/cartUtils"; 
+import { ToastSucess, ToastError } from "../../../utils/toast";
 
 interface CartItem {
+  quantityInStock: number;
   id: string;
   name: string;
   image: string;
@@ -14,7 +23,6 @@ interface CartItem {
 
 const Cart: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // Load từ localStorage và lắng nghe sự kiện cartUpdated
@@ -27,8 +35,8 @@ const Cart: React.FC = () => {
     const handleCartUpdated = () => {
       const updatedCart = JSON.parse(localStorage.getItem("cart") || "[]");
       setCartItems(updatedCart);
-      setSuccessMessage("Đã thêm sản phẩm vào giỏ hàng!");
-      setTimeout(() => setSuccessMessage(null), 3000);
+      // setSuccessMessage("Đã thêm sản phẩm vào giỏ hàng!");
+      // setTimeout(() => setSuccessMessage(null), 3000);
     };
 
     window.addEventListener("cartUpdated", handleCartUpdated);
@@ -44,30 +52,30 @@ const Cart: React.FC = () => {
 
   // Tăng số lượng
   const increaseQty = (item: CartItem) => {
-    const updated = cartItems.map((i) =>
-      i.id === item.id && (!i.variant || JSON.stringify(i.variant?.attributes) === JSON.stringify(item.variant?.attributes))
-        ? { ...i, quantity: i.quantity + 1 }
-        : i
-    );
-    updateCart(updated);
+    // Lấy số lượng tồn kho từ variant hoặc product
+  const stockQty = item.variant?.stock_quantity ?? item.quantityInStock ?? 0;// quantityInStock là field bạn cần lưu khi addToCart
+
+  if (item.quantity + 1 > stockQty) {
+    ToastError(`Chỉ còn ${stockQty} sản phẩm trong kho!`);
+    return;
+  }
+  
+    updateCartItemQuantity(item._id, item.variant, item.quantity + 1);
+    ToastSucess("Số lượng sản phẩm đã tăng thêm một!")
   };
 
   // Giảm số lượng
   const decreaseQty = (item: CartItem) => {
-    const updated = cartItems.map((i) =>
-      i.id === item.id && (!i.variant || JSON.stringify(i.variant?.attributes) === JSON.stringify(item.variant?.attributes)) && i.quantity > 1
-        ? { ...i, quantity: i.quantity - 1 }
-        : i
-    );
-    updateCart(updated);
+    if (item.quantity > 1) {
+      updateCartItemQuantity(item._id, item.variant, item.quantity - 1);
+      ToastSucess("Số lượng sản phẩm đã giảm đi một!")
+    }
   };
 
   // Xoá sản phẩm
   const removeItem = (item: CartItem) => {
-    const updated = cartItems.filter(
-      (i) => !(i.id === item.id && (!i.variant || JSON.stringify(i.variant?.attributes) === JSON.stringify(item.variant?.attributes)))
-    );
-    updateCart(updated);
+    removeFromUserCart(item._id, item.variant);
+    ToastSucess("Đã xóa sản phẩm khỏi giỏ hàng!")
   };
 
   // Tổng tiền
@@ -88,11 +96,11 @@ const Cart: React.FC = () => {
     <div className="max-w-5xl mx-auto px-4 py-12">
       <h2 className="text-3xl font-bold text-center mb-10 text-pink-600">🛒 Giỏ hàng của bạn</h2>
 
-      {successMessage && (
+      {/* {successMessage && (
         <div className="fixed top-5 right-5 bg-green-100 text-green-600 text-sm py-2 px-4 rounded-lg animate-slide-down z-50">
           {successMessage}
         </div>
-      )}
+      )} */}
 
       {cartItems.length === 0 ? (
         <p className="text-center text-gray-500 text-lg">Chưa có sản phẩm nào trong giỏ.</p>

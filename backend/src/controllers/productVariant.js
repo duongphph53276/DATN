@@ -1,5 +1,7 @@
+import Product from "../models/product.js";
 import ProductVariant from "../models/productVariant.js";
 import VariantAttributeValue from "../models/variantAttributeValue.js";
+import mongoose from "mongoose";
 // Hàm so sánh tổ hợp thuộc tính
 function isSameAttributes(existingAttrs, newAttrs) {
   if (existingAttrs.length !== newAttrs.length) return false;
@@ -160,5 +162,51 @@ export const deleteVariant = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ error: "Lỗi xoá biến thể", details: error.message });
+  }
+};
+
+// cập nhật số lượng 
+export const updateVariantQuantity = async (req, res) => {
+  const { variantId, quantity, action } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(variantId)) {
+    return res.status(400).json({ message: 'ID variant không hợp lệ' });
+  }
+
+  if (!['deduct'].includes(action)) {
+    return res.status(400).json({ message: 'Action không hợp lệ, phải là "deduct"' });
+  }
+
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    return res.status(400).json({ message: 'Số lượng không hợp lệ' });
+  }
+
+  try {
+    const variant = await ProductVariant.findById(variantId);
+
+    if (!variant) {
+      return res.status(404).json({ message: 'Không tìm thấy variant sản phẩm' });
+    }
+
+    if (action === 'deduct') {
+      if (variant.quantity < quantity) {
+        return res.status(400).json({ message: `Số lượng tồn kho không đủ, chỉ còn ${variant.quantity}` });
+      }
+      variant.quantity -= quantity;
+      variant.sold_quantity = (variant.sold_quantity || 0) + quantity;
+      await variant.save();
+
+      // Cập nhật total_sold trong Product (tùy chọn)
+      const product = await Product.findById(variant.product_id);
+      if (product) {
+        product.total_sold = (product.total_sold || 0) + quantity;
+        await product.save();
+      }
+
+      return res.status(200).json({ message: 'Cập nhật số lượng thành công', data: variant });
+    }
+  } catch (error) {
+    console.error('Lỗi khi cập nhật số lượng variant:', error);
+    return res.status(500).json({ message: 'Lỗi server', details: error.message });
   }
 };

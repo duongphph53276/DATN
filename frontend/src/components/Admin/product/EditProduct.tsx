@@ -21,7 +21,7 @@ type EditProductForm = {
   status?: "active" | "disabled" | "new" | "bestseller";
   sku?: string;
   average_rating?: number;
-  sold_quantity?: number;
+  total_sold?: number;
   variants: {
     _id?: string;
     price: number;
@@ -52,7 +52,7 @@ const validationSchema = yup.object().shape({
   description: yup.string().optional().nullable(),
   sku: yup.string().nullable().transform((value) => (value?.trim() === "" ? null : value)),
   average_rating: yup.number().optional(),
-  sold_quantity: yup.number().optional(),
+  total_sold: yup.number().optional(),
   status: yup.string().oneOf(["active", "disabled", "new", "bestseller"]).nullable(),
   variants: yup.array().of(
     yup.object().shape({
