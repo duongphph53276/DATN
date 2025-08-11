@@ -3,37 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { getAllProducts } from "../../../../../api/product.api";
 import { getAllAttributes, getAttributeValues } from "../../../../../api/attribute.api";
 import { ToastSucess, ToastError } from "../../../../utils/toast";
-import { addToUserCart } from "../../../../utils/cartUtils";
+import { addToUserCart, loadUserCart } from "../../../../utils/cartUtils";
 
-
-interface Product {
-  _id: string;
-  name: string;
-  price: string | number;
-  image?: string;
-  images?: string;
-  sold_quantity: number;
-  status?: 'active' | 'disabled' | 'new' | 'bestseller';
-  variants: Variant[];
-}
-
-interface Variant {
-  _id: string;
-  price: string | number;
-  image?: string;
-  attributes: { attribute_id: string; value_id: string }[];
-}
-
-interface Attribute {
-  _id: string;
-  name: string;
-}
-
-interface AttributeValue {
-  _id: string;
-  value: string;
-  attribute_id: string;
-}
 
 const parsePrice = (value: string | number | undefined | null): number => {
   if (typeof value === "number") return value;
@@ -65,11 +36,11 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
 const BestSelling: React.FC = () => {
   const navigate = useNavigate();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [attributes, setAttributes] = useState<Attribute[]>([]);
-  const [attributeValues, setAttributeValues] = useState<AttributeValue[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [attributes, setAttributes] = useState<any[]>([]);
+  const [attributeValues, setAttributeValues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedVariants, setSelectedVariants] = useState<{ [key: string]: Variant | undefined }>({});
+  const [selectedVariants, setSelectedVariants] = useState<{ [key: string]: any | undefined }>({});
   const [selectedAttributes, setSelectedAttributes] = useState<{ [productId: string]: { [attributeId: string]: string } }>({});
 
   useEffect(() => {
@@ -82,7 +53,7 @@ const BestSelling: React.FC = () => {
         const attrRes = await getAllAttributes();
         setAttributes(attrRes.data?.data || []);
 
-        const attrIds = attrRes.data?.data?.map((attr: Attribute) => attr._id) || [];
+        const attrIds = attrRes.data?.data?.map((attr: any) => attr._id) || [];
         const valuesPromises = attrIds.map((id: string) => getAttributeValues(id));
         const valuesRes = await Promise.all(valuesPromises);
         const allValues = valuesRes.flatMap((res) => res.data?.data || []);
@@ -114,9 +85,9 @@ const BestSelling: React.FC = () => {
     return value?.value || valueId;
   };
 
-  const getDefaultPrice = (product: Product): number => {
+  const getDefaultPrice = (product: any): number => {
     if (product.variants?.length) {
-      const prices = product.variants.map((v) => parsePrice(v.price)).filter((p) => !isNaN(p));
+      const prices = product.variants.map((v:any) => parsePrice(v.price)).filter((p:any) => !isNaN(p));
       return prices.length ? Math.min(...prices) : 0;
     }
     return parsePrice(product.price);
@@ -133,7 +104,7 @@ const BestSelling: React.FC = () => {
       }
 
       const product = products.find((p) => p._id === productId);
-      const matchedVariant = product?.variants?.find((variant) =>
+      const matchedVariant = product?.variants?.find((variant: { attributes: any[]; }) =>
         variant.attributes.every((attr) => updatedAttributes[attr.attribute_id] === attr.value_id)
       );
 
@@ -149,31 +120,65 @@ const BestSelling: React.FC = () => {
     });
   };
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = (product: any) => {
     const selectedVariant = selectedVariants[product._id];
     const productAttributes = selectedAttributes[product._id] || {};
 
     const requiredAttributes = attributes.filter((attr) =>
-      product.variants.some((variant) => variant.attributes.some((a) => a.attribute_id === attr._id))
+      product.variants.some((variant: { attributes: any[]; }) => variant.attributes.some((a) => a.attribute_id === attr._id))
     );
-    if (product.variants.length && (!selectedVariant || !requiredAttributes.every((attr) => productAttributes[attr._id]))) {
+    const allAttributesSelected = requiredAttributes.every(
+      (attr) => productAttributes[attr._id]
+    );
+
+    if (product.variants?.length && (!selectedVariant || !allAttributesSelected)) {
       ToastError("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
+      return;
+    }
+    // Lấy giỏ hàng theo user đúng cách
+    const cart = loadUserCart();
+
+    // Tìm sản phẩm đã có trong giỏ (đúng variant)
+    const existingCartItem = cart.find((item: any) => {
+      if (selectedVariant) {
+        return item._id === product._id && item.variant?._id === selectedVariant._id;
+      }
+      return item._id === product._id && !item.variant;
+    });
+
+    const existingQuantity = existingCartItem ? existingCartItem.quantity : 0;
+
+    // Lấy số lượng tồn kho đúng
+    const stockQuantity = selectedVariant
+      ? selectedVariant.stock_quantity ?? selectedVariant.quantity ?? 0
+      : product.stock_quantity ?? product.quantity ?? 0;
+
+    if (existingQuantity + 1 > stockQuantity) {
+      ToastError("Số lượng trong kho không đủ để thêm sản phẩm này!");
       return;
     }
 
     const variantAttributes = selectedVariant
       ? Object.entries(productAttributes)
-        .map(([attrId, valueId]) => `${getAttributeName(attrId)}: ${getAttributeValue(valueId)}`)
-        .join(", ")
-      : "No attributes";
+          .map(([attrId, valueId]) => `${getAttributeName(attrId)}: ${getAttributeValue(valueId)}`)
+          .join(", ")
+      : "Không có thuộc tính";
 
     const cartItem = {
-      _id: product._id,
+      ...product,
       id: product._id,
-      name: product.name,
+      _id: product._id,
       price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
-      image: selectedVariant?.image || product.image || product.images,
-      variant: selectedVariant,
+      image: selectedVariant ? selectedVariant.image || product.image : product.image,
+      variant: selectedVariant
+        ? {
+            _id: selectedVariant._id,
+            product_id: selectedVariant.product_id,
+            price: selectedVariant.price,
+            attributes: selectedVariant.attributes,
+            stock_quantity: stockQuantity,
+          }
+        : undefined,
       variantAttributes,
       quantity: 1,
     };
@@ -182,20 +187,20 @@ const BestSelling: React.FC = () => {
     ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
   };
 
-  const getValidAttributeValues = (product: Product, attributeId: string, selectedAttributes: { [key: string]: string }) => {
+  const getValidAttributeValues = (product: any, attributeId: string, selectedAttributes: { [key: string]: string }) => {
     const validValueIds = new Set<string>();
 
-    product.variants.forEach((variant) => {
+    product.variants.forEach((variant:any) => {
       const variantAttributes = variant.attributes;
       const isValidVariant = Object.entries(selectedAttributes)
         .filter(([key]) => key !== attributeId)
         .every(([key, value]) => {
-          const variantAttr = variantAttributes.find((a) => a.attribute_id === key);
+          const variantAttr = variantAttributes.find((a: { attribute_id: string; }) => a.attribute_id === key);
           return variantAttr && variantAttr.value_id === value;
         });
 
       if (isValidVariant) {
-        const currentAttr = variantAttributes.find((a) => a.attribute_id === attributeId);
+        const currentAttr = variantAttributes.find((a: { attribute_id: string; }) => a.attribute_id === attributeId);
         if (currentAttr) {
           validValueIds.add(currentAttr.value_id);
         }

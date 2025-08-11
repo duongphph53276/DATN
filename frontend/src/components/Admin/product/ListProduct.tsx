@@ -8,7 +8,7 @@ import { AiOutlineDoubleLeft, AiOutlineDoubleRight } from "react-icons/ai";
 import { FaEdit, FaFilter, FaSearch, FaUndo, FaEye } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
 import { X, ChevronDown, ChevronUp } from "lucide-react";
-import { ToastSucess, ToastError } from "../../../utils/toast";
+import { ToastSucess, ToastError, ToastWarning } from "../../../utils/toast";
 
 const ListProduct: React.FC = () => {
   const navigate = useNavigate();
@@ -154,16 +154,28 @@ const ListProduct: React.FC = () => {
 
   const handleDelete = async (id: string | number) => {
     if (!window.confirm("Bạn có chắc muốn xóa sản phẩm này?")) return;
+
     try {
       await deleteProduct(id);
+
       setProducts(products.filter((product) => product._id !== id));
       setFilteredProducts(filteredProducts.filter((product) => product._id !== id));
+
       if (currentProducts.length === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       }
-      ToastSucess("Xóa sản phẩm thành công")
-    } catch (error) {
-      console.error("Lỗi xóa sản phẩm:", error);
+
+      ToastSucess("Xóa sản phẩm thành công");
+
+    } catch (error: any) {
+      // Lấy thông báo lỗi chính xác từ response.data.message nếu có
+      const msg = error.response?.data?.message || error.message;
+
+      if (msg.includes("Không thể xóa")) {
+        ToastWarning(msg); // Hiển thị cảnh báo từ backend
+      } else {
+        ToastError(msg || "Lỗi xóa sản phẩm");
+      }
     }
   };
 
@@ -214,8 +226,8 @@ const ListProduct: React.FC = () => {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all duration-200 ${showFilters || activeFilters > 0
-                  ? 'bg-blue-50 border-blue-200 text-blue-700'
-                  : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                 }`}
             >
               <FaFilter className="text-sm" />
@@ -423,17 +435,17 @@ const ListProduct: React.FC = () => {
                       <span className="text-gray-700">{getCategoryName(product.category_id)}</span>
                     </td>
                     <td className="p-3">
-                      <span className="font-medium text-gray-900">{product.sold_quantity || 0}</span>
+                      <span className="font-medium text-gray-900">{product.total_sold || 0}</span>
                     </td>
                     <td className="p-3">
                       <span
                         className={`inline-block px-3 py-1.5 rounded-full text-xs font-semibold ${product.status === "active"
-                            ? "bg-green-100 text-green-700 border border-green-200"
-                            : product.status === "disabled"
-                              ? "bg-gray-100 text-gray-700 border border-gray-200"
-                              : product.status === "new"
-                                ? "bg-blue-100 text-blue-700 border border-blue-200"
-                                : "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                          ? "bg-green-100 text-green-700 border border-green-200"
+                          : product.status === "disabled"
+                            ? "bg-gray-100 text-gray-700 border border-gray-200"
+                            : product.status === "new"
+                              ? "bg-blue-100 text-blue-700 border border-blue-200"
+                              : "bg-yellow-100 text-yellow-700 border border-yellow-200"
                           }`}
                       >
                         {product.status === "active" && "Đang bán"}
@@ -502,8 +514,8 @@ const ListProduct: React.FC = () => {
               <button
                 key={index + 1}
                 className={`px-4 py-2 border rounded-xl transition-all duration-200 ${currentPage === index + 1
-                    ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white border-blue-500 shadow-lg shadow-blue-500/25"
-                    : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                  ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white border-blue-500 shadow-lg shadow-blue-500/25"
+                  : "border-gray-200 text-gray-600 hover:bg-gray-50"
                   }`}
                 onClick={() => handlePageChange(index + 1)}
               >
@@ -583,12 +595,12 @@ const ListProduct: React.FC = () => {
                     <td className="p-2">
                       <span
                         className={`inline-block px-2 py-1 rounded text-xs font-medium ${selectedProduct.status === "active"
-                            ? "bg-green-100 text-green-700"
-                            : selectedProduct.status === "disabled"
-                              ? "bg-gray-100 text-gray-700"
-                              : selectedProduct.status === "new"
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-yellow-100 text-yellow-700"
+                          ? "bg-green-100 text-green-700"
+                          : selectedProduct.status === "disabled"
+                            ? "bg-gray-100 text-gray-700"
+                            : selectedProduct.status === "new"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-yellow-100 text-yellow-700"
                           }`}
                       >
                         {selectedProduct.status || "Lên lịch"}

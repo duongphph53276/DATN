@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { createAttribute } from "../../../../api/attribute.api";
 import { useNavigate } from "react-router-dom";
-import { ToastSucess, ToastError } from "../../../utils/toast";
+import { ToastSucess, ToastError, ToastWarning} from "../../../utils/toast";
 
 type FormData = {
   name: string;
@@ -23,9 +23,15 @@ const AddAttribute = () => {
       await createAttribute(data);
       ToastSucess("Thêm thuộc tính thành công!");
       navigate("/admin/attribute");
-    } catch (err) {
-      console.error("Lỗi thêm thuộc tính:", err);
-      ToastError("Thêm thất bại");
+    } catch (error: any) {
+      // Lấy thông báo lỗi chính xác từ response.data.message nếu có
+      const msg = error.response?.data?.message || error.message;
+
+      if (msg.includes("Không thể xóa")) {
+        ToastWarning(msg); // Hiển thị cảnh báo từ backend
+      } else {
+        ToastError(msg || "Lỗi xóa sản phẩm");
+      }
     }
   };
 

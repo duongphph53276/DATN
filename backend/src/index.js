@@ -8,7 +8,7 @@ import { AddCategory, DeleteCategory, EditCategory, GetCategoryById, ListCategor
 import { createProduct, deleteProduct, getAllProducts, getProductById, updateProduct, getProductStatistics } from './controllers/product.js';
 import { createAttribute, getAttributeById, deleteAttribute, getAllAttributes, updateAttribute } from "./controllers/attribute.js";
 import { createAttributeValue, deleteAttributeValue, getAttributeValueById, getAttributeValues, updateAttributeValue } from './controllers/attributeValue.js';
-import { createVariant, deleteVariant, getVariantById, getVariantsByProduct, updateVariant } from './controllers/productVariant.js';
+import { createVariant, deleteVariant, getVariantById, getVariantsByProduct, updateVariant, updateVariantQuantity } from './controllers/productVariant.js';
 import orderRoutes from './routes/order.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import { checkEmail, login, Profile, register, UpdateProfile, verifyEmail } from './controllers/auth.js';
@@ -26,7 +26,7 @@ import { initializeSocket } from './socket/socket.js';
 import notificationRoutes from './routes/notification.routes.js';
 
 import { AddToCart, ClearCart, GetCartByUser, RemoveFromCart } from './controllers/cart.js';
-import { createReview, deleteReview, getAllReviews, getReviewById, getUserReviewByProduct, updateReview } from './controllers/reviews.js';
+import { checkPurchase, createReview, deleteReview, getAllReviews, getReviewById, getUserReviewByProduct, updateReview } from './controllers/reviews.js';
 
 
 
@@ -40,7 +40,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.use(cors({
-  origin: '*', 
+  origin: '*',
   credentials: true
 }));
 app.use(express.json());
@@ -110,7 +110,7 @@ app.get("/attribute/:id", getAttributeById);
 app.delete('/attribute/:id', deleteAttribute);
 app.put('/attribute/edit/:id', updateAttribute);
 // AttributeValue routes (gắn theo attributeId)
-app.post("/attribute-value/add", createAttributeValue );
+app.post("/attribute-value/add", createAttributeValue);
 app.get("/attribute-value/list/:attributeId", getAttributeValues);
 app.get("/attribute-value/:id", getAttributeValueById);
 app.put("/attribute-value/edit/:id", updateAttributeValue);
@@ -121,16 +121,17 @@ app.get("/variant/:id", getVariantById);
 app.get("/product/:productId/variants", getVariantsByProduct);
 app.delete('/variant/:id', deleteVariant);
 app.put('/variant/edit/:id', updateVariant);
+app.post('/product-variants/update-quantity', updateVariantQuantity);
 // oder
 app.use('/orders', orderRoutes);
 //payment
 app.use('/payment', paymentRoutes);
 //notification
 app.use('/notifications', notificationRoutes);
-app.get('/cart/:userId', GetCartByUser);          
-app.post('/cart/add', AddToCart);                  
-app.put('/cart/remove', RemoveFromCart);           
-app.delete('/cart/clear/:userId', ClearCart);    
+app.get('/cart/:userId', GetCartByUser);
+app.post('/cart/add', AddToCart);
+app.put('/cart/remove', RemoveFromCart);
+app.delete('/cart/clear/:userId', ClearCart);
 
 app.get('/category', ListCategory);
 app.post('/category/add', AddCategory);
@@ -139,12 +140,13 @@ app.delete('/category/:id', DeleteCategory);
 app.get('/category/:id', GetCategoryById);
 
 // Review routes
-app.post('/reviews', authMiddleware, createReview );
-app.get('/reviews', getAllReviews); 
-app.get('/reviews/:id', getReviewById); 
-app.put('/reviews/:id', authMiddleware, updateReview); 
+app.post('/reviews', authMiddleware, createReview);
+app.get('/reviews', getAllReviews);
+app.get('/reviews/:id', getReviewById);
+app.put('/reviews/:id', authMiddleware, updateReview);
 app.delete('/reviews/:id', authMiddleware, deleteReview);
 app.get('/reviews/user/product/:product_id', authMiddleware, getUserReviewByProduct);
+
 // Admin routes
 const adminRouter = express.Router();
 adminRouter.use(authMiddleware, restrictTo('admin', 'employee'));
@@ -185,17 +187,17 @@ app.use((req, res, next) => {
 // Khởi động server
 const startServer = async () => {
   await connectDB();
-  
+
   // Tạo permissions mặc định
   await createDefaultPermissions();
-  
+
   // Tạo roles mặc định và gán permissions
   await createDefaultRoles();
-  
+
   const server = app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
   });
-  
+
   // Khởi tạo Socket.IO
   initializeSocket(server);
   console.log('Socket.IO initialized');
