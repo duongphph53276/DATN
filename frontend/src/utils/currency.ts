@@ -59,7 +59,7 @@ export const parseVietnameseCurrency = (amountString: string): number => {
 };
 
 export function calculateDiscountedAmount(
-  type: DiscountType,
+  type: DiscountType | undefined,
   value: number,
   amount: number
 ): DiscountResult {
@@ -68,6 +68,15 @@ export function calculateDiscountedAmount(
   if (typeof value != 'number' || typeof amount != 'number' || amount < 0) {
     throw new Error('Giá trị không hợp lệ')
   }
+
+  if (!type) {
+    // Nếu không có type, trả về amount gốc
+    return {
+      discount: 0,
+      finalAmount: amount
+    }
+  }
+
   let discount = 0
 
   switch (type) {

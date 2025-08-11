@@ -57,8 +57,16 @@ export const getOrderClient = createAsyncThunk(
 );
 export const createOrder = createAsyncThunk(
   "order/create",
-  async (data: any) => {
-    return await createNewOrder(data);
+  async (data: any, { rejectWithValue }) => {
+    try {
+      return await createNewOrder(data);
+    } catch (error: any) {
+      // Trả về thông báo lỗi từ server nếu có
+      if (error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      }
+      return rejectWithValue('Lỗi khi đặt hàng. Vui lòng thử lại.');
+    }
   }
 )
 const orderSlice = createSlice({
@@ -72,7 +80,6 @@ const orderSlice = createSlice({
       })
       .addCase(getOrder.fulfilled, (state, action) => {
         const { orders, pagination } = action.payload.data;
-        state.client = orders;
         state.admin.orders = orders;
         state.admin.pagination = pagination;
         state.status = "idle";
@@ -95,12 +102,16 @@ const orderSlice = createSlice({
         updateInList(state.admin.orders);
         state.status = "idle";
       })
+      .addCase(getOrderClient.pending, (state) => {
+        state.status = "loading";
+      })
       .addCase(getOrderClient.fulfilled, (state, action) => {
         const { orders, pagination } = action.payload.data;
         state.client.orders = orders;
         state.client.pagination = pagination;
         state.status = "idle";
-      }).addCase(getOrderClient.rejected, (state) => {
+      })
+      .addCase(getOrderClient.rejected, (state) => {
         state.status = "failed";
       }).addCase(createOrder.fulfilled, (state, action) => {
         const newOrder = action.payload;
@@ -113,9 +124,10 @@ const orderSlice = createSlice({
 
         state.status = "idle";
         ToastSucess('Bạn đã đặt hàng thành công');
-      }).addCase(createOrder.rejected, (state) => {
+      }).addCase(createOrder.rejected, (state, action) => {
         state.status = "failed";
-        ToastError('Lỗi khi đặt hàng');
+        const errorMessage = action.payload || action.error?.message || 'Lỗi khi đặt hàng';
+        ToastError(errorMessage);
       })
       .addCase(updateOrder.rejected, (state) => {
         state.status = "failed";

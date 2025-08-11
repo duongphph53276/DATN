@@ -17,6 +17,16 @@ const CategorySchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Category', // Tham chiếu đến chính CategoryModel
         default: null,   // Nếu null thì là danh mục cha
+    },
+    order: {
+        type: Number,
+        default: 0,
+    },
+    display_limit: {
+        type: Number,
+        default: 6,
+        min: 1,
+        max: 20
     }
 },
 {

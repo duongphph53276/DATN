@@ -49,17 +49,18 @@ export const canChangeStatus = (
     return false
   }
 
-  // Admin chỉ có thể thay đổi từ pending sang preparing, shipping, hoặc cancelled
+  // Chỉ cho phép chuyển từng bước một: pending -> preparing -> shipping -> delivered
+  // Bỏ tính năng hủy đơn hàng
   if (currentLevel === ORDER_STATUS_FLOW.PENDING) {
-    return newLevel === ORDER_STATUS_FLOW.PREPARING || 
-           newLevel === ORDER_STATUS_FLOW.SHIPPING || 
-           newLevel === ORDER_STATUS_FLOW.CANCELLED
+    return newLevel === ORDER_STATUS_FLOW.PREPARING
   }
 
-  // Admin chỉ có thể thay đổi từ preparing sang shipping hoặc cancelled
   if (currentLevel === ORDER_STATUS_FLOW.PREPARING) {
-    return newLevel === ORDER_STATUS_FLOW.SHIPPING || 
-           newLevel === ORDER_STATUS_FLOW.CANCELLED
+    return newLevel === ORDER_STATUS_FLOW.SHIPPING
+  }
+
+  if (currentLevel === ORDER_STATUS_FLOW.SHIPPING) {
+    return newLevel === ORDER_STATUS_FLOW.DELIVERED
   }
 
   return false

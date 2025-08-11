@@ -26,14 +26,16 @@ export default function OrderTotalBox({ order }: Props) {
         <span>Giảm giá: </span>
         {order.voucher ? (
           <span>
-            {formatCurrency(
-              calculateTotal(order.order_details) -
+            - {formatCurrency(
               calculateDiscountedAmount(
-                order.voucher.type,
+                order.voucher.type || (order.voucher as any).discount_type,
                 order.voucher.value,
                 calculateTotal(order.order_details)
-              ).finalAmount
+              ).discount
             )}
+            <span className="text-sm text-gray-500 ml-2">
+              ({order.voucher.code})
+            </span>
           </span>
         ) : 'Không có giảm giá'}
 

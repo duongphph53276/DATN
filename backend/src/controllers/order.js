@@ -639,6 +639,9 @@ class OrderController {
       const { user_id } = req.params;
       const { page = 1, limit = 10, status } = req.query;
 
+      console.log('🔍 getOrdersByUserId - user_id:', user_id);
+      console.log('🔍 getOrdersByUserId - query params:', req.query);
+
       const userExists = await UserModel.findById(user_id).lean();
       if (!userExists) {
         return res.status(404).json({
@@ -649,6 +652,8 @@ class OrderController {
 
       const filter = { user_id };
       if (status) filter.status = status;
+
+      console.log('🔍 getOrdersByUserId - filter:', filter);
 
       const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -661,6 +666,19 @@ class OrderController {
 
       const totalOrders = await OrderModel.countDocuments(filter);
       const totalPages = Math.ceil(totalOrders / parseInt(limit));
+
+      console.log('🔍 getOrdersByUserId - found orders count:', orders.length);
+      console.log('🔍 getOrdersByUserId - total orders in DB:', totalOrders);
+      console.log('🔍 getOrdersByUserId - orders dates:', orders.map(o => ({ id: o._id, date: o.created_at, status: o.status })));
+
+      // Debug: Kiểm tra tất cả đơn hàng của user này trong DB
+      const allUserOrders = await OrderModel.find({ user_id }).sort({ created_at: -1 }).lean();
+      console.log('🔍 getOrdersByUserId - ALL orders for this user:', allUserOrders.map(o => ({ 
+        id: o._id, 
+        date: o.created_at, 
+        status: o.status,
+        total_amount: o.total_amount 
+      })));
 
       const ordersWithDetails = await Promise.all(
         orders.map(async (order) => {

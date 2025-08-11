@@ -21,7 +21,11 @@ const Header = () => {
         const response = await api.get("/category");
         if (response.data.status) {
           console.log("Fetched Categories:", response.data.data);
-          setCategories(response.data.data);
+          // Chỉ lấy danh mục theo display_limit từ database
+          const parentCategories = response.data.data.filter((cat: any) => !cat.parent_id);
+          const displayLimit = parentCategories[0]?.display_limit || 6;
+          const limitedCategories = parentCategories.slice(0, displayLimit);
+          setCategories(limitedCategories);
         }
       } catch (error) {
         console.error("Error fetching categories:", error);

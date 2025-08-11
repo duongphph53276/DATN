@@ -8,6 +8,18 @@ import { jwtDecode } from "jwt-decode";
 import { ToastSucess, ToastError } from "../../../utils/toast";
 import { addToUserCart, loadUserCart } from "../../../utils/cartUtils";  // Đảm bảo import loadUserCart
 
+// Import CartItem interface
+interface CartItem {
+  id: string;
+  _id: string;
+  name: string;
+  image: string;
+  price: number;
+  quantity: number;
+  variant?: any;
+  variantAttributes?: string;
+}
+
 
 // Hàm chuyển chuỗi giá về số
 const parsePrice = (value: string | number | undefined | null): number => {
@@ -446,6 +458,16 @@ const DetailsPage = () => {
         <div className="flex flex-col justify-center gap-6 text-center md:text-left">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800">{product.name && product.name.trim() ? product.name : "Sản phẩm không tên"}</h1>
 
+          {/* Hiển thị danh mục sản phẩm */}
+          {product.category_id && (
+            <div className="flex justify-center md:justify-start items-center gap-2">
+              <span className="text-sm text-gray-500">Danh mục:</span>
+              <span className="px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-sm font-medium">
+                {typeof product.category_id === 'object' ? product.category_id.name : 'Không xác định'}
+              </span>
+            </div>
+          )}
+
           <div className="flex justify-center md:justify-start items-center gap-4">
             <span className="text-3xl text-pink-500 font-semibold">{displayedPrice.toLocaleString()}₫</span>
             {product.oldPrice && <span className="line-through text-gray-400 text-lg">{parsePrice(product.oldPrice).toLocaleString()}₫</span>}
@@ -495,6 +517,19 @@ const DetailsPage = () => {
               >
                 +
               </button>
+            </div>
+            
+            {/* Hiển thị số lượng tồn kho */}
+            <div className="mt-2 text-sm text-gray-600">
+              {selectedVariant ? (
+                <span className={`font-medium ${selectedVariant.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  Còn lại: {selectedVariant.quantity} sản phẩm trong kho
+                </span>
+              ) : (
+                <span className={`font-medium ${product.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  Còn lại: {product.quantity || 0} sản phẩm trong kho
+                </span>
+              )}
             </div>
           </div>
           <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4">

@@ -48,6 +48,20 @@ export default function OrderInfoGrid({ order }: Props) {
           </p>
         </div>
       )}
+      {order.voucher && (
+        <div>
+          <p className={cx('label')}>Mã giảm giá:</p>
+          <div className="space-y-1">
+            <p className="text-green-600 font-semibold">{order.voucher.code}</p>
+            <p className="text-sm text-gray-600">
+              Giảm {order.voucher.value}{order.voucher.type === 'percentage' ? '%' : '₫'}
+            </p>
+            <p className="text-xs text-gray-500">
+              {order.voucher.type === 'percentage' ? 'Giảm theo phần trăm' : 'Giảm theo số tiền cố định'}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

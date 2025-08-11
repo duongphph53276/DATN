@@ -53,7 +53,7 @@ const ShipperOrders = ({ status }: Props) => {
   const [cancelReason, setCancelReason] = useState<string>('');
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const shipperId = user.id;
+  const shipperId = user._id || user.id;
 
   const getVariantAttributesDisplay = (variant: any) => {
     if (!variant || !variant.attributes || variant.attributes.length === 0) {
