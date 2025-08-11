@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Package, MapPin, Phone, User, Calendar, DollarSign, CheckCircle } from 'lucide-react';
+import { Package, MapPin, Phone, User, Calendar, DollarSign, CheckCircle, Tag } from 'lucide-react';
 import { formatCurrency } from '../../utils/convert';
 import { getVietnameseStatus } from '../../utils/constant';
+import { calculateDiscountedAmount } from '../../utils/currency';
 import instance from '../../../api/instance';
 import { toast } from 'react-hot-toast';
 import { Address } from '../../interfaces/user';
@@ -15,6 +16,13 @@ interface Order {
   created_at: string;
   delivered_at: string | null;
   cancel_reason: string | null;
+  voucher_id?: string | null;
+  voucher?: {
+    _id: string;
+    code: string;
+    discount_type: 'percentage' | 'fixed';
+    value: number;
+  } | null;
   user: {
     name: string;
     email: string;
@@ -69,6 +77,22 @@ const ShipperOrders = ({ status }: Props) => {
         ))}
       </div>
     );
+  };
+
+  // Tính tổng tiền sản phẩm trước khi giảm giá
+  const calculateSubtotal = (order: Order) => {
+    return order.order_details.reduce((total, item) => {
+      return total + (item.price * item.quantity);
+    }, 0);
+  };
+
+  // Tính số tiền giảm giá
+  const calculateDiscountAmount = (order: Order) => {
+    if (!order.voucher) return 0;
+    
+    const subtotal = calculateSubtotal(order);
+    const { discount } = calculateDiscountedAmount(order.voucher.discount_type, order.voucher.value, subtotal);
+    return discount;
   };
 
   const fetchOrders = async (page = 1) => {
@@ -183,138 +207,175 @@ const ShipperOrders = ({ status }: Props) => {
   return (
     <div className="space-y-6">
       <div className="grid gap-6">
-        {orders.map((order) => (
-          <div key={order._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            {/* Header */}
-            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Đơn hàng #{order._id.slice(-8)}
-                    </h3>
-                    <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-                      <div className="flex items-center space-x-1">
-                        <Calendar size={16} />
-                        <span>{new Date(order.created_at).toLocaleString('vi-VN')}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <DollarSign size={16} />
-                        <span className="font-medium text-green-600">
-                          {formatCurrency(order.total_amount)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    order.status === 'shipping' 
-                      ? 'bg-blue-100 text-blue-800'
-                      : order.status === 'delivered'
-                      ? 'bg-green-100 text-green-800'
-                      : order.status === 'cancelled'
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {getVietnameseStatus(order.status)}
-                  </span>
-                  {order.status === 'shipping' && (
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => updateOrderStatus(order._id)}
-                        disabled={updating === order._id}
-                        className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <CheckCircle size={16} />
-                        <span>
-                          {updating === order._id ? 'Đang cập nhật...' : 'Đã giao hàng'}
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => handleCancelDelivery(order._id)}
-                        disabled={updating === order._id}
-                        className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <span>Hủy giao hàng</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Customer Info */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">Thông tin khách hàng</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <User size={16} className="text-gray-400" />
-                      <span>{order.user.name}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Phone size={16} className="text-gray-400" />
-                      <span>{order.user.phone}</span>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <MapPin size={16} className="text-gray-400 mt-0.5" />
-                      <span>
-                        {order.address.street}, {order.address.city}{order.address.postal_code ? `, ${order.address.postal_code}` : ''}, {order.address.country}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Order Items */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">Sản phẩm ({order.quantity} items)</h4>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {order.order_details.map((item, index) => (
-                      <div key={index} className="flex items-center space-x-3 text-sm">
-                        <img 
-                          src={item.image} 
-                          alt={item.name}
-                          className="w-8 h-8 rounded object-cover"
-                        />
-                        <div className="flex-1">
-                          <div>
-                            <span className="text-gray-900">{item.name}</span>
-                            <span className="text-gray-500 ml-2">x{item.quantity}</span>
-                          </div>
-                          {getVariantAttributesDisplay(item.variant)}
+        {orders.map((order) => {
+          const subtotal = calculateSubtotal(order);
+          const discountAmount = calculateDiscountAmount(order);
+          
+          return (
+            <div key={order._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              {/* Header */}
+              <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Đơn hàng #{order._id.slice(-8)}
+                      </h3>
+                      <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
+                        <div className="flex items-center space-x-1">
+                          <Calendar size={16} />
+                          <span>{new Date(order.created_at).toLocaleString('vi-VN')}</span>
                         </div>
-                        <span className="text-gray-600">
-                          {formatCurrency(item.price * item.quantity)}
-                        </span>
+                        <div className="flex items-center space-x-1">
+                          <DollarSign size={16} />
+                          <span className="font-medium text-green-600">
+                            {formatCurrency(order.total_amount)}
+                          </span>
+                        </div>
                       </div>
-                    ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      order.status === 'shipping' 
+                        ? 'bg-blue-100 text-blue-800'
+                        : order.status === 'delivered'
+                        ? 'bg-green-100 text-green-800'
+                        : order.status === 'cancelled'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {getVietnameseStatus(order.status)}
+                    </span>
+                    {order.status === 'shipping' && (
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => updateOrderStatus(order._id)}
+                          disabled={updating === order._id}
+                          className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <CheckCircle size={16} />
+                          <span>
+                            {updating === order._id ? 'Đang cập nhật...' : 'Đã giao hàng'}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => handleCancelDelivery(order._id)}
+                          disabled={updating === order._id}
+                          className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <span>Hủy giao hàng</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {order.delivered_at && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="text-sm text-gray-500">
-                    <span className="font-medium">Đã giao lúc:</span>{' '}
-                    {new Date(order.delivered_at).toLocaleString('vi-VN')}
+              {/* Content */}
+              <div className="p-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Customer Info */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">Thông tin khách hàng</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center space-x-2">
+                        <User size={16} className="text-gray-400" />
+                        <span>{order.user.name}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Phone size={16} className="text-gray-400" />
+                        <span>{order.user.phone}</span>
+                      </div>
+                      <div className="flex items-start space-x-2">
+                        <MapPin size={16} className="text-gray-400 mt-0.5" />
+                        <span>
+                          {order.address.street}, {order.address.city}{order.address.postal_code ? `, ${order.address.postal_code}` : ''}, {order.address.country}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
 
-              {order.status === 'cancelled' && order.cancel_reason && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="text-sm">
-                    <span className="font-medium text-red-700">Lý do hủy:</span>{' '}
-                    <span className="text-red-600">{order.cancel_reason}</span>
+                  {/* Order Items */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">Sản phẩm ({order.quantity} items)</h4>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {order.order_details.map((item, index) => (
+                        <div key={index} className="flex items-center space-x-3 text-sm">
+                          <img 
+                            src={item.image} 
+                            alt={item.name}
+                            className="w-8 h-8 rounded object-cover"
+                          />
+                          <div className="flex-1">
+                            <div>
+                              <span className="text-gray-900">{item.name}</span>
+                              <span className="text-gray-500 ml-2">x{item.quantity}</span>
+                            </div>
+                            {getVariantAttributesDisplay(item.variant)}
+                          </div>
+                          <span className="text-gray-600">
+                            {formatCurrency(item.price * item.quantity)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              )}
+
+                {/* Voucher and Price Summary */}
+                {(order.voucher || discountAmount > 0) && (
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-gray-900 mb-3">Chi tiết thanh toán</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Tổng tiền hàng:</span>
+                          <span className="text-gray-900">{formatCurrency(subtotal)}</span>
+                        </div>
+                        {order.voucher && (
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center space-x-2">
+                              <Tag size={14} className="text-green-500" />
+                              <span className="text-gray-600">Mã giảm giá ({order.voucher.code}):</span>
+                            </div>
+                            <span className="text-green-600 font-medium">
+                              -{formatCurrency(discountAmount)}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between pt-2 border-t border-gray-200">
+                          <span className="font-medium text-gray-900">Tổng cộng:</span>
+                          <span className="font-bold text-green-600 text-lg">
+                            {formatCurrency(order.total_amount)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {order.delivered_at && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="text-sm text-gray-500">
+                      <span className="font-medium">Đã giao lúc:</span>{' '}
+                      {new Date(order.delivered_at).toLocaleString('vi-VN')}
+                    </div>
+                  </div>
+                )}
+
+                {order.status === 'cancelled' && order.cancel_reason && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="text-sm">
+                      <span className="font-medium text-red-700">Lý do hủy:</span>{' '}
+                      <span className="text-red-600">{order.cancel_reason}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Pagination */}
