@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import api from '../../../middleware/axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { ICategory, ICategoryResponse } from '../../../interfaces/category';
-import { FaFilter, FaSearch, FaUndo, FaEdit, FaTrash, FaPlus, FaFolder } from 'react-icons/fa';
+import { FaFilter, FaSearch, FaUndo, FaEdit, FaTrash, FaPlus, FaFolder, FaGripVertical } from 'react-icons/fa';
+import { ToastSucess } from '../../../utils/toast';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 
 const ListCategory: React.FC = () => {
@@ -18,6 +19,10 @@ const ListCategory: React.FC = () => {
   const [levelFilter, setLevelFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [displayLimit, setDisplayLimit] = useState(6);
+  const [showDisplayLimitModal, setShowDisplayLimitModal] = useState(false);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -114,6 +119,80 @@ const ListCategory: React.FC = () => {
     }
   };
 
+  // Drag and drop functions
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setIsDragging(true);
+    setDraggedItem(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (!draggedItem || draggedItem === targetId) return;
+
+    try {
+      // Update order in backend
+      const response = await api.patch(`admin/category/reorder`, {
+        draggedId: draggedItem,
+        targetId: targetId
+      });
+
+      if (response.data.status) {
+        // Update local state
+        const draggedIndex = categories.findIndex(c => c._id === draggedItem);
+        const targetIndex = categories.findIndex(c => c._id === targetId);
+        
+        if (draggedIndex !== -1 && targetIndex !== -1) {
+          const newCategories = [...categories];
+          const [draggedCategory] = newCategories.splice(draggedIndex, 1);
+          newCategories.splice(targetIndex, 0, draggedCategory);
+          setCategories(newCategories);
+        }
+      } else {
+        setError(response.data.message);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Không thể cập nhật thứ tự danh mục');
+    } finally {
+      setIsDragging(false);
+      setDraggedItem(null);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    setDraggedItem(null);
+  };
+
+  // Update display limit
+  const handleUpdateDisplayLimit = async () => {
+    try {
+      const response = await api.patch(`admin/category/display-limit`, {
+        display_limit: displayLimit
+      });
+
+      if (response.data.status) {
+        setShowDisplayLimitModal(false);
+        ToastSucess('Cập nhật số lượng hiển thị thành công!');
+        // Refresh categories to get updated data
+        const refreshResponse = await api.get<ICategoryResponse>('/admin/category');
+        if (refreshResponse.data.status) {
+          setCategories(refreshResponse.data.data || []);
+          setFilteredCategories(refreshResponse.data.data || []);
+        }
+      } else {
+        setError(response.data.message);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Không thể cập nhật số lượng hiển thị');
+    }
+  };
+
   // Lấy _id của danh mục cha (có thể là object hoặc string)
   const getParentId = (category: ICategory): string | null => {
     if (!category.parent_id) return null;
@@ -127,8 +206,20 @@ const ListCategory: React.FC = () => {
       .filter((item) => getParentId(item) === parentId)
       .map((item) => (
         <div key={item._id} className="ml-4">
-          <div className="flex justify-between items-center py-3 px-4 bg-white rounded-xl border border-gray-200/50 hover:bg-gray-50/50 transition-all duration-200 mb-2">
+          <div 
+            draggable={level === 0} // Chỉ cho phép kéo thả danh mục gốc
+            onDragStart={(e) => level === 0 && handleDragStart(e, item._id!)}
+            onDragOver={handleDragOver}
+            onDrop={(e) => level === 0 && handleDrop(e, item._id!)}
+            onDragEnd={handleDragEnd}
+            className={`flex justify-between items-center py-3 px-4 bg-white rounded-xl border border-gray-200/50 hover:bg-gray-50/50 transition-all duration-200 mb-2 ${
+              draggedItem === item._id ? 'opacity-50' : ''
+            } ${level === 0 ? 'cursor-move' : ''}`}
+          >
             <div className="flex items-center gap-3">
+              {level === 0 && (
+                <FaGripVertical className="text-gray-400 cursor-move" size={14} />
+              )}
               <div className={`w-2 h-2 rounded-full ${level === 0 ? 'bg-blue-500' : 'bg-gray-400'}`}></div>
               <div>
                 <span className={`${level > 0 ? 'text-gray-700' : 'font-semibold text-gray-900'}`}>
@@ -238,6 +329,15 @@ const ListCategory: React.FC = () => {
 
 
 
+            {/* Display Limit Button */}
+            <button
+              onClick={() => setShowDisplayLimitModal(true)}
+              className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-200 shadow-lg shadow-green-500/25"
+            >
+              <FaEdit className="text-sm" />
+              <span className="hidden sm:inline">Số lượng hiển thị</span>
+            </button>
+
             {/* Add Category Button */}
             <button
               onClick={() => navigate('/admin/category/add')}
@@ -304,6 +404,16 @@ const ListCategory: React.FC = () => {
 
       {/* Categories Tree Section */}
       <div className="p-6">
+        {/* Drag & Drop Instructions */}
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+          <div className="flex items-center gap-2 text-blue-700">
+            <FaGripVertical size={16} />
+                         <span className="text-sm font-medium">
+               💡 Hướng dẫn: Kéo thả các danh mục gốc để thay đổi thứ tự hiển thị. Sử dụng nút "Số lượng hiển thị" để thay đổi số danh mục hiển thị ở trang chủ.
+             </span>
+          </div>
+        </div>
+        
         <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/50 p-6">
           {filteredCategories.length === 0 ? (
             <div className="text-center py-12">
@@ -322,13 +432,57 @@ const ListCategory: React.FC = () => {
           )}
         </div>
 
-        {/* Results Summary */}
-        <div className="mt-4 text-sm text-gray-600">
-          Hiển thị <span className="font-semibold">{filteredCategories.length}</span> trong tổng số <span className="font-semibold">{categories.length}</span> danh mục
-        </div>
-      </div>
-    </div>
-  );
-};
+                 {/* Results Summary */}
+         <div className="mt-4 text-sm text-gray-600">
+           Hiển thị <span className="font-semibold">{filteredCategories.length}</span> trong tổng số <span className="font-semibold">{categories.length}</span> danh mục
+         </div>
+       </div>
+
+       {/* Display Limit Modal */}
+       {showDisplayLimitModal && (
+         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+           <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+             <h3 className="text-lg font-semibold text-gray-900 mb-4">
+               Cập nhật số lượng hiển thị danh mục
+             </h3>
+             <p className="text-sm text-gray-600 mb-4">
+               Số lượng danh mục sẽ hiển thị ở trang chủ và menu navigation
+             </p>
+             
+             <div className="mb-6">
+               <label className="block text-sm font-medium text-gray-700 mb-2">
+                 Số lượng hiển thị (1-20)
+               </label>
+               <input
+                 type="number"
+                 min="1"
+                 max="20"
+                 value={displayLimit}
+                 onChange={(e) => setDisplayLimit(parseInt(e.target.value) || 6)}
+                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                 placeholder="Nhập số lượng (1-20)"
+               />
+             </div>
+
+             <div className="flex gap-3">
+               <button
+                 onClick={() => setShowDisplayLimitModal(false)}
+                 className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200"
+               >
+                 Hủy
+               </button>
+               <button
+                 onClick={handleUpdateDisplayLimit}
+                 className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-200"
+               >
+                 Cập nhật
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+     </div>
+   );
+ };
 
 export default ListCategory;

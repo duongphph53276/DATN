@@ -36,7 +36,7 @@ export default function OrderDetail() {
         </div>
     )
 
-    const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>, shipperId?: string, cancelReason?: string) => {
+    const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>, shipperId?: string) => {
         const newStatus = e.target.value as stateOrder['status']
         if (!order) return
 
@@ -55,14 +55,11 @@ export default function OrderDetail() {
                 updateData.shipper_id = shipperId
             }
             
-            // Nếu có cancel_reason, thêm vào updateData
-            if (cancelReason) {
-                updateData.cancel_reason = cancelReason
-            }
+
             
             const updated: any = await dispatch(updateOrder(updateData)).unwrap()
             ToastSucess(updated.message)
-            setOrder({ ...order, status: updated.data.status, cancel_reason: updated.data.cancel_reason })
+            setOrder({ ...order, status: updated.data.status })
         } catch (err: any) {
             console.error('Lỗi khi cập nhật trạng thái:', err)
             console.error('Response data:', err.response?.data)

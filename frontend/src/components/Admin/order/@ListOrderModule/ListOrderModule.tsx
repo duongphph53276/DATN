@@ -114,7 +114,15 @@ function ListOrderModule() {
                       </td>
                       <td>{order.quantity}</td>
                       <td>{order.total_amount.toLocaleString()}₫</td>
-                      <td>{order.discount_code || "—"}</td>
+                      <td>
+                        {order.voucher ? (
+                          <span className="text-sm font-medium text-green-600">
+                            {order.voucher.code}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                       <td>{paymentMethodVietnamese[order.payment_method] || order.payment_method}</td>
                       <td>
                         {new Date(order.created_at).toLocaleDateString('vi-VN', {

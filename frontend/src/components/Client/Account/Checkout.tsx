@@ -17,7 +17,7 @@ const Checkout: React.FC = () => {
   const [address, setAddress] = useState<Address | null>(null);
   const [addressId, setAddressId] = useState<string>('');
   const [discountCode, setDiscountCode] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('COD');
+  const [paymentMethod, setPaymentMethod] = useState('cod');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -276,7 +276,7 @@ const Checkout: React.FC = () => {
       }
     }
 
-    if (paymentMethod === "VNPAY") {
+    if (paymentMethod === "bank_transfer") {
       try {
         const res = await callVnpaySanboxPayUrl({
           amount: finalTotal,
@@ -295,43 +295,119 @@ const Checkout: React.FC = () => {
       }
     } else {
       try {
-        const orderData = {
-          user_id: userInfo._id,
-          address_id: addressId,
-          order_details: cartItems.map((item) => ({
-            product_id: item.variant?.product_id || item._id || item.id,
-            variant_id: item.variant?._id || 'default-variant',
+        // Validate cart items before creating order
+        const validatedOrderDetails = cartItems.map((item, index) => {
+          const productId = item.variant?.product_id || item._id || item.id;
+          const variantId = item.variant?._id;
+          
+          if (!productId) {
+            throw new Error(`Sản phẩm thứ ${index + 1} không có ID hợp lệ`);
+          }
+          
+          if (!item.name) {
+            throw new Error(`Sản phẩm thứ ${index + 1} không có tên hợp lệ`);
+          }
+          
+          if (!variantId) {
+            throw new Error(`Sản phẩm "${item.name}" không có variant hợp lệ`);
+          }
+          
+          if (!item.price || isNaN(item.price) || item.price <= 0) {
+            throw new Error(`Sản phẩm "${item.name}" có giá không hợp lệ`);
+          }
+          
+          if (!item.quantity || isNaN(item.quantity) || item.quantity <= 0) {
+            throw new Error(`Sản phẩm "${item.name}" có số lượng không hợp lệ`);
+          }
+          
+          return {
+            product_id: productId,
+            variant_id: variantId,
             name: item.name,
             price: item.price,
             quantity: item.quantity,
-            image: item.image,
-          })),
+            image: item.image || '',
+          };
+        });
+
+        // Validate user info
+        if (!userInfo?._id) {
+          throw new Error('Thông tin người dùng không hợp lệ. Vui lòng đăng nhập lại.');
+        }
+
+        // Validate address
+        if (!addressId) {
+          throw new Error('Vui lòng chọn địa chỉ giao hàng.');
+        }
+
+        // Validate total amount
+        if (!finalTotal || isNaN(finalTotal) || finalTotal <= 0) {
+          throw new Error('Tổng tiền đơn hàng không hợp lệ.');
+        }
+
+        // Validate cart items
+        if (!cartItems || cartItems.length === 0) {
+          throw new Error('Giỏ hàng trống. Vui lòng thêm sản phẩm vào giỏ hàng.');
+        }
+
+        // Validate payment method
+        if (!paymentMethod) {
+          throw new Error('Vui lòng chọn phương thức thanh toán.');
+        }
+
+        const totalQuantity = cartItems.reduce((total, item) => total + item.quantity, 0);
+        
+        // Validate total quantity
+        if (!totalQuantity || isNaN(totalQuantity) || totalQuantity <= 0) {
+          throw new Error('Số lượng sản phẩm không hợp lệ.');
+        }
+
+        const orderData = {
+          user_id: userInfo._id,
+          address_id: addressId,
+          order_details: validatedOrderDetails,
           total_amount: finalTotal,
           payment_method: paymentMethod,
           voucher_id: appliedDiscount?._id || null,
-          quantity: cartItems.reduce((total, item) => total + item.quantity, 0),
+          quantity: totalQuantity,
         };
 
-        console.log('Sending order data:', orderData);
+        console.log('Sending order data:', JSON.stringify(orderData, null, 2));
         console.log('Order details breakdown:');
         orderData.order_details.forEach((detail, index) => {
-          console.log(`Item ${index + 1}:`, detail);
+          console.log(`Item ${index + 1}:`, JSON.stringify(detail, null, 2));
+        });
+        
+        // Log validation info
+        console.log('Validation info:', {
+          user_id: orderData.user_id,
+          address_id: orderData.address_id,
+          total_amount: orderData.total_amount,
+          payment_method: orderData.payment_method,
+          voucher_id: orderData.voucher_id,
+          quantity: orderData.quantity,
+          order_details_count: orderData.order_details.length
         });
 
         if (orderData) {
-          dispatch(createOrder(orderData));
+          try {
+            const result = await dispatch(createOrder(orderData)).unwrap();
+            
+            // Chỉ xóa giỏ hàng và hiển thị thông báo thành công khi đặt hàng thành công
+            clearUserCart();
+            localStorage.removeItem('appliedDiscount');
+
+            setSuccessMessage('Đơn hàng đã được đặt thành công!');
+            setTimeout(() => {
+              setSuccessMessage(null);
+              navigate('/');
+            }, 4000);
+          } catch (error: any) {
+            console.error('Lỗi khi đặt hàng:', error);
+            const errorMessage = error?.message || error?.payload || 'Lỗi khi gửi đơn hàng. Vui lòng thử lại.';
+            setErrorMessage(errorMessage);
+          }
         }
-
-        // Xóa giỏ hàng và mã giảm giá sau khi cập nhật thành công
-
-        clearUserCart();
-        localStorage.removeItem('appliedDiscount');
-
-        setSuccessMessage('Đơn hàng đã được đặt thành công!');
-        setTimeout(() => {
-          setSuccessMessage(null);
-          navigate('/');
-        }, 4000);
 
       } catch (error) {
         console.error('Lỗi khi xử lý đơn hàng:', error);
@@ -640,17 +716,17 @@ const Checkout: React.FC = () => {
                 </h3>
                 <div className="space-y-3">
                   <label className="flex items-center p-4 rounded-2xl border-2 border-gray-200 hover:border-pink-300 cursor-pointer transition-all group">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="COD"
-                      checked={paymentMethod === 'COD'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="sr-only"
-                    />
-                    <div className={`w-6 h-6 rounded-full border-2 mr-4 flex items-center justify-center ${paymentMethod === 'COD' ? 'border-pink-500 bg-pink-500' : 'border-gray-300'
-                      }`}>
-                      {paymentMethod === 'COD' && <div className="w-3 h-3 bg-white rounded-full"></div>}
+                                         <input
+                       type="radio"
+                       name="paymentMethod"
+                       value="cod"
+                       checked={paymentMethod === 'cod'}
+                       onChange={(e) => setPaymentMethod(e.target.value)}
+                       className="sr-only"
+                     />
+                                         <div className={`w-6 h-6 rounded-full border-2 mr-4 flex items-center justify-center ${paymentMethod === 'cod' ? 'border-pink-500 bg-pink-500' : 'border-gray-300'
+                       }`}>
+                       {paymentMethod === 'cod' && <div className="w-3 h-3 bg-white rounded-full"></div>}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
@@ -662,17 +738,17 @@ const Checkout: React.FC = () => {
                   </label>
 
                   <label className="flex items-center p-4 rounded-2xl border-2 border-gray-200 hover:border-pink-300 cursor-pointer transition-all group">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="VNPAY"
-                      checked={paymentMethod === 'VNPAY'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="sr-only"
-                    />
-                    <div className={`w-6 h-6 rounded-full border-2 mr-4 flex items-center justify-center ${paymentMethod === 'VNPAY' ? 'border-pink-500 bg-pink-500' : 'border-gray-300'
-                      }`}>
-                      {paymentMethod === 'VNPAY' && <div className="w-3 h-3 bg-white rounded-full"></div>}
+                                         <input
+                       type="radio"
+                       name="paymentMethod"
+                       value="bank_transfer"
+                       checked={paymentMethod === 'bank_transfer'}
+                       onChange={(e) => setPaymentMethod(e.target.value)}
+                       className="sr-only"
+                     />
+                                         <div className={`w-6 h-6 rounded-full border-2 mr-4 flex items-center justify-center ${paymentMethod === 'bank_transfer' ? 'border-pink-500 bg-pink-500' : 'border-gray-300'
+                       }`}>
+                       {paymentMethod === 'bank_transfer' && <div className="w-3 h-3 bg-white rounded-full"></div>}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between">

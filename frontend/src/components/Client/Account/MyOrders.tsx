@@ -17,7 +17,7 @@ const MyOrders: React.FC = () => {
   const { client, status } = useAppSelector((state) => state.order);
   const dispatch = useAppDispatch();
 
-  const itemsPerPage = 6;
+  const itemsPerPage = 50; // Tăng limit để xem tất cả đơn hàng
   useEffect(() => {
     const params: GetOrderParams = {
       page: currentPage,
@@ -31,7 +31,7 @@ const MyOrders: React.FC = () => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
       const user = JSON.parse(userStr);
-      dispatch(getOrderClient({ id: user.id, params }));
+      dispatch(getOrderClient({ id: user._id || user.id, params }));
     }
   }, [dispatch, currentPage, statusFilter, paymentFilter]);
 

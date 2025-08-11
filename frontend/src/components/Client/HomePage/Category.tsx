@@ -21,8 +21,10 @@ const Category: React.FC = () => {
       try {
         setLoading(true);
         const response = await getCategories();
-        // Chỉ lấy danh mục cha
-        setCategories(response.data?.data.filter((cat: CategoryItem) => !cat.parent_id) || []);
+        // Chỉ lấy danh mục cha và giới hạn theo display_limit từ database
+        const parentCategories = response.data?.data.filter((cat: CategoryItem) => !cat.parent_id) || [];
+        const displayLimit = parentCategories[0]?.display_limit || 6; // Lấy từ danh mục đầu tiên
+        setCategories(parentCategories.slice(0, displayLimit));
       } catch (error) {
         console.error('Lỗi khi tải danh mục:', error);
         ToastError('Không thể tải danh mục. Vui lòng thử lại.');

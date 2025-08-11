@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 
 export const ListCategory = async (req, res) => {
   try {
-    const Category = await CategoryModel.find().populate('parent_id', 'name');
+    const Category = await CategoryModel.find().populate('parent_id', 'name').sort({ order: 1, createdAt: 1 });
     res.status(200).send({ message: 'Tải danh mục thành công', status: true, data: Category });
   } catch (error) {
     res.status(500).send({ message: 'Tải thất bại', status: false, error: error.message });
@@ -76,6 +76,90 @@ export const GetCategoryById = async (req, res) => {
     res.status(200).send({ message: 'Lấy id danh mục thành công', status: true, data: Category });
   } catch (error) {
     res.status(500).send({ message: 'Lấy id danh mục thất bại', status: false, error: error.message });
+  }
+};
+
+// Update display limit
+export const updateDisplayLimit = async (req, res) => {
+  try {
+    const { display_limit } = req.body;
+    
+    if (!display_limit || display_limit < 1 || display_limit > 20) {
+      return res.status(400).send({ 
+        message: 'Số lượng hiển thị phải từ 1 đến 20', 
+        status: false 
+      });
+    }
+
+    // Cập nhật display_limit cho tất cả danh mục gốc
+    await CategoryModel.updateMany(
+      { parent_id: null },
+      { display_limit: display_limit }
+    );
+
+    res.status(200).send({ 
+      message: 'Cập nhật số lượng hiển thị thành công', 
+      status: true,
+      data: { display_limit }
+    });
+  } catch (error) {
+    res.status(500).send({ 
+      message: 'Cập nhật số lượng hiển thị thất bại', 
+      status: false, 
+      error: error.message 
+    });
+  }
+};
+
+// Reorder categories
+export const reorderCategories = async (req, res) => {
+  try {
+    const { draggedId, targetId } = req.body;
+    
+    if (!draggedId || !targetId) {
+      return res.status(400).send({ 
+        message: 'Thiếu thông tin cần thiết', 
+        status: false 
+      });
+    }
+
+    // Lấy tất cả danh mục gốc (không có parent_id)
+    const rootCategories = await CategoryModel.find({ parent_id: null }).sort({ order: 1 });
+    
+    // Tìm vị trí của dragged và target
+    const draggedIndex = rootCategories.findIndex(cat => cat._id.toString() === draggedId);
+    const targetIndex = rootCategories.findIndex(cat => cat._id.toString() === targetId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) {
+      return res.status(404).send({ 
+        message: 'Không tìm thấy danh mục', 
+        status: false 
+      });
+    }
+
+    // Cập nhật thứ tự
+    const draggedCategory = rootCategories[draggedIndex];
+    rootCategories.splice(draggedIndex, 1);
+    rootCategories.splice(targetIndex, 0, draggedCategory);
+
+    // Cập nhật order field cho tất cả danh mục
+    for (let i = 0; i < rootCategories.length; i++) {
+      await CategoryModel.findByIdAndUpdate(
+        rootCategories[i]._id,
+        { order: i + 1 }
+      );
+    }
+
+    res.status(200).send({ 
+      message: 'Cập nhật thứ tự danh mục thành công', 
+      status: true 
+    });
+  } catch (error) {
+    res.status(500).send({ 
+      message: 'Cập nhật thứ tự thất bại', 
+      status: false, 
+      error: error.message 
+    });
   }
 };
 
