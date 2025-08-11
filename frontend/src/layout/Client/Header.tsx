@@ -1,4 +1,4 @@
-import { FaPhoneAlt, FaSearch, FaUser, FaSignOutAlt, FaUserCircle, FaClipboardList } from "react-icons/fa";
+import { FaPhoneAlt, FaSearch, FaUser, FaSignOutAlt, FaUserCircle, FaClipboardList, FaChevronDown } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import CartCountBadge from "./CartCountBadge";
@@ -21,11 +21,8 @@ const Header = () => {
         const response = await api.get("/category");
         if (response.data.status) {
           console.log("Fetched Categories:", response.data.data);
-          // Chỉ lấy danh mục theo display_limit từ database
-          const parentCategories = response.data.data.filter((cat: any) => !cat.parent_id);
-          const displayLimit = parentCategories[0]?.display_limit || 6;
-          const limitedCategories = parentCategories.slice(0, displayLimit);
-          setCategories(limitedCategories);
+          // Lấy tất cả danh mục để có thể tạo dropdown
+          setCategories(response.data.data);
         }
       } catch (error) {
         console.error("Error fetching categories:", error);
@@ -78,24 +75,25 @@ const Header = () => {
     navigate("/");
   };
 
-  const topLevelCategories = categories.filter((cat) => !cat.parent_id);
-  const otherStuffedBearsCategory = categories.find(
-    (cat) => cat.name === "Gi co"
-  );
-  const subCategories = otherStuffedBearsCategory
-    ? categories.filter((cat) =>
-        cat.parent_id && cat.parent_id._id
-          ? cat.parent_id._id.toString() === otherStuffedBearsCategory._id.toString()
-          : false
-      )
-    : [];
+  // Lấy danh mục cha theo display_limit
+  const parentCategories = categories.filter((cat) => !cat.parent_id);
+  const displayLimit = parentCategories[0]?.display_limit || 6;
+  const limitedParentCategories = parentCategories.slice(0, displayLimit);
 
-  console.log("Top Level Categories:", topLevelCategories);
-  console.log("Other Stuffed Bears:", otherStuffedBearsCategory);
-  console.log("Subcategories:", subCategories);
+  // Hàm lấy subcategories cho một category cha
+  const getSubCategories = (parentId: string) => {
+    return categories.filter((cat) => 
+      cat.parent_id && 
+      (typeof cat.parent_id === 'string' 
+        ? cat.parent_id === parentId 
+        : cat.parent_id._id === parentId)
+    );
+  };
+
+  console.log("Limited Parent Categories:", limitedParentCategories);
 
   return (
-    <header className="shadow z-50 bg-white relative">
+    <header className="shadow-lg z-50 bg-white relative">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 h-20">
         <Link to="/" className="flex items-center space-x-2">
           <img src="/logo.png" alt="Logo Bemori" className="h-10 w-auto" />
@@ -232,50 +230,50 @@ const Header = () => {
           </div>
         </div>
       </div>
-      <nav className="bg-rose-300 text-white text-sm font-medium">
-        <div className="max-w-7xl mx-auto flex flex-wrap justify-center gap-x-8 gap-y-2 py-3 px-4">
-          <Link to="/" className="hover:text-rose-100 transition">
+      <nav className="bg-gradient-to-r from-rose-400 to-pink-500 text-white text-sm font-medium shadow-lg">
+        <div className="max-w-7xl mx-auto flex flex-wrap justify-center gap-x-8 gap-y-2 py-4 px-4">
+          <Link to="/" className="hover:text-rose-100 transition-colors duration-200 font-semibold">
             TRANG CHỦ
           </Link>
-          {topLevelCategories.map((category) => (
-            <div key={category._id} className="relative group">
-              {category.name === "Gi co" ? (
-                <>
-                  <Link
-                    to={`/category/${category.slug}`}
-                    className="flex items-center gap-1 hover:text-rose-100 transition"
-                  >
-                    {category.name}
-                  </Link>
-                  {subCategories.length > 0 && (
-                    <ul className="absolute left-0 top-full mt-1 bg-white text-gray-800 shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[180px]">
-                      {subCategories.map((subCat) => (
-                        <li key={subCat._id}>
-                          <Link
-                            to={`/category/${subCat.slug}`}
-                            className="block px-4 py-2 hover:bg-rose-100"
-                          >
-                            {subCat.name}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </>
-              ) : (
+          {limitedParentCategories.map((category) => {
+            const subCategories = getSubCategories(category._id);
+            const hasSubCategories = subCategories.length > 0;
+            
+            return (
+              <div key={category._id} className="relative group">
                 <Link
                   to={`/category/${category.slug}`}
-                  className="hover:text-rose-100 transition"
+                  className={`flex items-center gap-1 hover:text-rose-100 transition-colors duration-200 ${
+                    hasSubCategories ? 'cursor-pointer' : ''
+                  }`}
                 >
                   {category.name}
+                  {hasSubCategories && (
+                    <FaChevronDown className="text-xs transition-transform duration-200 group-hover:rotate-180" />
+                  )}
                 </Link>
-              )}
-            </div>
-          ))}
-          <Link to="/goc-cua-gau" className="hover:text-rose-100 transition">
+                {hasSubCategories && (
+                  <div className="absolute left-0 top-full mt-2 bg-white text-gray-800 shadow-xl rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-20 min-w-[200px] border border-gray-100 overflow-hidden">
+                    <div className="py-2">
+                      {subCategories.map((subCat) => (
+                        <Link
+                          key={subCat._id}
+                          to={`/category/${subCat.slug}`}
+                          className="block px-4 py-3 text-sm hover:bg-gradient-to-r hover:from-rose-50 hover:to-pink-50 hover:text-rose-600 transition-colors duration-150 border-b border-gray-50 last:border-b-0"
+                        >
+                          {subCat.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          <Link to="/goc-cua-gau" className="hover:text-rose-100 transition-colors duration-200 font-semibold">
             GÓC CỦA GẤU ▾
           </Link>
-          <Link to="/all-products" className="hover:text-rose-100 transition">
+          <Link to="/all-products" className="hover:text-rose-100 transition-colors duration-200 font-semibold">
             TẤT CẢ SP ▾
           </Link>
         </div>
