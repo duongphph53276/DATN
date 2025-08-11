@@ -39,7 +39,7 @@ const Checkout: React.FC = () => {
   useEffect(() => {
     // Migrate cart cũ nếu có
     migrateOldCart();
-    
+
     try {
       const userCartItems = loadUserCart();
       setCartItems(userCartItems);
@@ -114,13 +114,28 @@ const Checkout: React.FC = () => {
     }
 
     let amount = 0;
-    if (discount.type === 'percentage') {
+
+    // Sửa lại để sử dụng discount_type thay vì type
+    if (discount.discount_type === 'percentage') {
       amount = (totalPrice * discount.value) / 100;
-    } else if (discount.type === 'fixed') {
+      // Thêm giới hạn maximum discount nếu cần
+      if (discount.max_discount_amount) {
+        amount = Math.min(amount, discount.max_discount_amount);
+      }
+    } else if (discount.discount_type === 'fixed') {
       amount = discount.value;
     }
 
+    // Đảm bảo amount không vượt quá totalPrice
     amount = Math.min(amount, totalPrice);
+
+    console.log('Discount calculation:', {
+      discountType: discount.discount_type,
+      discountValue: discount.value,
+      totalPrice: totalPrice,
+      calculatedAmount: amount
+    });
+
     setDiscountAmount(amount);
   };
 
@@ -135,14 +150,21 @@ const Checkout: React.FC = () => {
       return { isValid: false, error: 'Vui lòng nhập mã giảm giá' };
     }
 
+    if (!userInfo?._id) {  // Check để tránh lỗi nếu user chưa login
+      return { isValid: false, error: 'Bạn cần đăng nhập để áp dụng mã giảm giá' };
+    }
+
     try {
       const response = await applyVoucher({
-        code: code.trim().toUpperCase()
+        code: code.trim().toUpperCase(),
+        user_id: userInfo._id  // Truyền user_id từ userInfo (là ObjectId hợp lệ)
       });
       console.log(response);
+
       if (response.status) {
         const discount: DiscountInfo = response.data;
-        console.log(discount, 'hẹ hẹ ')
+        console.log(discount, 'hẹ hẹ ');
+
         const now = new Date();
         const startDate = new Date(discount.start_date);
         const endDate = new Date(discount.end_date);
@@ -162,6 +184,7 @@ const Checkout: React.FC = () => {
         if (discount.used_quantity >= discount.quantity) {
           return { isValid: false, error: 'Mã giảm giá đã hết lượt sử dụng' };
         }
+
         console.log(totalPrice, discount.min_order_value);
         if (totalPrice < discount.min_order_value) {
           return {
@@ -203,7 +226,12 @@ const Checkout: React.FC = () => {
 
       localStorage.setItem('appliedDiscount', JSON.stringify(validation.discount));
 
-      setDiscountSuccess(`Áp dụng mã thành công! Giảm ${validation.discount.type === 'percentage' ? validation.discount.value + '%' : validation.discount.value.toLocaleString('vi-VN') + '₫'}`);
+      // Sửa lại hiển thị thông báo success
+      const discountText = validation.discount.discount_type === 'percentage'
+        ? validation.discount.value + '%'
+        : validation.discount.value.toLocaleString('vi-VN') + '₫';
+
+      setDiscountSuccess(`Áp dụng mã thành công! Giảm ${discountText}`);
 
       setTimeout(() => setDiscountSuccess(null), 3000);
     } else {
@@ -293,7 +321,7 @@ const Checkout: React.FC = () => {
         orderData.order_details.forEach((detail, index) => {
           console.log(`Item ${index + 1}:`, detail);
         });
-        
+
         if (orderData) {
           dispatch(createOrder(orderData));
         }
@@ -541,7 +569,7 @@ const Checkout: React.FC = () => {
                       </button>
                     </div>
                     <p className="text-sm text-green-700">
-                      Giảm {appliedDiscount.type === 'percentage'
+                      Giảm {appliedDiscount.discount_type === 'percentage'
                         ? `${appliedDiscount.value}%`
                         : `${appliedDiscount.value.toLocaleString('vi-VN')}₫`
                       } - Tiết kiệm {discountAmount.toLocaleString('vi-VN')}₫

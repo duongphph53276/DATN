@@ -39,6 +39,8 @@ export interface Address {
 }
 
 export interface DiscountInfo {
+  max_discount_amount: any;
+  discount_type: string;
   _id: string;
   code: string;
   type: 'percentage' | 'fixed';

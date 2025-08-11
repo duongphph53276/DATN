@@ -19,26 +19,28 @@ const ListVoucher: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState(0);
 
-  useEffect(() => {
-    const fetchVouchers = async () => {
-      try {
-        const response = await axios.get<IVoucherResponse>('http://localhost:5000/vouchers');
-        if (response.data.status) {
-          setVouchers(response.data.data);
-          setFilteredVouchers(response.data.data);
-        } else {
-          setError(response.data.message);
-        }
-      } catch (err) {
-        const errorResponse = err as IErrorResponse;
-        setError(errorResponse.message || 'Lỗi khi tải danh sách voucher');
-      } finally {
-        setLoading(false);
+useEffect(() => {
+  const fetchVouchers = async () => {
+    try {
+      const response = await axios.get<IVoucherResponse>('http://localhost:5000/vouchers');
+      if (response.data.status) {
+        // Sort theo _id descending (mới nhất lên đầu)
+        const sortedVouchers = response.data.data.sort((a, b) => b._id.localeCompare(a._id));
+        setVouchers(sortedVouchers);
+        setFilteredVouchers(sortedVouchers);
+      } else {
+        setError(response.data.message);
       }
-    };
+    } catch (err) {
+      const errorResponse = err as IErrorResponse;
+      setError(errorResponse.message || 'Lỗi khi tải danh sách voucher');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchVouchers();
-  }, []);
+  fetchVouchers();
+}, []);
 
   // Filter and search logic
   useEffect(() => {
