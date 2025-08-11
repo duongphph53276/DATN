@@ -221,7 +221,6 @@ const CategoryPage: React.FC = () => {
 
     addToUserCart(cartItem);
     ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
-    navigate("/cart");
   };
 
   const filteredProducts = products.filter((product) => {

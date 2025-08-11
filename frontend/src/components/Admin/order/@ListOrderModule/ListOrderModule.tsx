@@ -81,14 +81,13 @@ function ListOrderModule() {
               <thead>
                 <tr>
                   <th>STT</th>
-                  <th>Người dùng</th>
+                  <th>Thông tin khách hàng</th>
                   <th>Trạng thái</th>
                   <th>Số lượng</th>
                   <th>Tổng tiền</th>
                   <th>Giảm giá</th>
                   <th>Thanh toán</th>
                   <th>Ngày tạo</th>
-                  <th>Sản phẩm</th>
                   <th>Thao Tác</th>
                 </tr>
               </thead>
@@ -103,23 +102,36 @@ function ListOrderModule() {
                   orders.map((order, index) => (
                     <tr key={order._id}>
                       <td>{index + 1 + currentPage * pagination.per_page}</td>
-                      <td>{order.user_id}</td>
+                      <td>
+                        <div className="space-y-1">
+                          <div className="font-medium text-gray-900">{order.user?.name || 'N/A'}</div>
+                          <div className="text-sm text-gray-600">{order.user?.email || 'N/A'}</div>
+                          <div className="text-sm text-gray-600">{order.user?.phone || order.user?.phoneNumber || 'N/A'}</div>
+                        </div>
+                      </td>
                       <td className={cx("status", order.status)}>
                         {getVietnameseStatus(order.status)}
                       </td>
                       <td>{order.quantity}</td>
                       <td>{order.total_amount.toLocaleString()}₫</td>
-                      <td>{order.discount_code || "—"}</td>
+                      <td>
+                        {order.voucher ? (
+                          <span className="text-sm font-medium text-green-600">
+                            {order.voucher.code}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                       <td>{paymentMethodVietnamese[order.payment_method] || order.payment_method}</td>
                       <td>
-                        {new Date(order.created_at).toLocaleDateString()}
-                      </td>
-                      <td className={cx("productList")}>
-                        {order.order_details.map((item) => (
-                          <div key={item._id}>
-                            • {item.name} ({item.price.toLocaleString()}₫)
-                          </div>
-                        ))}
+                        {new Date(order.created_at).toLocaleDateString('vi-VN', {
+                          year: 'numeric',
+                          month: '2-digit', 
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </td>
                       <td>
                         <button

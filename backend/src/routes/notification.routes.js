@@ -3,7 +3,8 @@ import {
   getUserNotificationsController, 
   markNotificationAsReadController, 
   getUnreadNotificationCountController, 
-  getAdminNotificationsController
+  getAdminNotificationsController,
+  markAllNotificationsAsReadController
 } from '../controllers/notificationController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
@@ -18,5 +19,8 @@ router.get('/unread-count', authMiddleware, getUnreadNotificationCountController
 
 // Đánh dấu notification đã đọc
 router.put('/:notificationId/read', authMiddleware, markNotificationAsReadController);
+
+// Đánh dấu tất cả notifications đã đọc
+router.put('/mark-all-read', authMiddleware, markAllNotificationsAsReadController);
 
 export default router; 

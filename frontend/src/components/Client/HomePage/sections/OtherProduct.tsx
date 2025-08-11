@@ -162,7 +162,6 @@ const OtherProduct: React.FC = () => {
 
     addToUserCart(cartItem);
     ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
-    navigate("/cart");
   };
 
   const getValidAttributeValues = (product: any, attributeId: string, selectedAttributes: { [key: string]: string }) => {

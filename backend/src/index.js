@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/db.js';
 import { CreateVoucher, ListVoucher, UpdateVoucher, DeleteVoucher, ApplyVoucher, GetVoucherById } from './controllers/voucher.js';
-import { AddCategory, DeleteCategory, EditCategory, GetCategoryById, ListCategory, getCategoryDistribution } from './controllers/category.js';
+import { AddCategory, DeleteCategory, EditCategory, GetCategoryById, ListCategory, getCategoryDistribution, reorderCategories, updateDisplayLimit } from './controllers/category.js';
 import { createProduct, deleteProduct, getAllProducts, getProductById, updateProduct, getProductStatistics } from './controllers/product.js';
 import { createAttribute, getAttributeById, deleteAttribute, getAllAttributes, updateAttribute } from "./controllers/attribute.js";
 import { createAttributeValue, deleteAttributeValue, getAttributeValueById, getAttributeValues, updateAttributeValue } from './controllers/attributeValue.js';
@@ -161,6 +161,8 @@ adminRouter.post('/category/add', AddCategory);
 adminRouter.put('/category/edit/:id', EditCategory);
 adminRouter.delete('/category/:id', DeleteCategory);
 adminRouter.get('/category/:id', GetCategoryById);
+adminRouter.patch('/category/reorder', reorderCategories);
+adminRouter.patch('/category/display-limit', updateDisplayLimit);
 
 // adminRouter.
 
@@ -176,6 +178,13 @@ app.get('/verify-email', verifyEmail);
 
 
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
+app.use(express.json());
+
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} Headers:`, req.headers, 'Body:', req.body);
+  next();
+});
 
 // Khởi động server
 const startServer = async () => {

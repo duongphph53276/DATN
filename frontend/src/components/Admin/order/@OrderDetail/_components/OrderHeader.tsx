@@ -31,7 +31,7 @@ export default function OrderHeader({ orderId, orderStatus, onChangeStatus }: Pr
         } else {
           console.log('Failed to fetch shippers:', response.message)
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching shippers:', error)
         console.error('Error details:', error.response?.data)
       }
@@ -49,7 +49,7 @@ export default function OrderHeader({ orderId, orderStatus, onChangeStatus }: Pr
       return
     }
     
-    // Nếu không phải shipping, gọi onChangeStatus ngay
+    // Gọi onChangeStatus ngay cho các trạng thái khác
     onChangeStatus(e)
   }
 
@@ -128,6 +128,8 @@ export default function OrderHeader({ orderId, orderStatus, onChangeStatus }: Pr
           </div>
         )}
       </div>
+
+
     </div>
   )
 }

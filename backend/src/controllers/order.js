@@ -3,8 +3,9 @@ import { OrderDetailModel } from '../models/OrderDetailModel.js';
 import { VoucherModel } from '../models/Voucher.js';
 import { AddressModel } from '../models/User/address.js';
 import { UserModel } from '../models/User/user.js';
+import Product from '../models/product.js';
 import ProductVariant from '../models/productVariant.js';
-import Product from "../models/product.js";
+import VariantAttributeValue from '../models/variantAttributeValue.js';
 import {
   createOrderSuccessNotification,
   createOrderStatusNotification,
@@ -12,7 +13,6 @@ import {
   cancelledAdminNotification,
   createShipperAssignmentNotification
 } from '../services/notificationService.js';
-
 import mongoose from 'mongoose';
 
 class OrderController {
@@ -95,10 +95,27 @@ class OrderController {
                 ProductVariant.findById(detail.variant_id).lean()
               ]);
 
+              // Lấy variant attributes với thông tin chi tiết
+              const variantAttributes = await VariantAttributeValue
+                .find({ variant_id: detail.variant_id })
+                .populate('attribute_id', 'name')
+                .populate('value_id', 'value')
+                .lean();
+
+              const variantWithAttributes = variant ? {
+                ...variant,
+                attributes: variantAttributes.map(attr => ({
+                  attribute_id: attr.attribute_id._id,
+                  value_id: attr.value_id._id,
+                  attribute_name: attr.attribute_id.name,
+                  value: attr.value_id.value
+                }))
+              } : null;
+
               return {
                 ...detail,
                 product: product,
-                variant: variant
+                variant: variantWithAttributes
               };
             })
           );
@@ -178,10 +195,27 @@ class OrderController {
             ProductVariant.findById(detail.variant_id).lean()
           ]);
 
+          // Lấy variant attributes với thông tin chi tiết
+          const variantAttributes = await VariantAttributeValue
+            .find({ variant_id: detail.variant_id })
+            .populate('attribute_id', 'name')
+            .populate('value_id', 'value')
+            .lean();
+
+          const variantWithAttributes = variant ? {
+            ...variant,
+            attributes: variantAttributes.map(attr => ({
+              attribute_id: attr.attribute_id._id,
+              value_id: attr.value_id._id,
+              attribute_name: attr.attribute_id.name,
+              value: attr.value_id.value
+            }))
+          } : null;
+
           return {
             ...detail,
             product: product,
-            variant: variant
+            variant: variantWithAttributes
           };
         })
       );
@@ -283,6 +317,35 @@ class OrderController {
         }
       }
 
+      // Validate voucher if provided
+      if (voucher_id) {
+        const voucher = await VoucherModel.findById(voucher_id).session(session);
+        if (!voucher) {
+          return res.status(404).json({
+            success: false,
+            message: 'Voucher not found'
+          });
+        }
+        if (voucher.quantity <= voucher.used_quantity) {
+          return res.status(400).json({
+            success: false,
+            message: 'Voucher has no remaining uses'
+          });
+        }
+        // Check per-user usage limit
+        const userVoucherUsage = await OrderModel.countDocuments({
+          user_id,
+          voucher_id,
+          status: { $ne: 'cancelled' }
+        }).session(session);
+        if (userVoucherUsage >= voucher.usage_limit_per_user) {
+          return res.status(400).json({
+            success: false,
+            message: 'User has exceeded voucher usage limit'
+          });
+        }
+      }
+
       const newOrder = new OrderModel({
         user_id,
         quantity,
@@ -305,6 +368,15 @@ class OrderController {
       }));
 
       const savedOrderDetails = await OrderDetailModel.insertMany(orderDetailsData, { session });
+
+      // Update voucher used_quantity if voucher is used
+      if (voucher_id) {
+        await VoucherModel.findByIdAndUpdate(
+          voucher_id,
+          { $inc: { used_quantity: 1 } },
+          { session }
+        );
+      }
 
       const orderDetailsWithInfo = await Promise.all(
         savedOrderDetails.map(async (detail) => {
@@ -335,7 +407,6 @@ class OrderController {
       } catch (notificationError) {
         console.error('Error creating notifications:', notificationError);
       }
-
       res.status(201).json({
         success: true,
         message: 'Order created successfully',
@@ -376,7 +447,7 @@ class OrderController {
   async updateOrderStatus(req, res) {
     try {
       const { id } = req.params;
-      const { status, shipper_id } = req.body;
+      const { status, shipper_id, cancel_reason } = req.body;
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({
@@ -385,15 +456,36 @@ class OrderController {
         });
       }
 
-      const validStatuses = ['pending', 'preparing', 'shipping', 'delivered', 'cancelled'];
-      if (!status || !validStatuses.includes(status)) {
-        return res.status(400).json({
+      const currentOrder = await OrderModel.findById(id).lean();
+      if (!currentOrder) {
+        return res.status(404).json({
           success: false,
-          message: 'Invalid status. Valid statuses are: ' + validStatuses.join(', ')
+          message: 'Order not found'
         });
       }
 
-      // Kiểm tra nếu status là shipping thì phải có shipper_id
+      const allowedStatuses = ['preparing', 'shipping', 'cancelled'];
+      if (!status || !allowedStatuses.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Admin can only change status to: preparing, shipping, cancelled'
+        });
+      }
+
+      if (currentOrder.status === 'shipping') {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot change status of an order that is already being shipped'
+        });
+      }
+
+      if (currentOrder.status === 'delivered' || currentOrder.status === 'cancelled') {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot change status of a completed or cancelled order'
+        });
+      }
+
       if (status === 'shipping' && !shipper_id) {
         return res.status(400).json({
           success: false,
@@ -401,7 +493,13 @@ class OrderController {
         });
       }
 
-      // Nếu có shipper_id, kiểm tra shipper có tồn tại không
+      if (status === 'cancelled' && !cancel_reason) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cancel reason is required when cancelling order'
+        });
+      }
+
       if (shipper_id) {
         const shipperExists = await UserModel.findById(shipper_id).lean();
         if (!shipperExists) {
@@ -417,9 +515,12 @@ class OrderController {
         updateData.delivered_at = new Date();
       }
       
-      // Gán shipper_id khi status là shipping
       if (status === 'shipping' && shipper_id) {
         updateData.shipper_id = shipper_id;
+      }
+
+      if (status === 'cancelled' && cancel_reason) {
+        updateData.cancel_reason = cancel_reason;
       }
 
       const updatedOrder = await OrderModel.findByIdAndUpdate(
@@ -435,14 +536,13 @@ class OrderController {
         });
       }
 
-      if (status == 'cancelled') {
+      if (status === 'cancelled') {
         await cancelledAdminNotification(updatedOrder._id.toString());
       }
 
       try {
         await createOrderStatusNotification(updatedOrder.user_id.toString(), updatedOrder._id.toString(), status);
         
-        // Nếu status là shipping và có shipper_id, gửi notification cho shipper
         if (status === 'shipping' && shipper_id) {
           const customer = await OrderController.populateUserInfo(updatedOrder.user_id);
           const customerName = customer ? customer.name : 'Khách hàng';
@@ -452,7 +552,6 @@ class OrderController {
         console.error('Error creating status notification:', notificationError);
       }
 
-      // Include voucher, address and user in response
       const [voucher, address, user] = await Promise.all([
         updatedOrder.voucher_id ? VoucherModel.findById(updatedOrder.voucher_id).lean() : null,
         AddressModel.findById(updatedOrder.address_id).lean(),
@@ -540,6 +639,9 @@ class OrderController {
       const { user_id } = req.params;
       const { page = 1, limit = 10, status } = req.query;
 
+      console.log('🔍 getOrdersByUserId - user_id:', user_id);
+      console.log('🔍 getOrdersByUserId - query params:', req.query);
+
       const userExists = await UserModel.findById(user_id).lean();
       if (!userExists) {
         return res.status(404).json({
@@ -550,6 +652,8 @@ class OrderController {
 
       const filter = { user_id };
       if (status) filter.status = status;
+
+      console.log('🔍 getOrdersByUserId - filter:', filter);
 
       const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -562,6 +666,19 @@ class OrderController {
 
       const totalOrders = await OrderModel.countDocuments(filter);
       const totalPages = Math.ceil(totalOrders / parseInt(limit));
+
+      console.log('🔍 getOrdersByUserId - found orders count:', orders.length);
+      console.log('🔍 getOrdersByUserId - total orders in DB:', totalOrders);
+      console.log('🔍 getOrdersByUserId - orders dates:', orders.map(o => ({ id: o._id, date: o.created_at, status: o.status })));
+
+      // Debug: Kiểm tra tất cả đơn hàng của user này trong DB
+      const allUserOrders = await OrderModel.find({ user_id }).sort({ created_at: -1 }).lean();
+      console.log('🔍 getOrdersByUserId - ALL orders for this user:', allUserOrders.map(o => ({ 
+        id: o._id, 
+        date: o.created_at, 
+        status: o.status,
+        total_amount: o.total_amount 
+      })));
 
       const ordersWithDetails = await Promise.all(
         orders.map(async (order) => {
@@ -576,10 +693,26 @@ class OrderController {
                 ProductVariant.findById(detail.variant_id).lean()
               ]);
 
+              const variantAttributes = await VariantAttributeValue
+                .find({ variant_id: detail.variant_id })
+                .populate('attribute_id', 'name')
+                .populate('value_id', 'value')
+                .lean();
+
+              const variantWithAttributes = variant ? {
+                ...variant,
+                attributes: variantAttributes.map(attr => ({
+                  attribute_id: attr.attribute_id._id,
+                  value_id: attr.value_id._id,
+                  attribute_name: attr.attribute_id.name,
+                  value: attr.value_id.value
+                }))
+              } : null;
+
               return {
                 ...detail,
                 product: product,
-                variant: variant
+                variant: variantWithAttributes
               };
             })
           );
@@ -641,7 +774,12 @@ class OrderController {
         : {};
 
       const stats = await OrderModel.aggregate([
-        { $match: matchStage },
+        { 
+          $match: {
+            ...matchStage,
+            status: 'delivered'
+          }
+        },
         {
           $group: {
             _id: null,
@@ -659,7 +797,15 @@ class OrderController {
           $group: {
             _id: '$status',
             count: { $sum: 1 },
-            total_amount: { $sum: '$total_amount' }
+            total_amount: { 
+              $sum: {
+                $cond: [
+                  { $eq: ['$status', 'delivered'] },
+                  '$total_amount',
+                  0
+                ]
+              }
+            }
           }
         }
       ]);
@@ -670,14 +816,26 @@ class OrderController {
           $group: {
             _id: '$payment_method',
             count: { $sum: 1 },
-            total_amount: { $sum: '$total_amount' }
+            total_amount: { 
+              $sum: {
+                $cond: [
+                  { $eq: ['$status', 'delivered'] },
+                  '$total_amount',
+                  0
+                ]
+              }
+            }
           }
         }
       ]);
 
-      // Thêm thống kê theo user
       const topCustomers = await OrderModel.aggregate([
-        { $match: matchStage },
+        { 
+          $match: {
+            ...matchStage,
+            status: 'delivered'
+          }
+        },
         {
           $group: {
             _id: '$user_id',
@@ -690,7 +848,6 @@ class OrderController {
         { $limit: 10 }
       ]);
 
-      // Populate user info cho top customers
       const topCustomersWithInfo = await Promise.all(
         topCustomers.map(async (customer) => {
           const user = await OrderController.populateUserInfo(customer._id);
@@ -741,7 +898,7 @@ class OrderController {
               $gte: new Date(year, 0, 1),
               $lt: new Date(parseInt(year) + 1, 0, 1)
             },
-            status: { $in: ['completed', 'delivered'] }
+            status: 'delivered'
           }
         },
         {
@@ -759,7 +916,6 @@ class OrderController {
         }
       ]);
 
-      // Create array with all 12 months
       const monthNames = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
       const result = monthNames.map((month, index) => {
         const monthData = monthlyStats.find(stat => stat._id.month === index + 1);
@@ -794,7 +950,6 @@ class OrderController {
       const { shipper_id } = req.params;
       const { page = 1, limit = 10, status } = req.query;
 
-      // Kiểm tra shipper có tồn tại không
       const shipperExists = await UserModel.findById(shipper_id).lean();
       if (!shipperExists) {
         return res.status(404).json({
@@ -805,12 +960,10 @@ class OrderController {
 
       const filter = { shipper_id };
       
-      // Nếu có status filter, thêm vào query
       if (status) {
         filter.status = status;
       } else {
-        // Mặc định chỉ lấy đơn hàng có status shipping hoặc delivered
-        filter.status = { $in: ['shipping', 'delivered'] };
+        filter.status = { $in: ['shipping', 'delivered', 'cancelled'] };
       }
 
       const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -838,10 +991,26 @@ class OrderController {
                 ProductVariant.findById(detail.variant_id).lean()
               ]);
 
+              const variantAttributes = await VariantAttributeValue
+                .find({ variant_id: detail.variant_id })
+                .populate('attribute_id', 'name')
+                .populate('value_id', 'value')
+                .lean();
+
+              const variantWithAttributes = variant ? {
+                ...variant,
+                attributes: variantAttributes.map(attr => ({
+                  attribute_id: attr.attribute_id._id,
+                  value_id: attr.value_id._id,
+                  attribute_name: attr.attribute_id.name,
+                  value: attr.value_id.value
+                }))
+              } : null;
+
               return {
                 ...detail,
                 product: product,
-                variant: variant
+                variant: variantWithAttributes
               };
             })
           );
@@ -896,7 +1065,7 @@ class OrderController {
   async updateOrderStatusByShipper(req, res) {
     try {
       const { shipper_id, order_id } = req.params;
-      const { status } = req.body;
+      const { status, cancel_reason } = req.body;
 
       if (!mongoose.Types.ObjectId.isValid(order_id)) {
         return res.status(400).json({
@@ -905,15 +1074,21 @@ class OrderController {
         });
       }
 
-      // Shipper chỉ được phép thay đổi từ shipping sang delivered
-      if (status !== 'delivered') {
+      const allowedStatuses = ['delivered', 'cancelled'];
+      if (!allowedStatuses.includes(status)) {
         return res.status(400).json({
           success: false,
-          message: 'Shipper can only update status to delivered'
+          message: 'Shipper can only update status to delivered or cancelled'
         });
       }
 
-      // Kiểm tra đơn hàng có tồn tại và thuộc về shipper này không
+      if (status === 'cancelled' && !cancel_reason) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cancel reason is required when cancelling delivery'
+        });
+      }
+
       const order = await OrderModel.findOne({
         _id: order_id,
         shipper_id: shipper_id,
@@ -927,10 +1102,15 @@ class OrderController {
         });
       }
 
-      const updateData = { 
-        status: 'delivered',
-        delivered_at: new Date()
-      };
+      const updateData = { status };
+      
+      if (status === 'delivered') {
+        updateData.delivered_at = new Date();
+      }
+      
+      if (status === 'cancelled' && cancel_reason) {
+        updateData.cancel_reason = cancel_reason;
+      }
 
       const updatedOrder = await OrderModel.findByIdAndUpdate(
         order_id,
@@ -946,12 +1126,11 @@ class OrderController {
       }
 
       try {
-        await createOrderStatusNotification(updatedOrder.user_id.toString(), updatedOrder._id.toString(), 'delivered');
+        await createOrderStatusNotification(updatedOrder.user_id.toString(), updatedOrder._id.toString(), status);
       } catch (notificationError) {
         console.error('Error creating status notification:', notificationError);
       }
 
-      // Include voucher, address, user and shipper in response
       const [voucher, address, user, shipper] = await Promise.all([
         updatedOrder.voucher_id ? VoucherModel.findById(updatedOrder.voucher_id).lean() : null,
         AddressModel.findById(updatedOrder.address_id).lean(),
@@ -967,9 +1146,13 @@ class OrderController {
         shipper: shipper
       };
 
+      const message = status === 'delivered' 
+        ? 'Order status updated to delivered successfully'
+        : 'Order delivery cancelled successfully';
+        
       res.status(200).json({
         success: true,
-        message: 'Order status updated to delivered successfully',
+        message: message,
         data: orderWithDetails
       });
     } catch (error) {

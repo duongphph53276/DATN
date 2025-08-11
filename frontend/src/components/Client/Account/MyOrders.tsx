@@ -17,7 +17,7 @@ const MyOrders: React.FC = () => {
   const { client, status } = useAppSelector((state) => state.order);
   const dispatch = useAppDispatch();
 
-  const itemsPerPage = 6;
+  const itemsPerPage = 50; // Tăng limit để xem tất cả đơn hàng
   useEffect(() => {
     const params: GetOrderParams = {
       page: currentPage,
@@ -31,7 +31,7 @@ const MyOrders: React.FC = () => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
       const user = JSON.parse(userStr);
-      dispatch(getOrderClient({ id: user.id, params }));
+      dispatch(getOrderClient({ id: user._id || user.id, params }));
     }
   }, [dispatch, currentPage, statusFilter, paymentFilter]);
 
@@ -82,6 +82,22 @@ const MyOrders: React.FC = () => {
       default:
         return method;
     }
+  };
+
+  const getVariantAttributesDisplay = (variant: any) => {
+    if (!variant || !variant.attributes || variant.attributes.length === 0) {
+      return <span className="text-gray-400 text-xs">Phiên bản cơ bản</span>;
+    }
+
+    return (
+      <div className="mt-1">
+        {variant.attributes.map((attr: any, index: number) => (
+          <span key={index} className="inline-block bg-purple-100 text-purple-600 text-xs px-2 py-1 rounded-full mr-1 mb-1">
+            {attr.attribute_name}: {attr.value}
+          </span>
+        ))}
+      </div>
+    );
   };
 
   const formatDate = (dateString: string) => {
@@ -283,9 +299,7 @@ const MyOrders: React.FC = () => {
                           <p className="text-sm text-gray-600 mb-1">
                             Giá: {formatVNDSymbol(item.price)}
                           </p>
-                          {item.variant_id && (
-                            <p className="text-xs text-purple-600">Phiên bản: {item.variant_id ? item.variant_id.slice(-4) : 'N/A'}</p>
-                          )}
+                          {getVariantAttributesDisplay(item.variant)}
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-lg text-pink-600">

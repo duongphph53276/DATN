@@ -128,7 +128,10 @@ const OrderFilterModule: FC<OrderFilterProps> = ({ filters, onFiltersChange }) =
             )}
             {filters.created_at && (
               <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-800 text-sm rounded-full">
-                Ngày: {new Date(filters.created_at).toLocaleDateString('vi-VN')}
+                Ngày: {new Date(filters.created_at).toLocaleDateString('vi-VN', {
+                  year: 'numeric', month: '2-digit', day: '2-digit',
+                  hour: '2-digit', minute: '2-digit'
+                })}
                 <button
                   onClick={() => handleFilterChange("created_at", "")}
                   className="ml-1 hover:text-orange-600"
