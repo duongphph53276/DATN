@@ -36,6 +36,7 @@ const Checkout: React.FC = () => {
   const [availableAddresses, setAvailableAddresses] = useState<Address[]>([]);
 
   useEffect(() => {
+    
     migrateOldCart();
 
     try {
@@ -302,9 +303,9 @@ const Checkout: React.FC = () => {
         }
 
         // Xóa giỏ hàng và mã giảm giá sau khi cập nhật thành công
+
         clearUserCart();
         localStorage.removeItem('appliedDiscount');
-        window.dispatchEvent(new Event('cartUpdated'));
 
         setSuccessMessage('Đơn hàng đã được đặt thành công!');
         setTimeout(() => {

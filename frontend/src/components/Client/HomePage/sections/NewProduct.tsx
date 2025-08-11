@@ -6,6 +6,7 @@ import { ToastSucess, ToastError } from "../../../../utils/toast";
 import { addToUserCart, loadUserCart } from "../../../../utils/cartUtils";
 
 
+
 const parsePrice = (value: string | number | undefined | null): number => {
   if (typeof value === "number") return value;
   if (!value || typeof value !== "string") return 0;
@@ -186,7 +187,6 @@ const NewProduct: React.FC = () => {
 
     addToUserCart(cartItem);
     ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
-    navigate("/cart");
   };
 
   const getValidAttributeValues = (product: any, attributeId: string, selectedAttributes: { [key: string]: string }) => {
