@@ -35,6 +35,7 @@ const Cart: React.FC = () => {
 
     const handleCartUpdated = () => {
       const updatedCart = loadUserCart();
+
       setCartItems(updatedCart);
       // setSuccessMessage("Đã thêm sản phẩm vào giỏ hàng!");
       // setTimeout(() => setSuccessMessage(null), 3000);
@@ -43,6 +44,7 @@ const Cart: React.FC = () => {
     // Listen cho user changes (login/logout)
     const handleUserChange = () => {
       const updatedCart = loadUserCart();
+
       setCartItems(updatedCart);
     };
 
@@ -67,20 +69,25 @@ const Cart: React.FC = () => {
 
     updateCartItemQuantity(item._id, item.variant, item.quantity + 1);
     ToastSucess("Số lượng sản phẩm đã tăng thêm một!")
+
   };
 
   // Giảm số lượng
   const decreaseQty = (item: CartItem) => {
     if (item.quantity > 1) {
       updateCartItemQuantity(item._id, item.variant, item.quantity - 1);
+
       ToastSucess("Số lượng sản phẩm đã giảm đi một!")
+
     }
   };
 
   // Xoá sản phẩm
   const removeItem = (item: CartItem) => {
     removeFromUserCart(item._id, item.variant);
+
     ToastSucess("Đã xóa sản phẩm khỏi giỏ hàng!")
+
   };
 
   // Tổng tiền

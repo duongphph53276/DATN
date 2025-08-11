@@ -17,13 +17,15 @@ export interface OrderDetail {
 export interface stateOrder {
   _id: string;
   user_id: string;
-  status: "pending" | "processing" | "shipping" | "delivered" | "cancelled";
+  status: "pending" | "preparing" | "shipping" | "delivered" | "cancelled";
   quantity: number;
   total_amount: number;
   voucher_id: string | null;
   payment_method: "credit_card" | "paypal" | "cash_on_delivery" | string;
   address_id: string;
+  shipper_id: string | null;
   delivered_at: string | null;
+  cancel_reason: string | null;
   created_at: string;
   updated_at: string;
   __v: number;
@@ -97,6 +99,7 @@ export interface orderUpdateStatusData {
   _id: string | undefined;
   order_status: string;
   shipper_id?: string;
+  cancel_reason?: string;
 }
 
 export interface OrderListResponse {

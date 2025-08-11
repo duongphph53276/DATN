@@ -18,6 +18,7 @@ import AdminLayout from './layout/Admin/Admin.layout';
 import ProtectedRoute from './components/Admin/ProtectedRoute';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
+import RegisterAdmin from './components/Auth/RegisterAdmin';
 import ForgotPassword from './components/Auth/ForgotPassword';
 import ListUser from './components/Admin/user/ListUser';
 import UserDetail from './components/Admin/user/UserDetail';
@@ -50,6 +51,7 @@ import ProtectedShipperRoute from './components/Shipper/ProtectedShipperRoute';
 import AllOrders from './components/Shipper/AllOrders';
 import ShippingOrders from './components/Shipper/ShippingOrders';
 import DeliveredOrders from './components/Shipper/DeliveredOrders';
+import CancelledOrders from './components/Shipper/CancelledOrders';
 
 const SimpleProtectedRoute = ({ children, requiresAdmin = false }: { children: JSX.Element; requiresAdmin?: boolean }) => {
   const token = localStorage.getItem("token");
@@ -81,6 +83,10 @@ function App() {
     {
       path: "/register",
       element: <AuthGuard><Register /></AuthGuard>,
+    },
+    {
+      path: "/register/admin",
+      element: <AuthGuard><RegisterAdmin /></AuthGuard>,
     },
     {
       path: "/forgotpassword",
@@ -143,6 +149,7 @@ function App() {
         { path: "", element: <AllOrders /> },
         { path: "shipping", element: <ShippingOrders /> },
         { path: "delivered", element: <DeliveredOrders /> },
+        { path: "cancelled", element: <CancelledOrders /> },
       ],
     },
     { path: "*", element: <NotFound /> },

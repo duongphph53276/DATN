@@ -18,7 +18,6 @@ export default function OrderDetail() {
     const dispatch = useAppDispatch()
     const { id } = useParams()
     const [order, setOrder] = useState<stateOrder | null>(null)
-    const vatPercent = 10
 
     useEffect(() => {
         (async () => {
@@ -37,11 +36,7 @@ export default function OrderDetail() {
         </div>
     )
 
-    const subtotal = order.order_details.reduce((sum: number, item: any) => sum + item.price, 0)
-    const vat = (subtotal * vatPercent) / 100
-    const grandTotal = subtotal + vat
-
-    const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>, shipperId?: string) => {
+    const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>, shipperId?: string, cancelReason?: string) => {
         const newStatus = e.target.value as stateOrder['status']
         if (!order) return
 
@@ -60,12 +55,20 @@ export default function OrderDetail() {
                 updateData.shipper_id = shipperId
             }
             
+            // Nếu có cancel_reason, thêm vào updateData
+            if (cancelReason) {
+                updateData.cancel_reason = cancelReason
+            }
+            
             const updated: any = await dispatch(updateOrder(updateData)).unwrap()
             ToastSucess(updated.message)
-            setOrder({ ...order, status: updated.data.status })
-        } catch (err) {
+            setOrder({ ...order, status: updated.data.status, cancel_reason: updated.data.cancel_reason })
+        } catch (err: any) {
             console.error('Lỗi khi cập nhật trạng thái:', err)
-            ToastError(`Lỗi khi cập nhật trạng thái ${err}`)
+            console.error('Response data:', err.response?.data)
+            console.error('Response status:', err.response?.status)
+            const errorMessage = err.response?.data?.message || 'Có lỗi xảy ra khi cập nhật trạng thái'
+            ToastError(errorMessage)
             e.target.value = order.status
         }
     }
@@ -77,7 +80,7 @@ export default function OrderDetail() {
                 <OrderHeader orderId={order._id} orderStatus={order.status} onChangeStatus={handleStatusChange} />
                 <OrderInfoGrid order={order} />
                 <OrderTable items={order.order_details} />
-                <OrderTotalBox vat={vat} vatPercent={vatPercent} order={order}  />
+                <OrderTotalBox order={order}  />
             </div>
         </div>
     )

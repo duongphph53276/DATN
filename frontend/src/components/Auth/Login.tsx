@@ -3,6 +3,7 @@ import api from '../../middleware/axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { FaEye, FaEyeSlash, FaEnvelope, FaLock, FaSpinner, FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
+import { migrateOldCart } from '../../utils/cartUtils';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -32,6 +33,12 @@ const Login: React.FC = () => {
         const role = roleFromUser || tokenPayload.role || 'client';
         localStorage.setItem('role', role);
         localStorage.setItem('user', JSON.stringify(data.user));
+        
+        // Migrate cart cũ sau khi login
+        migrateOldCart();
+        
+        // Trigger event để các component biết user đã login
+        window.dispatchEvent(new Event("cartUpdated"));
         
         setSuccessMessage('Đăng nhập thành công! Đang chuyển hướng...');
         

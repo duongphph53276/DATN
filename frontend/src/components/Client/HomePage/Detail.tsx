@@ -8,6 +8,7 @@ import { jwtDecode } from "jwt-decode";
 import { ToastSucess, ToastError } from "../../../utils/toast";
 import { addToUserCart, loadUserCart } from "../../../utils/cartUtils";  // Đảm bảo import loadUserCart
 
+
 // Hàm chuyển chuỗi giá về số
 const parsePrice = (value: string | number | undefined | null): number => {
   if (typeof value === "number") return value;
@@ -249,8 +250,6 @@ const DetailsPage = () => {
     return parsePrice(product?.price);
   };
 
-
-
   const handleAddToCart = async () => {
   if (!product) return;
 
@@ -333,6 +332,7 @@ const DetailsPage = () => {
       : undefined,
     variantAttributes,
     quantity,
+
   };
 
   addToUserCart(newCartItem);

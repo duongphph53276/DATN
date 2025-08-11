@@ -51,8 +51,8 @@ const OrderDetailPage = () => {
         switch (status) {
             case 'pending':
                 return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-            case 'confirmed':
-                return 'bg-blue-100 text-blue-800 border-blue-200';
+            case 'preparing':
+                return 'bg-orange-100 text-orange-800 border-orange-200';
             case 'shipping':
                 return 'bg-purple-100 text-purple-800 border-purple-200';
             case 'delivered':
@@ -66,6 +66,22 @@ const OrderDetailPage = () => {
 
     const getStatusText = (status: string | undefined) => {
         return status ? getVietnameseStatus(status) : 'Không xác định';
+    };
+
+    const getVariantAttributesDisplay = (variant: any) => {
+        if (!variant || !variant.attributes || variant.attributes.length === 0) {
+            return <span className="text-gray-400 text-sm">Phiên bản cơ bản</span>;
+        }
+
+        return (
+            <div className="mt-2">
+                {variant.attributes.map((attr: any, index: number) => (
+                    <span key={index} className="inline-block bg-purple-100 text-purple-600 text-sm px-3 py-1 rounded-full mr-2 mb-1">
+                        🎀 {attr.attribute_name}: {attr.value}
+                    </span>
+                ))}
+            </div>
+        );
     };
 
     const handleCancelOrder = async () => {
@@ -151,8 +167,27 @@ const OrderDetailPage = () => {
                                 <MapPin className="w-5 h-5 text-pink-400" />
                                 <span className='text-[12px]'>Địa chỉ: <strong>{orderData?.address?.street}, {orderData?.address?.city}, {orderData?.address.country}</strong></span>
                             </div>
+                            {orderData?.shipper_id && (orderData?.status === 'shipping' || orderData?.status === 'delivered') && (
+                                <div className="flex items-center gap-3 text-gray-600">
+                                    <Package className="w-5 h-5 text-pink-400" />
+                                    <span className='text-sm'>Shipper giao hàng: <strong>Đã được phân công</strong></span>
+                                </div>
+                            )}
                         </div>
                     </div>
+
+                    {/* Hiển thị lý do hủy nếu đơn hàng bị hủy */}
+                    {orderData?.status === 'cancelled' && orderData?.cancel_reason && (
+                        <div className="mt-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
+                            <div className="flex items-start gap-3">
+                                <X className="w-5 h-5 text-red-500 mt-0.5" />
+                                <div>
+                                    <h3 className="font-semibold text-red-800 mb-2">Lý do hủy đơn hàng:</h3>
+                                    <p className="text-red-700">{orderData.cancel_reason}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border-2 border-pink-100">
@@ -174,7 +209,8 @@ const OrderDetailPage = () => {
                                 <div className="flex-1">
                                     <h3 className="font-bold text-gray-800 text-lg mb-1">{item.name}</h3>
                                     <p className="text-gray-500 text-sm mb-2">{item.product.description}</p>
-                                    <div className="flex items-center justify-between">
+                                    {getVariantAttributesDisplay(item.variant)}
+                                    <div className="flex items-center justify-between mt-3">
                                         <div className="flex items-center gap-4">
                                             <span className="text-pink-600 font-semibold">{formatPrice(item.price)}</span>
                                             <span className="text-gray-500">x {item.quantity}</span>

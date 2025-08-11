@@ -200,6 +200,7 @@ const handleAddToCart = (product: any) => {
     ? Object.entries(productAttributes)
         .map(([attrId, valueId]) => `${getAttributeName(attrId)}: ${getAttributeValue(valueId)}`)
         .join(", ")
+
     : "Không có thuộc tính";
 
   const cartItem = {
@@ -219,6 +220,7 @@ const handleAddToCart = (product: any) => {
       : undefined,
     variantAttributes,
     quantity: 1,
+
   };
 
   addToUserCart(cartItem);

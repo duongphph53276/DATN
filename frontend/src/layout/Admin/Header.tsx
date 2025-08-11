@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { usePermissions } from '../../hooks/usePermissions';
 import { FaUser, FaSignOutAlt, FaBell, FaCog } from 'react-icons/fa';
 import NotificationAdmin from '../../components/Admin/common/NotificationAdmin';
+import { clearCartDisplay } from '../../utils/cartUtils';
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,6 +15,7 @@ const Header = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('user');
+    clearCartDisplay(); // Chỉ clear hiển thị, GIỮ cart trong localStorage
     navigate('/');
   };
 

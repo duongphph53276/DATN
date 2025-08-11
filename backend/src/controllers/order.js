@@ -5,6 +5,7 @@ import { AddressModel } from '../models/User/address.js';
 import { UserModel } from '../models/User/user.js';
 import ProductVariant from '../models/productVariant.js';
 import Product from "../models/product.js";
+import VariantAttributeValue from '../models/variantAttributeValue.js';
 import {
   createOrderSuccessNotification,
   createOrderStatusNotification,
@@ -95,10 +96,27 @@ class OrderController {
                 ProductVariant.findById(detail.variant_id).lean()
               ]);
 
+              // Lấy variant attributes với thông tin chi tiết
+              const variantAttributes = await VariantAttributeValue
+                .find({ variant_id: detail.variant_id })
+                .populate('attribute_id', 'name')
+                .populate('value_id', 'value')
+                .lean();
+
+              const variantWithAttributes = variant ? {
+                ...variant,
+                attributes: variantAttributes.map(attr => ({
+                  attribute_id: attr.attribute_id._id,
+                  value_id: attr.value_id._id,
+                  attribute_name: attr.attribute_id.name,
+                  value: attr.value_id.value
+                }))
+              } : null;
+
               return {
                 ...detail,
                 product: product,
-                variant: variant
+                variant: variantWithAttributes
               };
             })
           );
@@ -178,10 +196,27 @@ class OrderController {
             ProductVariant.findById(detail.variant_id).lean()
           ]);
 
+          // Lấy variant attributes với thông tin chi tiết
+          const variantAttributes = await VariantAttributeValue
+            .find({ variant_id: detail.variant_id })
+            .populate('attribute_id', 'name')
+            .populate('value_id', 'value')
+            .lean();
+
+          const variantWithAttributes = variant ? {
+            ...variant,
+            attributes: variantAttributes.map(attr => ({
+              attribute_id: attr.attribute_id._id,
+              value_id: attr.value_id._id,
+              attribute_name: attr.attribute_id.name,
+              value: attr.value_id.value
+            }))
+          } : null;
+
           return {
             ...detail,
             product: product,
-            variant: variant
+            variant: variantWithAttributes
           };
         })
       );
@@ -335,7 +370,6 @@ class OrderController {
       } catch (notificationError) {
         console.error('Error creating notifications:', notificationError);
       }
-
       res.status(201).json({
         success: true,
         message: 'Order created successfully',
@@ -376,7 +410,9 @@ class OrderController {
   async updateOrderStatus(req, res) {
     try {
       const { id } = req.params;
-      const { status, shipper_id } = req.body;
+      const { status, shipper_id, cancel_reason } = req.body;
+
+
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({
@@ -385,11 +421,40 @@ class OrderController {
         });
       }
 
-      const validStatuses = ['pending', 'preparing', 'shipping', 'delivered', 'cancelled'];
-      if (!status || !validStatuses.includes(status)) {
+      // Lấy thông tin đơn hàng hiện tại
+      const currentOrder = await OrderModel.findById(id).lean();
+      if (!currentOrder) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+
+
+
+      // Chỉ cho phép admin thay đổi 3 trạng thái: preparing, shipping, cancelled
+      const allowedStatuses = ['preparing', 'shipping', 'cancelled'];
+      if (!status || !allowedStatuses.includes(status)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid status. Valid statuses are: ' + validStatuses.join(', ')
+          message: 'Admin can only change status to: preparing, shipping, cancelled'
+        });
+      }
+
+      // Kiểm tra logic chuyển đổi trạng thái
+      // Nếu đơn hàng đã ở trạng thái shipping, admin không thể thay đổi nữa
+      if (currentOrder.status === 'shipping') {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot change status of an order that is already being shipped'
+        });
+      }
+
+      // Nếu đơn hàng đã delivered hoặc cancelled, không thể thay đổi
+      if (currentOrder.status === 'delivered' || currentOrder.status === 'cancelled') {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot change status of a completed or cancelled order'
         });
       }
 
@@ -398,6 +463,14 @@ class OrderController {
         return res.status(400).json({
           success: false,
           message: 'Shipper ID is required when status is shipping'
+        });
+      }
+
+      // Kiểm tra nếu status là cancelled thì phải có cancel_reason
+      if (status === 'cancelled' && !cancel_reason) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cancel reason is required when cancelling order'
         });
       }
 
@@ -420,6 +493,11 @@ class OrderController {
       // Gán shipper_id khi status là shipping
       if (status === 'shipping' && shipper_id) {
         updateData.shipper_id = shipper_id;
+      }
+
+      // Gán cancel_reason khi status là cancelled
+      if (status === 'cancelled' && cancel_reason) {
+        updateData.cancel_reason = cancel_reason;
       }
 
       const updatedOrder = await OrderModel.findByIdAndUpdate(
@@ -576,10 +654,27 @@ class OrderController {
                 ProductVariant.findById(detail.variant_id).lean()
               ]);
 
+              // Lấy variant attributes với thông tin chi tiết
+              const variantAttributes = await VariantAttributeValue
+                .find({ variant_id: detail.variant_id })
+                .populate('attribute_id', 'name')
+                .populate('value_id', 'value')
+                .lean();
+
+              const variantWithAttributes = variant ? {
+                ...variant,
+                attributes: variantAttributes.map(attr => ({
+                  attribute_id: attr.attribute_id._id,
+                  value_id: attr.value_id._id,
+                  attribute_name: attr.attribute_id.name,
+                  value: attr.value_id.value
+                }))
+              } : null;
+
               return {
                 ...detail,
                 product: product,
-                variant: variant
+                variant: variantWithAttributes
               };
             })
           );
@@ -641,7 +736,12 @@ class OrderController {
         : {};
 
       const stats = await OrderModel.aggregate([
-        { $match: matchStage },
+        { 
+          $match: {
+            ...matchStage,
+            status: 'delivered' // Chỉ tính doanh thu từ đơn hàng đã giao
+          }
+        },
         {
           $group: {
             _id: null,
@@ -659,7 +759,15 @@ class OrderController {
           $group: {
             _id: '$status',
             count: { $sum: 1 },
-            total_amount: { $sum: '$total_amount' }
+            total_amount: { 
+              $sum: {
+                $cond: [
+                  { $eq: ['$status', 'delivered'] },
+                  '$total_amount',
+                  0
+                ]
+              }
+            }
           }
         }
       ]);
@@ -670,14 +778,27 @@ class OrderController {
           $group: {
             _id: '$payment_method',
             count: { $sum: 1 },
-            total_amount: { $sum: '$total_amount' }
+            total_amount: { 
+              $sum: {
+                $cond: [
+                  { $eq: ['$status', 'delivered'] },
+                  '$total_amount',
+                  0
+                ]
+              }
+            }
           }
         }
       ]);
 
-      // Thêm thống kê theo user
+      // Thêm thống kê theo user (chỉ tính từ đơn hàng đã giao)
       const topCustomers = await OrderModel.aggregate([
-        { $match: matchStage },
+        { 
+          $match: {
+            ...matchStage,
+            status: 'delivered'
+          }
+        },
         {
           $group: {
             _id: '$user_id',
@@ -741,7 +862,7 @@ class OrderController {
               $gte: new Date(year, 0, 1),
               $lt: new Date(parseInt(year) + 1, 0, 1)
             },
-            status: { $in: ['completed', 'delivered'] }
+            status: 'delivered'
           }
         },
         {
@@ -809,8 +930,8 @@ class OrderController {
       if (status) {
         filter.status = status;
       } else {
-        // Mặc định chỉ lấy đơn hàng có status shipping hoặc delivered
-        filter.status = { $in: ['shipping', 'delivered'] };
+        // Mặc định chỉ lấy đơn hàng có status shipping, delivered hoặc cancelled (nhưng chỉ cancelled bởi shipper)
+        filter.status = { $in: ['shipping', 'delivered', 'cancelled'] };
       }
 
       const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -838,10 +959,27 @@ class OrderController {
                 ProductVariant.findById(detail.variant_id).lean()
               ]);
 
+              // Lấy variant attributes với thông tin chi tiết
+              const variantAttributes = await VariantAttributeValue
+                .find({ variant_id: detail.variant_id })
+                .populate('attribute_id', 'name')
+                .populate('value_id', 'value')
+                .lean();
+
+              const variantWithAttributes = variant ? {
+                ...variant,
+                attributes: variantAttributes.map(attr => ({
+                  attribute_id: attr.attribute_id._id,
+                  value_id: attr.value_id._id,
+                  attribute_name: attr.attribute_id.name,
+                  value: attr.value_id.value
+                }))
+              } : null;
+
               return {
                 ...detail,
                 product: product,
-                variant: variant
+                variant: variantWithAttributes
               };
             })
           );
@@ -896,7 +1034,7 @@ class OrderController {
   async updateOrderStatusByShipper(req, res) {
     try {
       const { shipper_id, order_id } = req.params;
-      const { status } = req.body;
+      const { status, cancel_reason } = req.body;
 
       if (!mongoose.Types.ObjectId.isValid(order_id)) {
         return res.status(400).json({
@@ -905,11 +1043,20 @@ class OrderController {
         });
       }
 
-      // Shipper chỉ được phép thay đổi từ shipping sang delivered
-      if (status !== 'delivered') {
+      // Shipper chỉ được phép thay đổi từ shipping sang delivered hoặc cancelled
+      const allowedStatuses = ['delivered', 'cancelled'];
+      if (!allowedStatuses.includes(status)) {
         return res.status(400).json({
           success: false,
-          message: 'Shipper can only update status to delivered'
+          message: 'Shipper can only update status to delivered or cancelled'
+        });
+      }
+
+      // Kiểm tra nếu status là cancelled thì phải có cancel_reason
+      if (status === 'cancelled' && !cancel_reason) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cancel reason is required when cancelling delivery'
         });
       }
 
@@ -927,10 +1074,15 @@ class OrderController {
         });
       }
 
-      const updateData = { 
-        status: 'delivered',
-        delivered_at: new Date()
-      };
+      const updateData = { status };
+      
+      if (status === 'delivered') {
+        updateData.delivered_at = new Date();
+      }
+      
+      if (status === 'cancelled' && cancel_reason) {
+        updateData.cancel_reason = cancel_reason;
+      }
 
       const updatedOrder = await OrderModel.findByIdAndUpdate(
         order_id,
@@ -946,7 +1098,7 @@ class OrderController {
       }
 
       try {
-        await createOrderStatusNotification(updatedOrder.user_id.toString(), updatedOrder._id.toString(), 'delivered');
+        await createOrderStatusNotification(updatedOrder.user_id.toString(), updatedOrder._id.toString(), status);
       } catch (notificationError) {
         console.error('Error creating status notification:', notificationError);
       }
@@ -967,9 +1119,13 @@ class OrderController {
         shipper: shipper
       };
 
+      const message = status === 'delivered' 
+        ? 'Order status updated to delivered successfully'
+        : 'Order delivery cancelled successfully';
+        
       res.status(200).json({
         success: true,
-        message: 'Order status updated to delivered successfully',
+        message: message,
         data: orderWithDetails
       });
     } catch (error) {

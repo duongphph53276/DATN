@@ -5,6 +5,7 @@ import { getAllAttributes, getAttributeValues } from "../../../../../api/attribu
 import { ToastSucess, ToastError } from "../../../../utils/toast";
 import { addToUserCart, loadUserCart } from "../../../../utils/cartUtils";
 
+
 const parsePrice = (value: string | number | undefined | null): number => {
   if (typeof value === "number") return value;
   if (!value || typeof value !== "string") return 0;
@@ -134,7 +135,6 @@ const BestSelling: React.FC = () => {
       ToastError("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
       return;
     }
-
     // Lấy giỏ hàng theo user đúng cách
     const cart = loadUserCart();
 
