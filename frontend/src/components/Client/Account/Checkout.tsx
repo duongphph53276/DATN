@@ -10,6 +10,7 @@ import { getAddress } from '../../../services/api/address';
 import { usePermissions } from '../../../hooks/usePermissions';
 import AddressModal from './AddressModal';
 import { clearUserCart, migrateOldCart, loadUserCart } from '../../../utils/cartUtils';
+import { updateVariantQuantity } from '../../../services/api/productVariant'; // API mới để cập nhật số lượng variant
 
 const Checkout: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -31,15 +32,13 @@ const Checkout: React.FC = () => {
   const { userInfo } = usePermissions();
   const dispatch = useAppDispatch();
 
-  // Address modal state
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [availableAddresses, setAvailableAddresses] = useState<Address[]>([]);
 
-
   useEffect(() => {
-    // Migrate cart cũ nếu có
-    migrateOldCart();
     
+    migrateOldCart();
+
     try {
       const userCartItems = loadUserCart();
       setCartItems(userCartItems);
@@ -74,7 +73,6 @@ const Checkout: React.FC = () => {
   const fetchAddress = async () => {
     try {
       const response = await getAddress();
-
       if (response.status === 200) {
         const addresses: Address[] = response.data.data;
         setAvailableAddresses(addresses);
@@ -83,7 +81,6 @@ const Checkout: React.FC = () => {
           setAddress(defaultAddress);
           setAddressId(defaultAddress._id);
         } else if (addresses.length > 0) {
-          // If no default address, select the first one
           setAddress(addresses[0]);
           setAddressId(addresses[0]._id);
         }
@@ -139,10 +136,8 @@ const Checkout: React.FC = () => {
       const response = await applyVoucher({
         code: code.trim().toUpperCase()
       });
-      console.log(response);
       if (response.status) {
         const discount: DiscountInfo = response.data;
-        console.log(discount, 'hẹ hẹ ')
         const now = new Date();
         const startDate = new Date(discount.start_date);
         const endDate = new Date(discount.end_date);
@@ -162,7 +157,7 @@ const Checkout: React.FC = () => {
         if (discount.used_quantity >= discount.quantity) {
           return { isValid: false, error: 'Mã giảm giá đã hết lượt sử dụng' };
         }
-        console.log(totalPrice, discount.min_order_value);
+
         if (totalPrice < discount.min_order_value) {
           return {
             isValid: false,
@@ -200,11 +195,8 @@ const Checkout: React.FC = () => {
     if (validation.isValid && validation.discount) {
       setAppliedDiscount(validation.discount);
       calculateDiscountAmount(validation.discount);
-
       localStorage.setItem('appliedDiscount', JSON.stringify(validation.discount));
-
       setDiscountSuccess(`Áp dụng mã thành công! Giảm ${validation.discount.type === 'percentage' ? validation.discount.value + '%' : validation.discount.value.toLocaleString('vi-VN') + '₫'}`);
-
       setTimeout(() => setDiscountSuccess(null), 3000);
     } else {
       setDiscountError(validation.error || 'Mã giảm giá không hợp lệ');
@@ -293,26 +285,41 @@ const Checkout: React.FC = () => {
         orderData.order_details.forEach((detail, index) => {
           console.log(`Item ${index + 1}:`, detail);
         });
-        
-        if (orderData) {
-          dispatch(createOrder(orderData));
+
+        // Tạo đơn hàng
+        const orderResponse = await dispatch(createOrder(orderData)).unwrap();
+
+        // Cập nhật số lượng tồn kho sau khi tạo đơn hàng thành công
+        for (const item of cartItems) {
+          if (item.variant?._id) { // Chỉ cập nhật nếu ID variant tồn tại
+            try {
+              await updateVariantQuantity(item.variant._id, item.quantity, 'deduct');
+            } catch (error) {
+              console.error(`Lỗi khi cập nhật số lượng cho variant ${item.variant._id}:`, error);
+              setErrorMessage(`Đơn hàng đã được tạo nhưng lỗi khi cập nhật số lượng sản phẩm "${item.name}".`);
+              setLoading(false);
+            }
+          }
         }
+
+        // Xóa giỏ hàng và mã giảm giá sau khi cập nhật thành công
+
         clearUserCart();
         localStorage.removeItem('appliedDiscount');
 
+        setSuccessMessage('Đơn hàng đã được đặt thành công!');
         setTimeout(() => {
           setSuccessMessage(null);
           navigate('/');
         }, 4000);
 
       } catch (error) {
+        console.error('Lỗi khi xử lý đơn hàng:', error);
         setErrorMessage('Lỗi khi gửi đơn hàng. Vui lòng thử lại.');
       } finally {
         setLoading(false);
       }
     }
-
-
   };
 
   const getVariantAttributesDisplay = (variant?: IVariant) => {
@@ -692,7 +699,6 @@ const Checkout: React.FC = () => {
         </div>
       </div>
 
-      {/* Address Management Modal */}
       <AddressModal
         isOpen={showAddressModal}
         onClose={() => setShowAddressModal(false)}

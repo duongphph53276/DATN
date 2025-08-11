@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { FaFilter, FaSearch, FaUndo, FaEdit, FaTrash, FaPlus, FaEye, FaFolder } from "react-icons/fa";
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
-import { ToastSucess, ToastError } from "../../../utils/toast";
+import { ToastSucess, ToastError, ToastWarning } from "../../../utils/toast";
 
 interface AttributeValue {
   _id: string;
@@ -118,10 +118,16 @@ const AttributeList: React.FC = () => {
       await deleteAttribute(id);
       setAttributes(attributes.filter((attr) => attr._id !== id));
       ToastSucess("Xóa thành công");
-    } catch (err) {
-      console.error("Lỗi khi xóa:", err);
-      setError("Xóa thuộc tính thất bại");
-    }
+    } catch (error: any) {
+          // Lấy thông báo lỗi chính xác từ response.data.message nếu có
+          const msg = error.response?.data?.message || error.message;
+    
+          if (msg.includes("Không thể xóa")) {
+            ToastWarning(msg); // Hiển thị cảnh báo từ backend
+          } else {
+            ToastError(msg || "Lỗi xóa sản phẩm");
+          }
+        }
   };
 
   const handleAddOrUpdateValue = async (attributeId: string, data: { value: string }) => {

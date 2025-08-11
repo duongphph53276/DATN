@@ -4,6 +4,7 @@ import ProductVariant from "../models/productVariant.js";
 import VariantAttributeValue from "../models/variantAttributeValue.js";
 import { generateSku } from "../utils/generateSku.js";
 import Reviews from '../models/reviews.js';
+import { OrderDetailModel } from '../models/OrderDetailModel.js';
 
 export const createProduct = async (req, res) => {
   try {
@@ -324,16 +325,37 @@ export const updateProduct = async (req, res) => {
 
 export const deleteProduct = async (req, res) => {
   try {
-    const deleted = await Product.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
+    const productId = req.params.id;
 
-    // Xóa các biến thể liên quan
-    await ProductVariant.deleteMany({ product_id: req.params.id });
-    await VariantAttributeValue.deleteMany({ variant_id: { $in: await ProductVariant.find({ product_id: req.params.id }).distinct("_id") } });
+    // Kiểm tra sản phẩm có nằm trong đơn hàng không
+    const hasOrder = await OrderDetailModel.exists({ product_id: productId });
+    if (hasOrder) {
+      return res.status(400).json({
+        message: "Không thể xóa vì sản phẩm đã tồn tại trong đơn hàng. Hãy thay đổi trạng thái sản phẩm."
+      });
+    }
+
+    // Lấy ID biến thể trước khi xóa
+    const variantIds = await ProductVariant.find({ product_id: productId }).distinct("_id");
+
+    // Xóa thuộc tính biến thể
+    await VariantAttributeValue.deleteMany({ variant_id: { $in: variantIds } });
+
+    // Xóa biến thể
+    await ProductVariant.deleteMany({ product_id: productId });
+
+    // Xóa sản phẩm chính
+    const deleted = await Product.findByIdAndDelete(productId);
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
+    }
 
     return res.json({ message: "Đã xóa sản phẩm và biến thể thành công" });
+
   } catch (err) {
-    return res.status(500).json({ message: "Lỗi xóa sản phẩm", error: err });
+    console.error("Lỗi deleteProduct:", err);
+    return res.status(500).json({ message: "Lỗi xóa sản phẩm", error: err.message });
   }
 };
 

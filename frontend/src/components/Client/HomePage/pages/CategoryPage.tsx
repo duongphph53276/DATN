@@ -3,7 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../../../../middleware/axios";
 import { getAllAttributes, getAttributeValues } from "../../../../../api/attribute.api";
 import ProductFilters from "../../../../layout/Client/ProductFilters";
-import { ToastSucess } from "../../../../utils/toast";
+import { ToastSucess, ToastError } from "../../../../utils/toast";
+import { addToUserCart, loadUserCart } from "../../../../utils/cartUtils";
 
 // Hàm chuyển chuỗi giá về số
 const parsePrice = (value: string | number | undefined | null): number => {
@@ -125,27 +126,71 @@ const CategoryPage: React.FC = () => {
 
   const handleSelectAttribute = (productId: string, attributeId: string, valueId: string) => {
     setSelectedAttributes((prev) => {
-      const current = prev[productId] || {};
-      const updated = { ...current, [attributeId]: valueId };
+      const currentAttributes = prev[productId] || {};
+      const updatedAttributes = { ...currentAttributes };
+      if (currentAttributes[attributeId] === valueId) {
+        delete updatedAttributes[attributeId];
+      } else {
+        updatedAttributes[attributeId] = valueId;
+      }
+
       const product = products.find((p) => p._id === productId);
-      const matchedVariant = product?.variants?.find((variant: any) =>
-        variant.attributes.every((attr: any) => updated[attr.attribute_id] === attr.value_id)
-      );
-      setSelectedVariants((prevVariants) => ({ ...prevVariants, [productId]: matchedVariant || undefined }));
-      return { ...prev, [productId]: updated };
+      const matchedVariant = product?.variants?.find((variant: any) => {
+        return variant.attributes.every(
+          (attr: any) => updatedAttributes[attr.attribute_id] === attr.value_id
+        );
+      });
+
+      setSelectedVariants((prevVariants) => ({
+        ...prevVariants,
+        [productId]: matchedVariant || undefined,
+      }));
+
+      return {
+        ...prev,
+        [productId]: updatedAttributes,
+      };
     });
   };
 
   const handleAddToCart = (product: any) => {
     const selectedVariant = selectedVariants[product._id];
     const productAttributes = selectedAttributes[product._id] || {};
-    const requiredAttributes = attributes.filter((attr: any) =>
-      product.variants.some((variant: any) => variant.attributes.some((a: any) => a.attribute_id === attr._id))
-    );
-    const allSelected = requiredAttributes.every((attr: any) => productAttributes[attr._id]);
 
-    if (product.variants?.length && (!selectedVariant || !allSelected)) {
-      ToastSucess("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
+    const requiredAttributes = attributes.filter((attr: any) =>
+      product.variants.some((variant: any) =>
+        variant.attributes.some((a: any) => a.attribute_id === attr._id)
+      )
+    );
+    const allAttributesSelected = requiredAttributes.every(
+      (attr: any) => productAttributes[attr._id]
+    );
+
+    if (product.variants?.length && (!selectedVariant || !allAttributesSelected)) {
+      ToastError("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
+      return;
+    }
+
+    // Lấy giỏ hàng theo user đúng cách
+    const cart = loadUserCart();
+
+    // Tìm sản phẩm đã có trong giỏ (đúng variant)
+    const existingCartItem = cart.find((item: any) => {
+      if (selectedVariant) {
+        return item._id === product._id && item.variant?._id === selectedVariant._id;
+      }
+      return item._id === product._id && !item.variant;
+    });
+
+    const existingQuantity = existingCartItem ? existingCartItem.quantity : 0;
+
+    // Lấy số lượng tồn kho đúng
+    const stockQuantity = selectedVariant
+      ? selectedVariant.stock_quantity ?? selectedVariant.quantity ?? 0
+      : product.stock_quantity ?? product.quantity ?? 0;
+
+    if (existingQuantity + 1 > stockQuantity) {
+      ToastError("Số lượng trong kho không đủ để thêm sản phẩm này!");
       return;
     }
 
@@ -155,37 +200,26 @@ const CategoryPage: React.FC = () => {
           .join(", ")
       : "Không có thuộc tính";
 
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    const existingIndex = cart.findIndex(
-      (item: any) =>
-        item._id === product._id &&
-        (!item.variant ||
-          JSON.stringify(item.variant?.attributes?.map((a: any) => [a.attribute_id, a.value_id]).sort()) ===
-            JSON.stringify(selectedVariant?.attributes?.map((a: any) => [a.attribute_id, a.value_id]).sort()))
-    );
+    const cartItem = {
+      ...product,
+      id: product._id,
+      _id: product._id,
+      price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
+      image: selectedVariant ? selectedVariant.image || product.images : product.images,
+      variant: selectedVariant
+        ? {
+            _id: selectedVariant._id,
+            product_id: selectedVariant.product_id,
+            price: selectedVariant.price,
+            attributes: selectedVariant.attributes,
+            stock_quantity: stockQuantity,
+          }
+        : undefined,
+      variantAttributes,
+      quantity: 1,
+    };
 
-    if (existingIndex !== -1) {
-      cart[existingIndex].quantity += 1;
-    } else {
-      cart.push({
-        ...product,
-        id: product._id,
-        _id: product._id,
-        price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
-        image: selectedVariant ? selectedVariant.image || product.images : product.images,
-        variant: selectedVariant 
-          ? {
-              _id: selectedVariant._id,
-              product_id: selectedVariant.product_id,
-              price: selectedVariant.price,
-              attributes: selectedVariant.attributes
-            }
-          : undefined,
-        quantity: 1,
-      });
-    }
-    localStorage.setItem("cart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("cartUpdated"));
+    addToUserCart(cartItem);
     ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
   };
 

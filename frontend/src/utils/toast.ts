@@ -11,3 +11,14 @@ export const ToastError = (notify: string) => {
     duration: 5000, 
   });
 };
+export const ToastWarning = (notify: string) => {
+  toast(notify, {
+    duration: 5000,
+    style: {
+      background: '#facc15', // vàng
+      color: '#000',         // chữ đen
+      fontWeight: 'bold',
+    },
+    icon: '⚠️',
+  });
+};

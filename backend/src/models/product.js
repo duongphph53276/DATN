@@ -32,7 +32,7 @@ const productSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    sold_quantity: {
+    total_sold : {
         type: Number,
         default: 0
     }
