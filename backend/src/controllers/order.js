@@ -5,7 +5,6 @@ import { AddressModel } from '../models/User/address.js';
 import { UserModel } from '../models/User/user.js';
 import Product from '../models/product.js';
 import ProductVariant from '../models/productVariant.js';
-import Product from "../models/product.js";
 import VariantAttributeValue from '../models/variantAttributeValue.js';
 import {
   createOrderSuccessNotification,
