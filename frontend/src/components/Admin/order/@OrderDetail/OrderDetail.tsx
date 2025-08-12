@@ -36,7 +36,7 @@ export default function OrderDetail() {
         </div>
     )
 
-    const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>, shipperId?: string) => {
+    const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>, shipperId?: string, cancelReason?: string) => {
         const newStatus = e.target.value as stateOrder['status']
         if (!order) return
 
@@ -74,7 +74,7 @@ export default function OrderDetail() {
         <div className="min-h-screen bg-gray-50 p-6">
             <OrderBanner />
             <div className="bg-white rounded-lg shadow-sm border p-6">
-                <OrderHeader orderId={order._id} orderStatus={order.status} onChangeStatus={handleStatusChange} />
+                <OrderHeader orderId={order._id} orderStatus={order.status} onChangeStatus={handleStatusChange} order={order} />
                 <OrderInfoGrid order={order} />
                 <OrderTable items={order.order_details} />
                 <OrderTotalBox order={order}  />

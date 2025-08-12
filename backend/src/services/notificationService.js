@@ -169,29 +169,109 @@ export const markAllNotificationsAsRead = async (userId) => {
 
 // Tạo thông báo cho shipper khi có đơn hàng mới cần giao
 export const createShipperAssignmentNotification = async (shipperId, orderId, customerName) => {
-  const content = `Bạn có đơn hàng mới cần giao #${orderId.slice(-6)} từ khách hàng ${customerName}`;
-  
+  const content = `Bạn đã được phân công giao đơn hàng #${orderId.slice(-6)} cho khách hàng ${customerName}`;
+
   try {
-    // Tạo notification cá nhân cho shipper
-    const personalNotification = await createNotification(shipperId, content, 'shipper_assignment');
-    
-    // Tạo notification chung cho role shipper
-    const shipperRole = await RoleModel.findOne({ name: 'shipper' });
-    if (shipperRole) {
-      const notification = new NotiModel({
-        user_id: null,
-        content,
-        type: 'shipper_assignment',
-        role_id: shipperRole._id
-      });
+    const notification = new NotiModel({
+      user_id: shipperId,
+      content,
+      type: 'shipper_assignment',
+      role_id: '6877b96a7042a1ba5016ba3e'
+    });
 
-      const savedNotification = await notification.save();
-      sendNotificationToShippers(savedNotification);
-    }
+    const savedNotification = await notification.save();
 
-    return personalNotification;
+    sendNotificationToUser(shipperId, savedNotification);
+
+    return savedNotification;
   } catch (error) {
     console.error('Error creating shipper assignment notification:', error);
+    throw error;
+  }
+};
+
+export const createCancelRequestNotification = async (orderId, userId) => {
+  const content = `Có yêu cầu hủy đơn hàng #${orderId.slice(-6)} từ khách hàng. Vui lòng kiểm tra và xử lý.`;
+
+  try {
+    const notification = new NotiModel({
+      user_id: null,
+      content,
+      type: 'cancel_request_admin',
+      role_id: '6877b96a7042a1ba5016ba3e'
+    });
+
+    const savedNotification = await notification.save();
+
+    sendNotificationToAdmins(savedNotification);
+
+    return savedNotification;
+  } catch (error) {
+    console.error('Error creating cancel request notification:', error);
+    throw error;
+  }
+};
+
+export const createCancelRequestRejectedNotification = async (userId, orderId, adminNote) => {
+  const content = `Yêu cầu hủy đơn hàng #${orderId.slice(-6)} đã bị từ chối. Lý do: ${adminNote || 'Không có lý do cụ thể'}`;
+
+  try {
+    const notification = new NotiModel({
+      user_id: userId,
+      content,
+      type: 'cancel_request_rejected'
+    });
+
+    const savedNotification = await notification.save();
+
+    sendNotificationToUser(userId, savedNotification);
+
+    return savedNotification;
+  } catch (error) {
+    console.error('Error creating cancel request rejected notification:', error);
+    throw error;
+  }
+}; 
+
+export const createReturnRequestRejectedNotification = async (userId, orderId, adminNote) => {
+  const content = `Yêu cầu hoàn hàng #${orderId.slice(-6)} đã bị từ chối. Lý do: ${adminNote || 'Không có lý do cụ thể'}`;
+
+  try {
+    const notification = new NotiModel({
+      user_id: userId,
+      content,
+      type: 'return_request_rejected'
+    });
+
+    const savedNotification = await notification.save();
+
+    sendNotificationToUser(userId, savedNotification);
+
+    return savedNotification;
+  } catch (error) {
+    console.error('Error creating return request rejected notification:', error);
+    throw error;
+  }
+};
+
+export const createReturnRequestNotification = async (orderId, userId) => {
+  const content = `Có yêu cầu hoàn hàng #${orderId.slice(-6)} từ khách hàng. Vui lòng kiểm tra và xử lý.`;
+
+  try {
+    const notification = new NotiModel({
+      user_id: null,
+      content,
+      type: 'return_request_admin',
+      role_id: '6877b96a7042a1ba5016ba3e'
+    });
+
+    const savedNotification = await notification.save();
+
+    sendNotificationToAdmins(savedNotification);
+
+    return savedNotification;
+  } catch (error) {
+    console.error('Error creating return request notification:', error);
     throw error;
   }
 }; 
