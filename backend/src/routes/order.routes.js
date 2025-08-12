@@ -15,6 +15,8 @@ router.get('/monthly-revenue', OrderController.getMonthlyRevenue);
 //Seed fake data
 router.post('/seed', OrderController.seedFakeData);
 
+router.post('/cleanup', OrderController.cleanupInvalidRequests);
+
 //Lấy đơn hàng theo ID người dùng
 router.get('/user/:user_id', OrderController.getOrdersByUserId);
 
@@ -32,6 +34,18 @@ router.post('/', OrderController.createOrder);
 
 //Update Status
 router.patch('/:id/status', OrderController.updateOrderStatus);
+
+// Yêu cầu hủy đơn hàng (user) - chỉ khi pending/preparing
+router.post('/:id/request-cancel', OrderController.requestCancelOrder);
+
+// Xử lý yêu cầu hủy đơn hàng (admin)
+router.patch('/:id/cancel-request', OrderController.handleCancelRequest);
+
+// Yêu cầu hoàn hàng (user) - chỉ khi delivered
+router.post('/:id/request-return', OrderController.requestReturnOrder);
+
+// Xử lý yêu cầu hoàn hàng (admin)
+router.patch('/:id/return-request', OrderController.handleReturnRequest);
 
 //Xoá đơn hàng
 router.delete('/:id', OrderController.deleteOrder);

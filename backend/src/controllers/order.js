@@ -5,13 +5,18 @@ import { AddressModel } from '../models/User/address.js';
 import { UserModel } from '../models/User/user.js';
 import Product from '../models/product.js';
 import ProductVariant from '../models/productVariant.js';
+import Product from "../models/product.js";
 import VariantAttributeValue from '../models/variantAttributeValue.js';
 import {
   createOrderSuccessNotification,
   createOrderStatusNotification,
   createNewOrderAdminNotification,
   cancelledAdminNotification,
-  createShipperAssignmentNotification
+  createShipperAssignmentNotification,
+  createCancelRequestNotification,
+  createCancelRequestRejectedNotification,
+  createReturnRequestNotification,
+  createReturnRequestRejectedNotification
 } from '../services/notificationService.js';
 import mongoose from 'mongoose';
 
@@ -464,6 +469,8 @@ class OrderController {
         });
       }
 
+
+
       const allowedStatuses = ['preparing', 'shipping', 'cancelled'];
       if (!status || !allowedStatuses.includes(status)) {
         return res.status(400).json({
@@ -693,6 +700,7 @@ class OrderController {
                 ProductVariant.findById(detail.variant_id).lean()
               ]);
 
+              // Lấy variant attributes với thông tin chi tiết
               const variantAttributes = await VariantAttributeValue
                 .find({ variant_id: detail.variant_id })
                 .populate('attribute_id', 'name')
@@ -991,6 +999,7 @@ class OrderController {
                 ProductVariant.findById(detail.variant_id).lean()
               ]);
 
+              // Lấy variant attributes với thông tin chi tiết
               const variantAttributes = await VariantAttributeValue
                 .find({ variant_id: detail.variant_id })
                 .populate('attribute_id', 'name')
@@ -1153,6 +1162,426 @@ class OrderController {
       res.status(200).json({
         success: true,
         message: message,
+        data: orderWithDetails
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+      });
+    }
+  }
+
+  /**
+   * @desc    Request to cancel order (user initiated)
+   * @route   POST /api/orders/:id/request-cancel
+   * @access  Private
+   */
+  async requestCancelOrder(req, res) {
+    try {
+      const { id } = req.params;
+      const { cancel_reason, cancel_images } = req.body;
+      const userId = req.user?.id || req.body.user_id; 
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid order ID format'
+        });
+      }
+
+      const order = await OrderModel.findById(id).lean();
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+
+      if (order.user_id != userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only cancel your own orders',
+          data: order.user_id,
+          userId: userId
+        });
+      }
+
+      if (!['pending', 'preparing'].includes(order.status)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Only pending or preparing orders can be cancelled'
+        });
+      }
+
+      if (!cancel_reason || !cancel_reason.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cancel reason is required'
+        });
+      }
+
+      const updateData = {
+        cancel_request: {
+          reason: cancel_reason.trim(),
+          images: cancel_images || [],
+          requested_at: new Date(),
+          status: 'pending' 
+        }
+      };
+
+      const updatedOrder = await OrderModel.findByIdAndUpdate(
+        id,
+        updateData,
+        { new: true, runValidators: true }
+      ).lean();
+
+      if (!updatedOrder) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+
+      try {
+        await createCancelRequestNotification(updatedOrder._id.toString(), userId);
+      } catch (notificationError) {
+        console.error('Error creating cancel request notification:', notificationError);
+      }
+
+      const [voucher, address, user] = await Promise.all([
+        updatedOrder.voucher_id ? VoucherModel.findById(updatedOrder.voucher_id).lean() : null,
+        AddressModel.findById(updatedOrder.address_id).lean(),
+        OrderController.populateUserInfo(updatedOrder.user_id)
+      ]);
+
+      const orderWithDetails = {
+        ...updatedOrder,
+        user: user,
+        voucher: voucher,
+        address: address
+      };
+
+      res.status(200).json({
+        success: true,
+        message: 'Cancel request submitted successfully. Waiting for admin approval.',
+        data: orderWithDetails
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+      });
+    }
+  }
+
+  /**
+   * @desc    Admin approve/reject cancel request
+   * @route   PATCH /api/orders/:id/cancel-request
+   * @access  Private (Admin only)
+   */
+  async handleCancelRequest(req, res) {
+    try {
+      const { id } = req.params;
+      const { action, admin_note } = req.body; 
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid order ID format'
+        });
+      }
+
+      if (!['approve', 'reject'].includes(action)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Action must be either "approve" or "reject"'
+        });
+      }
+
+      const order = await OrderModel.findById(id).lean();
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+
+      if (!order.cancel_request || order.cancel_request.status !== 'pending') {
+        return res.status(400).json({
+          success: false,
+          message: 'No pending cancel request found for this order'
+        });
+      }
+
+      let updateData = {};
+
+      if (action === 'approve') {
+        updateData = {
+          status: 'cancelled',
+          cancel_reason: order.cancel_request.reason,
+          'cancel_request.status': 'approved',
+          'cancel_request.admin_note': admin_note || 'Admin approved cancel request',
+          'cancel_request.processed_at': new Date()
+        };
+      } else {
+        updateData = {
+          'cancel_request.status': 'rejected',
+          'cancel_request.admin_note': admin_note || 'Admin rejected cancel request',
+          'cancel_request.processed_at': new Date()
+        };
+      }
+
+      const updatedOrder = await OrderModel.findByIdAndUpdate(
+        id,
+        updateData,
+        { new: true, runValidators: true }
+      ).lean();
+
+      if (!updatedOrder) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+
+      try {
+        if (action === 'approve') {
+          await createOrderStatusNotification(updatedOrder.user_id.toString(), updatedOrder._id.toString(), 'cancelled');
+        } else {
+          await createCancelRequestRejectedNotification(updatedOrder.user_id.toString(), updatedOrder._id.toString(), admin_note);
+        }
+      } catch (notificationError) {
+        console.error('Error creating notification:', notificationError);
+      }
+
+      const [voucher, address, user] = await Promise.all([
+        updatedOrder.voucher_id ? VoucherModel.findById(updatedOrder.voucher_id).lean() : null,
+        AddressModel.findById(updatedOrder.address_id).lean(),
+        OrderController.populateUserInfo(updatedOrder.user_id)
+      ]);
+
+      const orderWithDetails = {
+        ...updatedOrder,
+        user: user,
+        voucher: voucher,
+        address: address
+      };
+
+      res.status(200).json({
+        success: true,
+        message: `Cancel request ${action}d successfully`,
+        data: orderWithDetails
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+      });
+    }
+  }
+
+  /**
+   * @desc    Request to return order (user initiated) - chỉ khi đơn hàng đã delivered
+   * @route   POST /api/orders/:id/request-return
+   * @access  Private
+   */
+  async requestReturnOrder(req, res) {
+    try {
+      const { id } = req.params;
+      const { return_reason, return_images } = req.body;
+      const userId = req.user?.id || req.body.user_id;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid order ID format'
+        });
+      }
+
+      const order = await OrderModel.findById(id).lean();
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+
+      if (order.user_id !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only return your own orders'
+        });
+      }
+
+      if (order.status !== 'delivered') {
+        return res.status(400).json({
+          success: false,
+          message: 'Only delivered orders can be returned'
+        });
+      }
+
+      if (!return_reason || !return_reason.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Return reason is required'
+        });
+      }
+
+      const updateData = {
+        return_request: {
+          reason: return_reason.trim(),
+          images: return_images || [],
+          requested_at: new Date(),
+          status: 'pending' 
+        }
+      };
+
+      const updatedOrder = await OrderModel.findByIdAndUpdate(
+        id,
+        updateData,
+        { new: true, runValidators: true }
+      ).lean();
+
+      if (!updatedOrder) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+
+      try {
+        await createReturnRequestNotification(updatedOrder._id.toString(), userId);
+      } catch (notificationError) {
+        console.error('Error creating return request notification:', notificationError);
+      }
+
+      const [voucher, address, user] = await Promise.all([
+        updatedOrder.voucher_id ? VoucherModel.findById(updatedOrder.voucher_id).lean() : null,
+        AddressModel.findById(updatedOrder.address_id).lean(),
+        OrderController.populateUserInfo(updatedOrder.user_id)
+      ]);
+
+      const orderWithDetails = {
+        ...updatedOrder,
+        user: user,
+        voucher: voucher,
+        address: address
+      };
+
+      res.status(200).json({
+        success: true,
+        message: 'Return request submitted successfully. Waiting for admin approval.',
+        data: orderWithDetails
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+      });
+    }
+  }
+
+  /**
+   * @desc    Admin approve/reject return request
+   * @route   PATCH /api/orders/:id/return-request
+   * @access  Private (Admin only)
+   */
+  async handleReturnRequest(req, res) {
+    try {
+      const { id } = req.params;
+      const { action, admin_note } = req.body; 
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid order ID format'
+        });
+      }
+
+      if (!['approve', 'reject'].includes(action)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Action must be either "approve" or "reject"'
+        });
+      }
+
+      const order = await OrderModel.findById(id).lean();
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+
+      if (!order.return_request || order.return_request.status !== 'pending') {
+        return res.status(400).json({
+          success: false,
+          message: 'No pending return request found for this order'
+        });
+      }
+
+      let updateData = {};
+
+      if (action === 'approve') {
+        updateData = {
+          status: 'returned',
+          return_reason: order.return_request.reason,
+          'return_request.status': 'approved',
+          'return_request.admin_note': admin_note || 'Admin approved return request',
+          'return_request.processed_at': new Date()
+        };
+      } else {
+        updateData = {
+          'return_request.status': 'rejected',
+          'return_request.admin_note': admin_note || 'Admin rejected return request',
+          'return_request.processed_at': new Date()
+        };
+      }
+
+      const updatedOrder = await OrderModel.findByIdAndUpdate(
+        id,
+        updateData,
+        { new: true, runValidators: true }
+      ).lean();
+
+      if (!updatedOrder) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+
+      try {
+        if (action === 'approve') {
+          await createOrderStatusNotification(updatedOrder.user_id.toString(), updatedOrder._id.toString(), 'returned');
+        } else {
+          await createReturnRequestRejectedNotification(updatedOrder.user_id.toString(), updatedOrder._id.toString(), admin_note);
+        }
+      } catch (notificationError) {
+        console.error('Error creating notification:', notificationError);
+      }
+
+      const [voucher, address, user] = await Promise.all([
+        updatedOrder.voucher_id ? VoucherModel.findById(updatedOrder.voucher_id).lean() : null,
+        AddressModel.findById(updatedOrder.address_id).lean(),
+        OrderController.populateUserInfo(updatedOrder.user_id)
+      ]);
+
+      const orderWithDetails = {
+        ...updatedOrder,
+        user: user,
+        voucher: voucher,
+        address: address
+      };
+
+      res.status(200).json({
+        success: true,
+        message: `Return request ${action}d successfully`,
         data: orderWithDetails
       });
     } catch (error) {
@@ -1331,6 +1760,81 @@ class OrderController {
       });
     } finally {
       session.endSession();
+    }
+  }
+
+  /**
+   * @desc    Dọn dẹp các cancel_request và return_request không hợp lệ
+   * @route   POST /api/orders/cleanup
+   * @access  Private (Development only)
+   */
+  async cleanupInvalidRequests(req, res) {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({
+        success: false,
+        message: 'Cleanup is not allowed in production'
+      });
+    }
+
+    try {
+      const cancelResult = await OrderModel.updateMany(
+        { 
+          $or: [
+            { "cancel_request.status": { $exists: false } },
+            { "cancel_request.status": null },
+            { "cancel_request.status": "" }
+          ]
+        },
+        { 
+          $unset: { cancel_request: "" } 
+        }
+      );
+
+      const returnResult = await OrderModel.updateMany(
+        { 
+          $or: [
+            { "return_request.status": { $exists: false } },
+            { "return_request.status": null },
+            { "return_request.status": "" }
+          ]
+        },
+        { 
+          $unset: { return_request: "" } 
+        }
+      );
+
+      const ordersWithInvalidCancel = await OrderModel.countDocuments({
+        $or: [
+          { "cancel_request.status": { $exists: false } },
+          { "cancel_request.status": null },
+          { "return_request.status": "" }
+        ]
+      });
+
+      const ordersWithInvalidReturn = await OrderModel.countDocuments({
+        $or: [
+          { "return_request.status": { $exists: false } },
+          { "return_request.status": null },
+          { "return_request.status": "" }
+        ]
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Cleanup completed successfully',
+        data: {
+          cancel_requests_cleaned: cancelResult.modifiedCount,
+          return_requests_cleaned: returnResult.modifiedCount,
+          remaining_invalid_cancel: ordersWithInvalidCancel,
+          remaining_invalid_return: ordersWithInvalidReturn
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to cleanup invalid requests',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+      });
     }
   }
 }

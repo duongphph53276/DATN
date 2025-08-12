@@ -4,7 +4,6 @@ class SocketService {
   private socket: Socket | null = null;
   private isConnected = false;
 
-  // Kết nối Socket.IO
   connect(token: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.socket && this.isConnected) {
@@ -12,7 +11,7 @@ class SocketService {
         return;
       }
 
-      this.socket = io('http://localhost:5000', {
+      this.socket = io(import.meta.env.VITE_API_URL, {
         auth: {
           token: token
         }
