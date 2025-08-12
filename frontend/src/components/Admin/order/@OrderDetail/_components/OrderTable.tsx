@@ -1,6 +1,7 @@
 import styles from '../OrderDetail.module.scss'
 import classNames from 'classnames/bind'
 import { formatCurrency } from '../../../../../utils/convert'
+import VariantAttributesDisplay from '../../../../common/VariantAttributesDisplay'
 
 const cx = classNames.bind(styles)
 
@@ -43,7 +44,7 @@ export default function OrderTable({ items }: Props) {
             <td>
               <div>
                 <div className="font-medium">{item.name}</div>
-                {getVariantAttributesDisplay(item.variant)}
+                <VariantAttributesDisplay variant={item.variant} size="sm" theme="blue" showIcon={false} />
               </div>
             </td>
             <td>{formatCurrency(item.price)}</td>
