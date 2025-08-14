@@ -45,6 +45,7 @@ import MyOrders from './components/Client/Account/MyOrders';
 import NewsPage from './components/Client/HomePage/pages/NewPage';
 import CategoryPage from './components/Client/HomePage/pages/CategoryPage';
 import PaymentReturn from './components/Client/Payment/PaymentReturn';
+import OrderSuccess from './components/Client/Payment/OrderSuccess';
 import OrderDetailPage from './components/Client/Account/OrderDetailPage';
 import ShipperLayout from './layout/Shipper/Shipper.layout';
 import ProtectedShipperRoute from './components/Shipper/ProtectedShipperRoute';
@@ -109,6 +110,7 @@ function App() {
         { path: "my-orders", element: <SimpleProtectedRoute><MyOrders /></SimpleProtectedRoute> },
         { path: "goc-cua-gau", element: <NewsPage /> },
         { path: "payment-return", element: <SimpleProtectedRoute><PaymentReturn /></SimpleProtectedRoute> },
+        { path: "order-success", element: <SimpleProtectedRoute><OrderSuccess /></SimpleProtectedRoute> },
         { path: "order-detail/:id", element: <OrderDetailPage /> },
 
       ],

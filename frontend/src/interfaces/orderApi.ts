@@ -1,5 +1,5 @@
 import { IProduct } from "./product";
-import { IVariant } from "./variant";
+import { IVariantDisplay } from "./variant";
 
 export interface OrderDetail {
   _id: string;
@@ -11,21 +11,39 @@ export interface OrderDetail {
   quantity: number;
   __v: number;
   product : IProduct,
-  variant: IVariant
+  variant: IVariantDisplay 
 }
 
 export interface stateOrder {
   _id: string;
   user_id: string;
-  status: "pending" | "preparing" | "shipping" | "delivered" | "cancelled";
+  status: "pending" | "preparing" | "shipping" | "delivered" | "cancelled" | "returned";
   quantity: number;
   total_amount: number;
+  shipping_fee: number;
   voucher_id: string | null;
   payment_method: "credit_card" | "paypal" | "cash_on_delivery" | string;
   address_id: string;
   shipper_id: string | null;
   delivered_at: string | null;
-  cancel_reason: string | null;
+  cancel_reason: string | null; 
+  return_reason: string | null;
+  cancel_request?: {
+    reason: string;
+    images: string[];
+    requested_at: string;
+    status: 'pending' | 'approved' | 'rejected';
+    admin_note?: string;
+    processed_at?: string;
+  };
+  return_request?: {
+    reason: string;
+    images: string[];
+    requested_at: string;
+    status: 'pending' | 'approved' | 'rejected';
+    admin_note?: string;
+    processed_at?: string;
+  };
   created_at: string;
   updated_at: string;
   __v: number;

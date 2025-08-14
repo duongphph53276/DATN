@@ -7,6 +7,7 @@ import { Address } from '../../../interfaces/user';
 import { callVnpaySanboxPayUrl } from '../../../services/api/payment';
 import { applyVoucher } from '../../../services/api/voucher';
 import { getAddress } from '../../../services/api/address';
+import { calculateShippingFee } from '../../../services/api/shipping';
 import { usePermissions } from '../../../hooks/usePermissions';
 import AddressModal from './AddressModal';
 import { clearUserCart, migrateOldCart, loadUserCart } from '../../../utils/cartUtils';
@@ -34,6 +35,7 @@ const Checkout: React.FC = () => {
 
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [availableAddresses, setAvailableAddresses] = useState<Address[]>([]);
+  const [shippingFee, setShippingFee] = useState(0);
 
   useEffect(() => {
     migrateOldCart();
@@ -79,9 +81,29 @@ const Checkout: React.FC = () => {
         if (defaultAddress) {
           setAddress(defaultAddress);
           setAddressId(defaultAddress._id);
+          // Calculate shipping fee for default address
+          try {
+            const shippingResponse = await calculateShippingFee({ address_id: defaultAddress._id });
+            if (shippingResponse.status === 200) {
+              setShippingFee(shippingResponse.data.data.shipping_fee);
+            }
+          } catch (error) {
+            console.error('Lỗi khi tính phí ship:', error);
+            setShippingFee(10000);
+          }
         } else if (addresses.length > 0) {
           setAddress(addresses[0]);
           setAddressId(addresses[0]._id);
+          // Calculate shipping fee for first address
+          try {
+            const shippingResponse = await calculateShippingFee({ address_id: addresses[0]._id });
+            if (shippingResponse.status === 200) {
+              setShippingFee(shippingResponse.data.data.shipping_fee);
+            }
+          } catch (error) {
+            console.error('Lỗi khi tính phí ship:', error);
+            setShippingFee(10000);
+          }
         }
       } else {
         setErrorMessage('Không thể tải địa chỉ. Vui lòng thêm địa chỉ giao hàng.');
@@ -92,10 +114,21 @@ const Checkout: React.FC = () => {
     }
   };
 
-  const handleSelectAddress = (selectedAddress: Address) => {
+  const handleSelectAddress = async (selectedAddress: Address) => {
     setAddress(selectedAddress);
     setAddressId(selectedAddress._id);
     setErrorMessage(null);
+    
+    // Calculate shipping fee when address is selected
+    try {
+      const response = await calculateShippingFee({ address_id: selectedAddress._id });
+      if (response.status === 200) {
+        setShippingFee(response.data.data.shipping_fee);
+      }
+    } catch (error) {
+      console.error('Lỗi khi tính phí ship:', error);
+      setShippingFee(10000); // Default to 10k if error
+    }
   };
 
   const totalPrice = cartItems.reduce(
@@ -247,7 +280,7 @@ const Checkout: React.FC = () => {
     localStorage.removeItem('appliedDiscount');
   };
 
-  const finalTotal = Math.max(0, totalPrice - discountAmount);
+  const finalTotal = Math.max(0, totalPrice - discountAmount + shippingFee);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -397,11 +430,11 @@ const Checkout: React.FC = () => {
             clearUserCart();
             localStorage.removeItem('appliedDiscount');
 
-            setSuccessMessage('Đơn hàng đã được đặt thành công!');
-            setTimeout(() => {
-              setSuccessMessage(null);
-              navigate('/');
-            }, 4000);
+            // Chuyển hướng đến trang thông báo đặt hàng thành công
+            const orderId = result?.data?._id || 'N/A';
+            const paymentMethodText = paymentMethod === 'cod' ? 'Thanh toán khi nhận hàng' : 'Thanh toán VNPay';
+            
+            navigate(`/order-success?orderId=${orderId}&totalAmount=${finalTotal}&paymentMethod=${encodeURIComponent(paymentMethodText)}`);
           } catch (error: any) {
             console.error('Lỗi khi đặt hàng:', error);
             const errorMessage = error?.message || error?.payload || 'Lỗi khi gửi đơn hàng. Vui lòng thử lại.';
@@ -550,6 +583,24 @@ const Checkout: React.FC = () => {
                       </div>
                     )}
 
+                    {shippingFee > 0 && (
+                      <div className="flex justify-between items-center text-blue-600">
+                        <span className="text-lg font-semibold">Phí vận chuyển:</span>
+                        <span className="text-xl font-bold">
+                          {shippingFee.toLocaleString('vi-VN')}₫
+                        </span>
+                      </div>
+                    )}
+
+                    {shippingFee === 0 && address && (
+                      <div className="flex justify-between items-center text-green-600">
+                        <span className="text-lg font-semibold">Phí vận chuyển:</span>
+                        <span className="text-xl font-bold">
+                          🚚 Miễn phí
+                        </span>
+                      </div>
+                    )}
+
                     <div className="flex justify-between items-center border-t pt-3">
                       <span className="text-xl font-semibold text-gray-700">Tổng cộng:</span>
                       <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-rose-600">
@@ -599,10 +650,22 @@ const Checkout: React.FC = () => {
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-green-200">
-                    <p className="text-sm text-green-700 flex items-center">
-                      <span className="mr-2">✅</span>
-                      Địa chỉ đã được xác nhận
-                    </p>
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm text-green-700 flex items-center">
+                        <span className="mr-2">✅</span>
+                        Địa chỉ đã được xác nhận
+                      </p>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-gray-700">
+                          Phí vận chuyển: 
+                          {shippingFee === 0 ? (
+                            <span className="text-green-600 ml-1">🚚 Miễn phí</span>
+                          ) : (
+                            <span className="text-blue-600 ml-1">{shippingFee.toLocaleString('vi-VN')}₫</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : (

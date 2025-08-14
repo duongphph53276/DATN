@@ -40,6 +40,16 @@ export default function OrderTotalBox({ order }: Props) {
         ) : 'Không có giảm giá'}
 
       </div>
+
+      <div className={cx('line')}>
+        <span>Phí vận chuyển: </span>
+        {order.shipping_fee === 0 ? (
+          <span className="text-green-600">🚚 Miễn phí</span>
+        ) : (
+          <span>{formatCurrency(order.shipping_fee)}</span>
+        )}
+      </div>
+
       <div className={cx('line', 'grand')}>
         <span>Tổng đơn hàng:</span>
         <span>{formatCurrency(order.total_amount)}</span>
