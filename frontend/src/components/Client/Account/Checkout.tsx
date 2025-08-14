@@ -46,6 +46,7 @@ const Checkout: React.FC = () => {
   const [isUpdatingUserInfo, setIsUpdatingUserInfo] = useState(false);
 
   useEffect(() => {
+    
     migrateOldCart();
 
     try {
