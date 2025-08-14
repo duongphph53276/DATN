@@ -1409,7 +1409,7 @@ class OrderController {
         });
       }
 
-      if (order.user_id !== userId) {
+      if (order.user_id != userId) {
         return res.status(403).json({
           success: false,
           message: 'You can only return your own orders'

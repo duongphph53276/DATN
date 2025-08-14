@@ -263,75 +263,75 @@ const DetailsPage = () => {
   };
 
   const handleAddToCart = async () => {
-  if (!product) return;
+    if (!product) return;
 
-  // Lấy giỏ hàng hiện tại
-  const cart = loadUserCart();
+    // Lấy giỏ hàng hiện tại
+    const cart = loadUserCart();
 
-  // Xác định key để tìm đúng sản phẩm/biến thể
-  const cartItem = cart.find((item: any) =>
-    item.id === product._id &&
-    (
-      selectedVariant
-        ? item.variant?._id === selectedVariant._id
-        : !item.variant
-    )
-  );
-
-  // Số lượng đã có sẵn trong giỏ hàng
-  const existingQty = cartItem ? cartItem.quantity : 0;
-
-  // Số lượng còn lại trong kho
-  const stockQty = selectedVariant
-    ? selectedVariant.quantity
-    : product.quantity;
-
-  // Nếu tổng số lượng sau khi thêm > tồn kho → chặn
-  if (existingQty + quantity > stockQty) {
-    ToastError(`Chỉ còn ${stockQty} sản phẩm trong kho!`);
-    return;
-  }
-
-  // ... phần kiểm tra thuộc tính như hiện tại
-  if (product.variants?.length) {
-    const requiredAttributes = attributes.filter((attr: any) =>
-      product.variants.some((variant: any) =>
-        variant.attributes.some((a: any) => a.attribute_id === attr._id)
+    // Xác định key để tìm đúng sản phẩm/biến thể
+    const cartItem = cart.find((item: any) =>
+      item.id === product._id &&
+      (
+        selectedVariant
+          ? item.variant?._id === selectedVariant._id
+          : !item.variant
       )
     );
-    const allAttributesSelected = requiredAttributes.every(
-      (attr: any) => selectedAttributes[attr._id]
-    );
-    if (!selectedVariant || !allAttributesSelected) {
-      ToastError("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
-      return;
-    }
-    if (selectedVariant.quantity === 0) {
-      ToastError("Sản phẩm này đã hết hàng!");
-      return;
-    }
-  } else {
-    if (product.quantity === 0) {
-      ToastError("Sản phẩm này đã hết hàng!");
-      return;
-    }
-  }
 
-  // ... tạo cartItem như cũ
-  const variantAttributes = selectedVariant
-    ? Object.entries(selectedAttributes)
-      .map(([attrId, valueId]) => `${getAttributeName(attrId)}: ${getAttributeValue(valueId)}`)
-      .join(", ")
-    : "Không có thuộc tính";
+    // Số lượng đã có sẵn trong giỏ hàng
+    const existingQty = cartItem ? cartItem.quantity : 0;
 
-  const newCartItem = {
-    id: product._id || id,
-    _id: product._id || id,
-    name: product.name || "Sản phẩm không tên",
-    image: selectedVariant?.image || product.images || product.image || "https://via.placeholder.com/420",
-    price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
-    variant: selectedVariant
-      ? {
+    // Số lượng còn lại trong kho
+    const stockQty = selectedVariant
+      ? selectedVariant.quantity
+      : product.quantity;
+
+    // Nếu tổng số lượng sau khi thêm > tồn kho → chặn
+    if (existingQty + quantity > stockQty) {
+      ToastError(`Chỉ còn ${stockQty} sản phẩm trong kho!`);
+      return;
+    }
+
+    // ... phần kiểm tra thuộc tính như hiện tại
+    if (product.variants?.length) {
+      const requiredAttributes = attributes.filter((attr: any) =>
+        product.variants.some((variant: any) =>
+          variant.attributes.some((a: any) => a.attribute_id === attr._id)
+        )
+      );
+      const allAttributesSelected = requiredAttributes.every(
+        (attr: any) => selectedAttributes[attr._id]
+      );
+      if (!selectedVariant || !allAttributesSelected) {
+        ToastError("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
+        return;
+      }
+      if (selectedVariant.quantity === 0) {
+        ToastError("Sản phẩm này đã hết hàng!");
+        return;
+      }
+    } else {
+      if (product.quantity === 0) {
+        ToastError("Sản phẩm này đã hết hàng!");
+        return;
+      }
+    }
+
+    // ... tạo cartItem như cũ
+    const variantAttributes = selectedVariant
+      ? Object.entries(selectedAttributes)
+        .map(([attrId, valueId]) => `${getAttributeName(attrId)}: ${getAttributeValue(valueId)}`)
+        .join(", ")
+      : "Không có thuộc tính";
+
+    const newCartItem = {
+      id: product._id || id,
+      _id: product._id || id,
+      name: product.name || "Sản phẩm không tên",
+      image: selectedVariant?.image || product.images || product.image || "https://via.placeholder.com/420",
+      price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
+      variant: selectedVariant
+        ? {
           _id: selectedVariant._id,
           product_id: selectedVariant.product_id,
           price: selectedVariant.price,
@@ -341,15 +341,15 @@ const DetailsPage = () => {
             value_id: attr.value_id,
           })),
         }
-      : undefined,
-    variantAttributes,
-    quantity,
+        : undefined,
+      variantAttributes,
+      quantity,
 
+    };
+
+    addToUserCart(newCartItem);
+    ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
   };
-
-  addToUserCart(newCartItem);
-  ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
-};
 
   const handleReviewSubmit = async () => {
     if (!rating) {
@@ -518,16 +518,25 @@ const DetailsPage = () => {
                 +
               </button>
             </div>
-            
+
             {/* Hiển thị số lượng tồn kho */}
             <div className="mt-2 text-sm text-gray-600">
               {selectedVariant ? (
-                <span className={`font-medium ${selectedVariant.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <span
+                  className={`font-medium ${selectedVariant.quantity > 0 ? 'text-green-600' : 'text-red-600'
+                    }`}
+                >
                   Còn lại: {selectedVariant.quantity} sản phẩm trong kho
                 </span>
               ) : (
-                <span className={`font-medium ${product.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  Còn lại: {product.quantity || 0} sản phẩm trong kho
+                <span
+                  className={`font-medium ${(product.variants?.reduce((total: any, v: { quantity: any; }) => total + (v.quantity || 0), 0)) > 0
+                      ? 'text-green-600'
+                      : 'text-red-600'
+                    }`}
+                >
+                  Còn lại:{' '}
+                  {product.variants?.reduce((total: any, v: { quantity: any; }) => total + (v.quantity || 0), 0) || 0} sản phẩm trong kho
                 </span>
               )}
             </div>
@@ -544,7 +553,7 @@ const DetailsPage = () => {
             )}
             {!selectedVariant && product.quantity === 0 && (
               <p className="text-red-500 text-sm mt-2">Sản phẩm này đã hết hàng!</p>
-            )}            
+            )}
           </div>
           <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm shadow-inner border">
             {benefits.map((item, i) => (

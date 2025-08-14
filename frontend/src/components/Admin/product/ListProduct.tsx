@@ -19,6 +19,8 @@ const ListProduct: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 10;
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<IProduct | null>(null);
 
   // States for filters and search
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -152,30 +154,37 @@ const ListProduct: React.FC = () => {
     return `${minPrice.toLocaleString()}đ - ${maxPrice.toLocaleString()}đ`;
   };
 
-  const handleDelete = async (id: string | number) => {
-    if (!window.confirm("Bạn có chắc muốn xóa sản phẩm này?")) return;
+  const openDeleteModal = (product: IProduct) => {
+    setProductToDelete(product);
+    setIsDeleteModalOpen(true);
+  };
 
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setProductToDelete(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
     try {
-      await deleteProduct(id);
-
-      setProducts(products.filter((product) => product._id !== id));
-      setFilteredProducts(filteredProducts.filter((product) => product._id !== id));
+      await deleteProduct(productToDelete._id!);
+      setProducts(products.filter((p) => p._id !== productToDelete._id));
+      setFilteredProducts(filteredProducts.filter((p) => p._id !== productToDelete._id));
 
       if (currentProducts.length === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       }
 
       ToastSucess("Xóa sản phẩm thành công");
-
     } catch (error: any) {
-      // Lấy thông báo lỗi chính xác từ response.data.message nếu có
       const msg = error.response?.data?.message || error.message;
-
       if (msg.includes("Không thể xóa")) {
-        ToastWarning(msg); // Hiển thị cảnh báo từ backend
+        ToastWarning(msg);
       } else {
         ToastError(msg || "Lỗi xóa sản phẩm");
       }
+    } finally {
+      closeDeleteModal();
     }
   };
 
@@ -471,7 +480,7 @@ const ListProduct: React.FC = () => {
                         </button>
                         <button
                           className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 shadow-sm hover:shadow-md"
-                          onClick={() => handleDelete(product._id!)}
+                          onClick={() => openDeleteModal(product)}
                           title="Xóa"
                         >
                           <MdDelete size={14} />
@@ -639,6 +648,39 @@ const ListProduct: React.FC = () => {
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+      {isDeleteModalOpen && productToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center ">
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-fadeInScale"
+          >
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full">
+              <MdDelete className="text-red-600 text-3xl" />
+            </div>
+            <h2 className="text-xl font-semibold text-center text-gray-800 mb-2">
+              Xác nhận xóa
+            </h2>
+            <p className="text-center text-gray-600 mb-6">
+              Bạn có chắc chắn muốn xóa sản phẩm{" "}
+              <span className="font-semibold text-red-500">{productToDelete.name}</span>?
+              Hành động này không thể hoàn tác.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={closeDeleteModal}
+                className="flex-1 px-4 py-2 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 transition shadow"
+              >
+                Xóa
+              </button>
             </div>
           </div>
         </div>
