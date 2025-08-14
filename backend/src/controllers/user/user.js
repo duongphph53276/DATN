@@ -169,7 +169,11 @@ export const getUserWithPermissions = async (req, res) => {
       const rolePermissions = await RolePermissionModel.find({ role_id: user.role_id._id })
         .populate('permission_id', 'name description');
       
-      permissions = rolePermissions.map(rp => rp.permission_id);
+      permissions = rolePermissions
+        .map(rp => rp.permission_id)
+        .filter(permission => permission !== null && permission !== undefined);
+      
+      console.log(`Found ${permissions.length} valid permissions for user ${user._id}`);
     }
     
     res.json({
