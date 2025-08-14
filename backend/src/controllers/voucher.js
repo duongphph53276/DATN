@@ -73,6 +73,12 @@ export const CreateVoucher = async (req, res) => {
         errors,
       });
     }
+    if (error.code === 11000 && error.keyPattern.code === 1) {
+      return res.status(400).json({
+        message: "Mã giảm giá đã tồn tại",
+        status: false,
+      });
+    }
     console.error("Lỗi khi tạo voucher:", error);
     res.status(500).json({ message: "Lỗi tạo voucher", error: error.message });
   }
@@ -128,6 +134,12 @@ export const UpdateVoucher = async (req, res) => {
         message: 'Dữ liệu không hợp lệ',
         status: false,
         errors,
+      });
+    }
+    if (error.code === 11000 && error.keyPattern.code === 1) {
+      return res.status(400).json({
+        message: "Mã giảm giá đã tồn tại",
+        status: false,
       });
     }
     console.error('Lỗi khi cập nhật voucher:', error);
@@ -249,7 +261,7 @@ export const ApplyVoucher = async (req, res) => {
       });
     }
 
-    // Trả về voucher với các field cần thiết cho frontend
+    // Trả về voucher với các field cần thiết cho frontend (loại bỏ max_discount_amount vì không tồn tại trong schema)
     const voucherResponse = {
       _id: voucher._id,
       code: voucher.code,
@@ -261,8 +273,8 @@ export const ApplyVoucher = async (req, res) => {
       is_active: voucher.is_active,
       quantity: voucher.quantity,
       used_quantity: voucher.used_quantity,
-      usage_limit_per_user: voucher.usage_limit_per_user,
-      max_discount_amount: voucher.max_discount_amount // Thêm field này nếu có
+      usage_limit_per_user: voucher.usage_limit_per_user
+      // Loại bỏ max_discount_amount để tránh undefined và sai format
     };
 
     console.log('Voucher response:', voucherResponse);
