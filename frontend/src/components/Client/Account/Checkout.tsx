@@ -861,110 +861,11 @@ const Checkout: React.FC = () => {
              </div>
           </div>
 
-          {/* Right Column - Sidebar */}
-          <div className="space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Discount Code Section */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                <div className="flex items-center mb-4">
-                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                    <span className="text-purple-600 text-sm">🎫</span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-slate-800">
-                    Mã giảm giá
-                  </h3>
-                </div>
+                     {/* Right Column - Sidebar */}
+           <div className="space-y-6">
+             <form onSubmit={handleSubmit} className="space-y-6">
 
-                {appliedDiscount ? (
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center">
-                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center mr-2">
-                          <span className="text-white text-xs">✓</span>
-                        </div>
-                        <span className="font-semibold text-green-800">{appliedDiscount.code}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleRemoveDiscount}
-                        className="text-red-500 hover:text-red-700 text-xs bg-red-50 px-2 py-1 rounded-md transition-colors"
-                      >
-                        Xóa
-                      </button>
-                    </div>
-                    <p className="text-sm text-green-700">
-                      Giảm {appliedDiscount.discount_type === 'percentage'
-                        ? `${appliedDiscount.value}%`
-                        : `${appliedDiscount.value.toLocaleString('vi-VN')}₫`
-                      } - Tiết kiệm {discountAmount.toLocaleString('vi-VN')}₫
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={discountCode}
-                        onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                        className="w-full border border-slate-300 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-colors"
-                        placeholder="Nhập mã giảm giá"
-                        disabled={isCheckingDiscount}
-                      />
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-lg">
-                        💝
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleApplyDiscount}
-                      disabled={!discountCode.trim() || isCheckingDiscount}
-                      className={`w-full py-3 rounded-xl font-medium transition-colors ${
-                        !discountCode.trim() || isCheckingDiscount
-                          ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                          : 'bg-purple-600 hover:bg-purple-700 text-white'
-                      }`}
-                    >
-                      {isCheckingDiscount ? (
-                        <div className="flex items-center justify-center">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                          Đang kiểm tra...
-                        </div>
-                      ) : (
-                        'Áp dụng mã giảm giá'
-                      )}
-                    </button>
-                  </div>
-                )}
-
-                {discountError && (
-                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="flex items-center">
-                      <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-2">
-                        <span className="text-white text-xs">✕</span>
-                      </div>
-                      <p className="text-red-700 text-sm">{discountError}</p>
-                    </div>
-                  </div>
-                )}
-
-                {discountSuccess && (
-                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center">
-                      <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-2">
-                        <span className="text-white text-xs">✓</span>
-                      </div>
-                      <p className="text-green-700 text-sm">{discountSuccess}</p>
-                    </div>
-                  </div>
-                )}
-
-                <p className="text-xs text-slate-500 mt-3 text-center">
-                  Áp dụng mã để nhận ưu đãi đặc biệt
-                </p>
-              </div>
-
-            {/* User Information Section */}
+             {/* User Information Section */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center">
@@ -1184,6 +1085,107 @@ const Checkout: React.FC = () => {
                   </label>
                 </div>
               </div>
+
+              {/* Discount Code Section */}
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                    <span className="text-purple-600 text-sm">🎫</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-800">
+                    Mã giảm giá
+                  </h3>
+                </div>
+
+                {appliedDiscount ? (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center">
+                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center mr-2">
+                          <span className="text-white text-xs">✓</span>
+                        </div>
+                        <span className="font-semibold text-green-800">{appliedDiscount.code}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveDiscount}
+                        className="text-red-500 hover:text-red-700 text-xs bg-red-50 px-2 py-1 rounded-md transition-colors"
+                      >
+                        Xóa
+                      </button>
+                    </div>
+                    <p className="text-sm text-green-700">
+                      Giảm {appliedDiscount.discount_type === 'percentage'
+                        ? `${appliedDiscount.value}%`
+                        : `${appliedDiscount.value.toLocaleString('vi-VN')}₫`
+                      } - Tiết kiệm {discountAmount.toLocaleString('vi-VN')}₫
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={discountCode}
+                        onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                        className="w-full border border-slate-300 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-colors"
+                        placeholder="Nhập mã giảm giá"
+                        disabled={isCheckingDiscount}
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-lg">
+                        💝
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleApplyDiscount}
+                      disabled={!discountCode.trim() || isCheckingDiscount}
+                      className={`w-full py-3 rounded-xl font-medium transition-colors ${
+                        !discountCode.trim() || isCheckingDiscount
+                          ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                          : 'bg-purple-600 hover:bg-purple-700 text-white'
+                      }`}
+                    >
+                      {isCheckingDiscount ? (
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                          Đang kiểm tra...
+                        </div>
+                      ) : (
+                        'Áp dụng mã giảm giá'
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {discountError && (
+                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center">
+                      <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-2">
+                        <span className="text-white text-xs">✕</span>
+                      </div>
+                      <p className="text-red-700 text-sm">{discountError}</p>
+                    </div>
+                  </div>
+                )}
+
+                {discountSuccess && (
+                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center">
+                      <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-2">
+                        <span className="text-white text-xs">✓</span>
+                      </div>
+                      <p className="text-green-700 text-sm">{discountSuccess}</p>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-slate-500 mt-3 text-center">
+                  Áp dụng mã để nhận ưu đãi đặc biệt
+                </p>
+              </div>
+
                                              {/* Place Order Button */}
                 <button
                   type="submit"
