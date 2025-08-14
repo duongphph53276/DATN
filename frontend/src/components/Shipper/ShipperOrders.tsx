@@ -13,6 +13,8 @@ interface Order {
   status: string;
   quantity: number;
   total_amount: number;
+  shipping_fee?: number;
+  payment_method: string;
   created_at: string;
   delivered_at: string | null;
   cancel_reason: string | null;
@@ -93,6 +95,28 @@ const ShipperOrders = ({ status }: Props) => {
     const subtotal = calculateSubtotal(order);
     const { discount } = calculateDiscountedAmount(order.voucher.discount_type, order.voucher.value, subtotal);
     return discount;
+  };
+
+  // Tính số tiền cần thu từ khách hàng
+  const calculateAmountToCollect = (order: Order) => {
+    // Nếu thanh toán qua VNPay (bank_transfer) thì số tiền cần thu là 0
+    if (order.payment_method === 'bank_transfer') {
+      return 0;
+    }
+    // Nếu thanh toán khi nhận hàng (cod) thì số tiền cần thu là tổng tiền đơn hàng (đã bao gồm phí ship)
+    return order.total_amount || 0;
+  };
+
+  // Lấy tên phương thức thanh toán
+  const getPaymentMethodText = (paymentMethod: string) => {
+    switch (paymentMethod) {
+      case 'cod':
+        return 'Thanh toán khi nhận hàng (COD)';
+      case 'bank_transfer':
+        return 'Chuyển khoản VNPay';
+      default:
+        return paymentMethod;
+    }
   };
 
   const fetchOrders = async (page = 1) => {
@@ -323,37 +347,76 @@ const ShipperOrders = ({ status }: Props) => {
                   </div>
                 </div>
 
-                {/* Voucher and Price Summary */}
-                {(order.voucher || discountAmount > 0) && (
-                  <div className="mt-6 pt-4 border-t border-gray-200">
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-gray-900 mb-3">Chi tiết thanh toán</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Tổng tiền hàng:</span>
-                          <span className="text-gray-900">{formatCurrency(subtotal)}</span>
-                        </div>
-                        {order.voucher && (
-                          <div className="flex justify-between items-center">
-                            <div className="flex items-center space-x-2">
-                              <Tag size={14} className="text-green-500" />
-                              <span className="text-gray-600">Mã giảm giá ({order.voucher.code}):</span>
-                            </div>
-                            <span className="text-green-600 font-medium">
-                              -{formatCurrency(discountAmount)}
-                            </span>
+                {/* Payment Information and Amount to Collect */}
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
+                      <DollarSign size={16} className="mr-2 text-blue-600" />
+                      Thông tin thanh toán
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Phương thức thanh toán:</span>
+                        <span className={`font-medium px-2 py-1 rounded text-xs ${
+                          order.payment_method === 'bank_transfer' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-orange-100 text-orange-800'
+                        }`}>
+                          {getPaymentMethodText(order.payment_method)}
+                        </span>
+                      </div>
+                      
+                      {/* Hiển thị chi tiết thanh toán */}
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Tổng tiền hàng:</span>
+                        <span className="text-gray-900">{formatCurrency(subtotal)}</span>
+                      </div>
+                      
+                      {order.voucher && (
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center space-x-2">
+                            <Tag size={14} className="text-green-500" />
+                            <span className="text-gray-600">Mã giảm giá ({order.voucher.code}):</span>
                           </div>
-                        )}
-                        <div className="flex justify-between pt-2 border-t border-gray-200">
-                          <span className="font-medium text-gray-900">Tổng cộng:</span>
-                          <span className="font-bold text-green-600 text-lg">
-                            {formatCurrency(order.total_amount)}
+                          <span className="text-green-600 font-medium">
+                            -{formatCurrency(discountAmount)}
                           </span>
                         </div>
+                      )}
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Phí vận chuyển:</span>
+                        {order.shipping_fee === 0 ? (
+                          <span className="text-green-600 font-medium">🚚 Miễn phí</span>
+                        ) : (
+                          <span className="text-gray-900">{formatCurrency(order.shipping_fee)}</span>
+                        )}
+                      </div>
+                      
+                      <div className="flex justify-between pt-2 border-t border-gray-200">
+                        <span className="font-medium text-gray-900">Tổng cộng:</span>
+                        <span className="font-bold text-green-600 text-lg">
+                          {formatCurrency(order.total_amount)}
+                        </span>
+                      </div>
+                      
+                      {/* Số tiền cần thu */}
+                      <div className="flex justify-between pt-2 border-t-2 border-blue-200 bg-blue-100 rounded-lg p-2">
+                        <span className="font-bold text-blue-900">Số tiền cần thu:</span>
+                        <span className={`font-bold text-lg ${
+                          calculateAmountToCollect(order) === 0 
+                            ? 'text-green-600' 
+                            : 'text-red-600'
+                        }`}>
+                          {calculateAmountToCollect(order) === 0 
+                            ? 'Đã thanh toán (Chuyển khoản)' 
+                            : formatCurrency(calculateAmountToCollect(order))
+                          }
+                        </span>
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
 
                 {order.delivered_at && (
                   <div className="mt-4 pt-4 border-t border-gray-200">

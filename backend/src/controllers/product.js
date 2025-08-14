@@ -186,7 +186,15 @@ export const getAllProducts = async (req, res) => {
 export const getProductById = async (req, res) => {
   try {
     console.log("Request ID:", req.params.id);
-    const product = await Product.findById(req.params.id).populate("category_id").lean();
+    const product = await Product.findById(req.params.id)
+      .populate({
+        path: "category_id",
+        populate: {
+          path: "parent_id",
+          select: "name slug"
+        }
+      })
+      .lean();
     if (!product) return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
 
     // Tính average_rating và review_count

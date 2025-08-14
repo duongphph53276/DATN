@@ -263,75 +263,75 @@ const DetailsPage = () => {
   };
 
   const handleAddToCart = async () => {
-    if (!product) return;
+  if (!product) return;
 
-    // Lấy giỏ hàng hiện tại
-    const cart = loadUserCart();
+  // Lấy giỏ hàng hiện tại
+  const cart = loadUserCart();
 
-    // Xác định key để tìm đúng sản phẩm/biến thể
-    const cartItem = cart.find((item: any) =>
-      item.id === product._id &&
-      (
-        selectedVariant
-          ? item.variant?._id === selectedVariant._id
-          : !item.variant
+  // Xác định key để tìm đúng sản phẩm/biến thể
+  const cartItem = cart.find((item: any) =>
+    item.id === product._id &&
+    (
+      selectedVariant
+        ? item.variant?._id === selectedVariant._id
+        : !item.variant
+    )
+  );
+
+  // Số lượng đã có sẵn trong giỏ hàng
+  const existingQty = cartItem ? cartItem.quantity : 0;
+
+  // Số lượng còn lại trong kho
+  const stockQty = selectedVariant
+    ? selectedVariant.quantity
+    : product.quantity;
+
+  // Nếu tổng số lượng sau khi thêm > tồn kho → chặn
+  if (existingQty + quantity > stockQty) {
+    ToastError(`Chỉ còn ${stockQty} sản phẩm trong kho!`);
+    return;
+  }
+
+  // ... phần kiểm tra thuộc tính như hiện tại
+  if (product.variants?.length) {
+    const requiredAttributes = attributes.filter((attr: any) =>
+      product.variants.some((variant: any) =>
+        variant.attributes.some((a: any) => a.attribute_id === attr._id)
       )
     );
-
-    // Số lượng đã có sẵn trong giỏ hàng
-    const existingQty = cartItem ? cartItem.quantity : 0;
-
-    // Số lượng còn lại trong kho
-    const stockQty = selectedVariant
-      ? selectedVariant.quantity
-      : product.quantity;
-
-    // Nếu tổng số lượng sau khi thêm > tồn kho → chặn
-    if (existingQty + quantity > stockQty) {
-      ToastError(`Chỉ còn ${stockQty} sản phẩm trong kho!`);
+    const allAttributesSelected = requiredAttributes.every(
+      (attr: any) => selectedAttributes[attr._id]
+    );
+    if (!selectedVariant || !allAttributesSelected) {
+      ToastError("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
       return;
     }
-
-    // ... phần kiểm tra thuộc tính như hiện tại
-    if (product.variants?.length) {
-      const requiredAttributes = attributes.filter((attr: any) =>
-        product.variants.some((variant: any) =>
-          variant.attributes.some((a: any) => a.attribute_id === attr._id)
-        )
-      );
-      const allAttributesSelected = requiredAttributes.every(
-        (attr: any) => selectedAttributes[attr._id]
-      );
-      if (!selectedVariant || !allAttributesSelected) {
-        ToastError("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
-        return;
-      }
-      if (selectedVariant.quantity === 0) {
-        ToastError("Sản phẩm này đã hết hàng!");
-        return;
-      }
-    } else {
-      if (product.quantity === 0) {
-        ToastError("Sản phẩm này đã hết hàng!");
-        return;
-      }
+    if (selectedVariant.quantity === 0) {
+      ToastError("Sản phẩm này đã hết hàng!");
+      return;
     }
+  } else {
+    if (product.quantity === 0) {
+      ToastError("Sản phẩm này đã hết hàng!");
+      return;
+    }
+  }
 
-    // ... tạo cartItem như cũ
-    const variantAttributes = selectedVariant
-      ? Object.entries(selectedAttributes)
-        .map(([attrId, valueId]) => `${getAttributeName(attrId)}: ${getAttributeValue(valueId)}`)
-        .join(", ")
-      : "Không có thuộc tính";
+  // ... tạo cartItem như cũ
+  const variantAttributes = selectedVariant
+    ? Object.entries(selectedAttributes)
+      .map(([attrId, valueId]) => `${getAttributeName(attrId)}: ${getAttributeValue(valueId)}`)
+      .join(", ")
+    : "Không có thuộc tính";
 
-    const newCartItem = {
-      id: product._id || id,
-      _id: product._id || id,
-      name: product.name || "Sản phẩm không tên",
-      image: selectedVariant?.image || product.images || product.image || "https://via.placeholder.com/420",
-      price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
-      variant: selectedVariant
-        ? {
+  const newCartItem = {
+    id: product._id || id,
+    _id: product._id || id,
+    name: product.name || "Sản phẩm không tên",
+    image: selectedVariant?.image || product.images || product.image || "https://via.placeholder.com/420",
+    price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
+    variant: selectedVariant
+      ? {
           _id: selectedVariant._id,
           product_id: selectedVariant.product_id,
           price: selectedVariant.price,
@@ -341,15 +341,15 @@ const DetailsPage = () => {
             value_id: attr.value_id,
           })),
         }
-        : undefined,
-      variantAttributes,
-      quantity,
+      : undefined,
+    variantAttributes,
+    quantity,
 
-    };
-
-    addToUserCart(newCartItem);
-    ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
   };
+
+  addToUserCart(newCartItem);
+  ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
+};
 
   const handleReviewSubmit = async () => {
     if (!rating) {
@@ -406,8 +406,43 @@ const DetailsPage = () => {
 
   return (
     <ErrorBoundary>
-      <div className="max-w-7xl mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-2 gap-12">
-        <div className="relative rounded-2xl overflow-hidden shadow-xl border border-gray-100 bg-white">
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        {/* Breadcrumb danh mục */}
+        {product.category_id && (
+          <div className="mb-6 flex items-center justify-center md:justify-start gap-2 text-sm">
+            <button
+              onClick={() => navigate('/')}
+              className="text-purple-600 hover:text-purple-800 transition-colors font-medium"
+            >
+              Trang chủ
+            </button>
+            <span className="text-gray-400">›</span>
+            {product.category_id.parent_id && (
+              <>
+                <button
+                  onClick={() => navigate(`/category/${product.category_id.parent_id.slug}`)}
+                  className="text-purple-600 hover:text-purple-800 transition-colors font-medium"
+                >
+                  {product.category_id.parent_id.name}
+                </button>
+                <span className="text-gray-400">›</span>
+              </>
+            )}
+            <button
+              onClick={() => navigate(`/category/${product.category_id.slug}`)}
+              className="text-purple-600 hover:text-purple-800 transition-colors font-medium"
+            >
+              {product.category_id.name}
+            </button>
+            <span className="text-gray-400">›</span>
+            <span className="text-gray-700 font-medium">
+              {product.name}
+            </span>
+          </div>
+        )}
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div className="relative rounded-2xl overflow-hidden shadow-xl border border-gray-100 bg-white">
           {/* Ảnh chính */}
           <div className="relative w-full h-[420px] bg-gray-100">
             {product.images || selectedVariant?.image || product.image ? (
@@ -457,16 +492,6 @@ const DetailsPage = () => {
 
         <div className="flex flex-col justify-center gap-6 text-center md:text-left">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800">{product.name && product.name.trim() ? product.name : "Sản phẩm không tên"}</h1>
-
-          {/* Hiển thị danh mục sản phẩm */}
-          {product.category_id && (
-            <div className="flex justify-center md:justify-start items-center gap-2">
-              <span className="text-sm text-gray-500">Danh mục:</span>
-              <span className="px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-sm font-medium">
-                {typeof product.category_id === 'object' ? product.category_id.name : 'Không xác định'}
-              </span>
-            </div>
-          )}
 
           <div className="flex justify-center md:justify-start items-center gap-4">
             <span className="text-3xl text-pink-500 font-semibold">{displayedPrice.toLocaleString()}₫</span>
@@ -518,25 +543,22 @@ const DetailsPage = () => {
                 +
               </button>
             </div>
-
+            
             {/* Hiển thị số lượng tồn kho */}
             <div className="mt-2 text-sm text-gray-600">
-              {selectedVariant ? (
-                <span
-                  className={`font-medium ${selectedVariant.quantity > 0 ? 'text-green-600' : 'text-red-600'
-                    }`}
-                >
-                  Còn lại: {selectedVariant.quantity} sản phẩm trong kho
-                </span>
+              {product.variants?.length > 0 ? (
+                selectedVariant ? (
+                  <span className={`font-medium ${selectedVariant.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    Còn lại: {selectedVariant.quantity} sản phẩm trong kho
+                  </span>
+                ) : (
+                  <span className="text-gray-500">
+                    Vui lòng chọn thuộc tính để xem số lượng tồn kho
+                  </span>
+                )
               ) : (
-                <span
-                  className={`font-medium ${(product.variants?.reduce((total: any, v: { quantity: any; }) => total + (v.quantity || 0), 0)) > 0
-                      ? 'text-green-600'
-                      : 'text-red-600'
-                    }`}
-                >
-                  Còn lại:{' '}
-                  {product.variants?.reduce((total: any, v: { quantity: any; }) => total + (v.quantity || 0), 0) || 0} sản phẩm trong kho
+                <span className={`font-medium ${product.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  Còn lại: {product.quantity || 0} sản phẩm trong kho
                 </span>
               )}
             </div>
@@ -553,7 +575,7 @@ const DetailsPage = () => {
             )}
             {!selectedVariant && product.quantity === 0 && (
               <p className="text-red-500 text-sm mt-2">Sản phẩm này đã hết hàng!</p>
-            )}
+            )}            
           </div>
           <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm shadow-inner border">
             {benefits.map((item, i) => (
@@ -562,6 +584,7 @@ const DetailsPage = () => {
                 <span>{item}</span>
               </div>
             ))}
+          </div>
           </div>
         </div>
         <div className="col-span-1 md:col-span-2">

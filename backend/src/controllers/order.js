@@ -17,6 +17,7 @@ import {
   createReturnRequestNotification,
   createReturnRequestRejectedNotification
 } from '../services/notificationService.js';
+import { calculateShippingFee } from '../common/shipping.js';
 import mongoose from 'mongoose';
 
 class OrderController {
@@ -321,6 +322,24 @@ class OrderController {
         }
       }
 
+      // Get address to calculate shipping fee
+      console.log('🔍 Looking for address_id:', address_id);
+      const address = await AddressModel.findById(address_id).session(session);
+      console.log('🏠 Found address:', address);
+      
+      if (!address) {
+        console.log('❌ Address not found for ID:', address_id);
+        return res.status(404).json({
+          success: false,
+          message: 'Address not found'
+        });
+      }
+
+      // Calculate shipping fee based on city
+      console.log('🏙️ Address city:', address.city);
+      const shippingFee = calculateShippingFee(address.city);
+      console.log('💰 Calculated shipping fee:', shippingFee);
+
       // Validate voucher if provided
       if (voucher_id) {
         const voucher = await VoucherModel.findById(voucher_id).session(session);
@@ -350,16 +369,29 @@ class OrderController {
         }
       }
 
-      const newOrder = new OrderModel({
+      console.log('📦 Creating new order with data:', {
         user_id,
         quantity,
         total_amount,
+        shipping_fee: shippingFee,
         voucher_id,
         payment_method,
         address_id
       });
 
+      const newOrder = new OrderModel({
+        user_id,
+        quantity,
+        total_amount,
+        shipping_fee: shippingFee,
+        voucher_id,
+        payment_method,
+        address_id
+      });
+
+      console.log('💾 Saving order to database...');
       const savedOrder = await newOrder.save({ session });
+      console.log('✅ Order saved successfully:', savedOrder._id);
 
       const orderDetailsData = order_details.map(detail => ({
         order_id: savedOrder._id,
@@ -397,7 +429,7 @@ class OrderController {
         })
       );
 
-      const [voucher, address, user] = await Promise.all([
+      const [voucher, addressInfo, user] = await Promise.all([
         savedOrder.voucher_id ? VoucherModel.findById(savedOrder.voucher_id).lean() : null,
         AddressModel.findById(savedOrder.address_id).lean(),
         OrderController.populateUserInfo(savedOrder.user_id)
@@ -418,14 +450,17 @@ class OrderController {
           ...savedOrder.toObject(),
           user: user,
           voucher: voucher,
-          address: address,
+          address: addressInfo,
           order_details: orderDetailsWithInfo
         }
       });
     } catch (error) {
+      console.error('❌ Error in createOrder:', error);
+      console.error('❌ Error stack:', error.stack);
       await session.abortTransaction();
 
       if (error.name === 'ValidationError') {
+        console.log('❌ Validation error:', Object.values(error.errors).map(err => err.message));
         return res.status(400).json({
           success: false,
           message: 'Validation error',
@@ -433,6 +468,7 @@ class OrderController {
         });
       }
 
+      console.log('❌ Internal server error:', error.message);
       res.status(500).json({
         success: false,
         message: 'Internal server error',

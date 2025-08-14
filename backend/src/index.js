@@ -11,6 +11,7 @@ import { createAttributeValue, deleteAttributeValue, getAttributeValueById, getA
 import { createVariant, deleteVariant, getVariantById, getVariantsByProduct, updateVariant, updateVariantQuantity } from './controllers/productVariant.js';
 import orderRoutes from './routes/order.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
+import shippingRoutes from './routes/shipping.routes.js';
 import { checkEmail, login, Profile, register, UpdateProfile, verifyEmail } from './controllers/auth.js';
 import { getUserAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from './controllers/address/address.js';
 import { authMiddleware, restrictTo } from './middleware/auth.js';
@@ -126,6 +127,8 @@ app.post('/product-variants/update-quantity', updateVariantQuantity);
 app.use('/orders', orderRoutes);
 //payment
 app.use('/payment', paymentRoutes);
+//shipping
+app.use('/shipping', shippingRoutes);
 //notification
 app.use('/notifications', notificationRoutes);
 app.get('/cart/:userId', GetCartByUser);

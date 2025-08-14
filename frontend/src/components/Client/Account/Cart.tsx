@@ -174,10 +174,7 @@ const Cart: React.FC = () => {
                       >
                         +
                       </button>
-                    </div>
-                    <div className="mt-2 text-sm text-gray-600">
-                      Còn lại: {stockQty} sản phẩm trong kho
-                    </div>
+                    </div>                
                   </div>
                   <div className="text-center sm:text-right mr-12">
                     <p className="text-gray-500 text-ellipsis">

@@ -14,6 +14,7 @@ const OrderSchema = new Schema(
     },
     quantity: { type: Number, required: true },
     total_amount: { type: Number, required: true },
+    shipping_fee: { type: Number, default: 0 },
     voucher_id: { type: String, default: null },
     payment_method: { type: String, required: true },
     address_id: { type: String, required: true },
