@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getAllProducts } from "../../../../../api/product.api";
+import { getBestSellingProducts } from "../../../../../api/product.api";
 import { getAllAttributes, getAttributeValues } from "../../../../../api/attribute.api";
 import { ToastSucess, ToastError } from "../../../../utils/toast";
 import { addToUserCart, loadUserCart } from "../../../../utils/cartUtils";
@@ -47,7 +47,9 @@ const BestSelling: React.FC = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const productRes = await getAllProducts();
+        
+        // Sử dụng API mới để lấy sản phẩm bán chạy
+        const productRes = await getBestSellingProducts(8); // Lấy 8 sản phẩm bán chạy nhất
         setProducts(productRes.data?.data || []);
 
         const attrRes = await getAllAttributes();
@@ -68,11 +70,10 @@ const BestSelling: React.FC = () => {
     fetchData();
   }, []);
 
+  // Loại bỏ logic lọc cũ vì API đã trả về sản phẩm bán chạy
   const bestSellingProducts = useMemo(() => {
-    return products
-      .filter((product) => product.status === "bestseller" || product.sold_quantity > 20)
-      .sort((a, b) => b.sold_quantity - a.sold_quantity)
-      .slice(0, 4);
+    const result = products.slice(0, 4); // Chỉ hiển thị 4 sản phẩm đầu tiên
+    return result;
   }, [products]);
 
   const getAttributeName = (attributeId: string) => {
@@ -222,12 +223,12 @@ const BestSelling: React.FC = () => {
     <ErrorBoundary>
       <section className="py-10 bg-white">
         <h2 className="text-center text-rose-500 font-bold text-3xl mb-6">SẢN PHẨM BÁN CHẠY</h2>
-        <div className="flex flex-wrap justify-center gap-6 px-4">
-          {bestSellingProducts.length === 0 ? (
-            <p className="text-center text-gray-500" aria-live="polite">
-              Không tìm thấy sản phẩm bán chạy.
-            </p>
-          ) : (
+                 <div className="flex flex-wrap justify-center gap-6 px-4">
+           {bestSellingProducts.length === 0 ? (
+             <p className="text-center text-gray-500" aria-live="polite">
+               Không tìm thấy sản phẩm bán chạy.
+             </p>
+           ) : (
             bestSellingProducts.map((product) => {
               const defaultPrice = getDefaultPrice(product);
               const selectedVariant = selectedVariants[product._id];
@@ -252,6 +253,9 @@ const BestSelling: React.FC = () => {
                   </Link>
                   
                     <div className="text-rose-500 font-bold mt-2">{displayedPrice.toLocaleString()}₫</div>
+                                         <div className="text-xs text-gray-500 mt-1">
+                       Đã bán: {product.total_sold || 0} sản phẩm
+                     </div>
                     {product.variants?.length > 0 && (
                       <div className="mt-1 space-y-3">
                         {attributes.map((attr) => {
