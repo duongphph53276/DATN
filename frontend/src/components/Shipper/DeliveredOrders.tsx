@@ -14,9 +14,3 @@ const DeliveredOrders = () => {
 };
 
 export default DeliveredOrders;
-
-
-
-
-
-
