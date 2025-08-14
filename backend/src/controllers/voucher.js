@@ -11,7 +11,6 @@ const voucherSchema = yup.object().shape({
   value: yup.number().required().min(0),
   quantity: yup.number().required().min(1),
   min_order_value: yup.number().required().min(0),
-  max_user_number: yup.number().required().min(0),
   start_date: yup.date().required(),
   end_date: yup.date().required().min(yup.ref('start_date'), 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu'),
   applicable_products: yup.array().of(yup.string().matches(/^[0-9a-fA-F]{24}$/, 'ID sản phẩm không hợp lệ')),

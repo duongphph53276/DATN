@@ -11,7 +11,6 @@ export interface IVoucher {
   used_quantity?: number; // Số lượng đã dùng, tùy chọn
   is_active?: boolean; // Trạng thái hoạt động, tùy chọn
   min_order_value?: number; // Giá trị đơn hàng tối thiểu, tùy chọn
-  max_user_number?: number; // Số người dùng tối đa, tùy chọn
   applicable_products?: string[]; // Danh sách ID sản phẩm áp dụng, tùy chọn
   description?: string; // Mô tả, tùy chọn
   usage_limit_per_user?: number; // Giới hạn sử dụng mỗi người dùng, tùy chọn
@@ -38,11 +37,10 @@ export interface ISingleVoucherResponse {
 // Requests
 export type IAddVoucherRequest = Pick<
   IVoucher,
-  'code' | 'discount_type' | 'value' | 'start_date' | 'end_date' | 'quantity' | 'min_order_value' | 'max_user_number' | 'applicable_products' | 'description' | 'usage_limit_per_user'
+  'code' | 'discount_type' | 'value' | 'start_date' | 'end_date' | 'quantity' | 'min_order_value'  | 'applicable_products' | 'description' | 'usage_limit_per_user'
 > & {
   // Đảm bảo các trường tùy chọn có giá trị mặc định nếu không điền
   min_order_value?: number; // Tùy chọn, mặc định 0 nếu không cung cấp
-  max_user_number?: number; // Tùy chọn, mặc định 0 nếu không cung cấp
   applicable_products?: string[]; // Tùy chọn, mặc định rỗng nếu không cung cấp
   description?: string; // Tùy chọn, mặc định undefined
   usage_limit_per_user?: number; // Tùy chọn, mặc định undefined
@@ -50,11 +48,10 @@ export type IAddVoucherRequest = Pick<
 
 export type IEditVoucherRequest = Pick<
   IVoucher,
-  'code' | 'value' | 'start_date' | 'end_date' | 'quantity' | 'min_order_value' | 'max_user_number' | 'applicable_products' | 'description' | 'usage_limit_per_user' | 'is_active'
+  'code' | 'value' | 'start_date' | 'end_date' | 'quantity' | 'min_order_value' |  'applicable_products' | 'description' | 'usage_limit_per_user' | 'is_active'
 > & {
   // Đảm bảo các trường tùy chọn có giá trị mặc định nếu không điền
   min_order_value?: number;
-  max_user_number?: number;
   applicable_products?: string[];
   description?: string;
   usage_limit_per_user?: number;
@@ -67,7 +64,6 @@ export interface IExtendedAddVoucherRequest extends Omit<IAddVoucherRequest, 'va
   value: string | number; // Cho phép nhập dạng chuỗi để xử lý input
   min_order_value: string | number; // Thêm hỗ trợ string cho min_order_value
   quantity: number;
-  max_user_number: number;
   applicable_products: string[];
 }
 
@@ -77,7 +73,6 @@ export interface IExtendedEditVoucherRequest extends Omit<IEditVoucherRequest, '
   value: string | number; // Cho phép string để xử lý input rỗng
   min_order_value: string | number; // Thêm hỗ trợ string cho min_order_value
   quantity: number;
-  max_user_number: number;
   applicable_products: string[];
   is_active?: boolean; // Giữ tùy chọn cho is_active
 }

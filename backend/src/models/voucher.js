@@ -44,11 +44,6 @@ const voucherSchema = new Schema(
       required: true,
       min: 0,
     },
-    max_user_number: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
     usage_limit_per_user: {
       type: Number,
       default: 1,
