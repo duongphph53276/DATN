@@ -20,6 +20,7 @@ export interface stateOrder {
   status: "pending" | "preparing" | "shipping" | "delivered" | "cancelled" | "returned";
   quantity: number;
   total_amount: number;
+  shipping_fee: number;
   voucher_id: string | null;
   payment_method: "credit_card" | "paypal" | "cash_on_delivery" | string;
   address_id: string;

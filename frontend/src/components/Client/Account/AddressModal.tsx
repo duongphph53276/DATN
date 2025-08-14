@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Address } from '../../../interfaces/user';
 import { getAddress, createAddress, updateAddress, deleteAddress, setDefaultAddress } from '../../../services/api/address';
+import { getProvinces } from '../../../services/api/shipping';
 import { FaMapMarkerAlt, FaPlus, FaEdit, FaTrash, FaStar, FaTimes, FaCheck } from 'react-icons/fa';
 
 interface AddressModalProps {
@@ -29,13 +30,36 @@ const AddressModal: React.FC<AddressModalProps> = ({
     country: 'Việt Nam',
     is_default: false
   });
+  const [provinces, setProvinces] = useState<string[]>([]);
 
   // Fetch addresses when modal opens
   useEffect(() => {
     if (isOpen) {
+      console.log('🚀 Modal mở, bắt đầu fetch data...');
       fetchAddresses();
+      fetchProvinces();
     }
   }, [isOpen]);
+
+  // Debug provinces state
+  useEffect(() => {
+    console.log('🏛️ Provinces state updated:', provinces);
+  }, [provinces]);
+
+  const fetchProvinces = async () => {
+    try {
+      console.log('🔄 Đang tải danh sách tỉnh thành...');
+      const response = await getProvinces();
+      console.log('📦 Response provinces:', response);
+      if (response.status === 200) {
+        const provincesData = response.data.data || [];
+        console.log('🏛️ Danh sách tỉnh thành:', provincesData);
+        setProvinces(provincesData);
+      }
+    } catch (err) {
+      console.error('❌ Lỗi khi tải danh sách tỉnh thành:', err);
+    }
+  };
 
   const fetchAddresses = async () => {
     setLoading(true);
@@ -63,8 +87,9 @@ const AddressModal: React.FC<AddressModalProps> = ({
     setShowForm(false);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -230,15 +255,20 @@ const AddressModal: React.FC<AddressModalProps> = ({
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Thành phố/Tỉnh <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="text"
+                    <select
                       name="city"
                       value={formData.city}
                       onChange={handleInputChange}
                       className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100"
-                      placeholder="Hà Nội, TP.HCM..."
                       required
-                    />
+                    >
+                      <option value="">Chọn tỉnh thành ({provinces.length} tỉnh)</option>
+                      {provinces.map((province, index) => (
+                        <option key={index} value={province}>
+                          {province}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>

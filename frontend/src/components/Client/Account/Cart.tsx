@@ -22,6 +22,8 @@ interface CartItem {
 
 const Cart: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<CartItem | null>(null);
   const navigate = useNavigate();
 
   // Load cart của user và lắng nghe sự kiện cartUpdated
@@ -67,7 +69,7 @@ const Cart: React.FC = () => {
       return;
     }
 
-    updateCartItemQuantity(item._id, item.variant, item.quantity + 1);
+    updateCartItemQuantity(item.id, item.variant, item.quantity + 1);
     ToastSucess("Số lượng sản phẩm đã tăng thêm một!")
 
   };
@@ -75,7 +77,7 @@ const Cart: React.FC = () => {
   // Giảm số lượng
   const decreaseQty = (item: CartItem) => {
     if (item.quantity > 1) {
-      updateCartItemQuantity(item._id, item.variant, item.quantity - 1);
+      updateCartItemQuantity(item.id, item.variant, item.quantity - 1);
 
       ToastSucess("Số lượng sản phẩm đã giảm đi một!")
 
@@ -84,10 +86,24 @@ const Cart: React.FC = () => {
 
   // Xoá sản phẩm
   const removeItem = (item: CartItem) => {
-    removeFromUserCart(item._id, item.variant);
+    setItemToDelete(item);
+    setShowDeleteConfirm(true);
+  };
 
-    ToastSucess("Đã xóa sản phẩm khỏi giỏ hàng!")
+  // Xác nhận xóa sản phẩm
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      removeFromUserCart(itemToDelete.id, itemToDelete.variant);
+      ToastSucess("Đã xóa sản phẩm khỏi giỏ hàng!");
+      setShowDeleteConfirm(false);
+      setItemToDelete(null);
+    }
+  };
 
+  // Hủy xóa sản phẩm
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setItemToDelete(null);
   };
 
   // Tổng tiền
@@ -175,6 +191,39 @@ const Cart: React.FC = () => {
             </button>
           </div>
         </>
+      )}
+
+      {/* Dialog xác nhận xóa */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={cancelDelete}>
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Xác nhận xóa</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Bạn có chắc chắn muốn xóa sản phẩm <span className="font-semibold">"{itemToDelete?.name}"</span> khỏi giỏ hàng?
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors"
+              >
+                Xóa
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
