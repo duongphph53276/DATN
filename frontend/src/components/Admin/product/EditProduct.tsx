@@ -354,6 +354,35 @@ const EditProduct = () => {
     try {
       if (isSubmitting || !id) return;
       setIsSubmitting(true);
+
+      // Kiểm tra bắt buộc ảnh sản phẩm, album, và ảnh biến thể
+      if (!imageFile && !productData?.images) {
+        ToastError("Hình ảnh sản phẩm là bắt buộc");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (albumFiles.length === 0 && (!productData?.album || productData.album.length === 0)) {
+        ToastError("Album ảnh sản phẩm là bắt buộc và phải có ít nhất một hình ảnh");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const variantImageErrors = data.variants
+        .map((variant, index) => {
+          if (!variant.image) {
+            return `Hình ảnh cho biến thể ${index + 1} là bắt buộc`;
+          }
+          return null;
+        })
+        .filter(Boolean);
+
+      if (variantImageErrors.length > 0) {
+        variantImageErrors.forEach((err) => ToastError(err));
+        setIsSubmitting(false);
+        return;
+      }
+
       let imageUrl = productData.images || "";
       if (imageFile) imageUrl = await uploadToCloudinary(imageFile);
       const albumUrls = productData.album || [];

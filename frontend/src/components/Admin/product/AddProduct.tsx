@@ -288,6 +288,34 @@ const AddProduct = () => {
       if (isSubmitting) return;
       setIsSubmitting(true);
 
+      // Kiểm tra bắt buộc ảnh sản phẩm, album, và ảnh biến thể
+      if (!imageFile) {
+        ToastError("Hình ảnh sản phẩm là bắt buộc");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (albumFiles.length === 0) {
+        ToastError("Album ảnh sản phẩm là bắt buộc và phải có ít nhất một hình ảnh");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const variantImageErrors = data.variants
+        .map((variant, index) => {
+          if (!variantImages[index] && !variant.image) {
+            return `Hình ảnh cho biến thể ${index + 1} là bắt buộc`;
+          }
+          return null;
+        })
+        .filter(Boolean);
+
+      if (variantImageErrors.length > 0) {
+        variantImageErrors.forEach((err) => ToastError(err));
+        setIsSubmitting(false);
+        return;
+      }
+
       let imageUrl = "";
       if (imageFile) imageUrl = await uploadToCloudinary(imageFile);
 

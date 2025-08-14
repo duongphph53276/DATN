@@ -45,6 +45,10 @@ const AttributeList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
+  // Delete modal states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [attributeToDelete, setAttributeToDelete] = useState<{ id: string; name: string } | null>(null);
+
   const { register, handleSubmit, reset, setValue } = useForm<{ value: string }>();
 
   useEffect(() => {
@@ -112,22 +116,30 @@ const AttributeList: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Xác nhận xóa?")) return;
+  const handleDeleteClick = (attr: Attribute) => {
+    setAttributeToDelete({ id: attr._id, name: attr.name });
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!attributeToDelete) return;
     try {
-      await deleteAttribute(id);
-      setAttributes(attributes.filter((attr) => attr._id !== id));
+      await deleteAttribute(attributeToDelete.id);
+      setAttributes(attributes.filter((attr) => attr._id !== attributeToDelete.id));
       ToastSucess("Xóa thành công");
     } catch (error: any) {
-          // Lấy thông báo lỗi chính xác từ response.data.message nếu có
-          const msg = error.response?.data?.message || error.message;
-    
-          if (msg.includes("Không thể xóa")) {
-            ToastWarning(msg); // Hiển thị cảnh báo từ backend
-          } else {
-            ToastError(msg || "Lỗi xóa sản phẩm");
-          }
-        }
+      // Lấy thông báo lỗi chính xác từ response.data.message nếu có
+      const msg = error.response?.data?.message || error.message;
+
+      if (msg.includes("Không thể xóa")) {
+        ToastWarning(msg); // Hiển thị cảnh báo từ backend
+      } else {
+        ToastError(msg || "Lỗi xóa sản phẩm");
+      }
+    } finally {
+      setShowDeleteModal(false);
+      setAttributeToDelete(null);
+    }
   };
 
   const handleAddOrUpdateValue = async (attributeId: string, data: { value: string }) => {
@@ -225,8 +237,8 @@ const AttributeList: React.FC = () => {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all duration-200 ${showFilters || activeFilters > 0
-                  ? 'bg-blue-50 border-blue-200 text-blue-700'
-                  : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                 }`}
             >
               <FaFilter className="text-sm" />
@@ -362,7 +374,7 @@ const AttributeList: React.FC = () => {
                           </button>
                           <button
                             className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 shadow-sm hover:shadow-md"
-                            onClick={() => handleDelete(attr._id)}
+                            onClick={() => handleDeleteClick(attr)}
                             title="Xóa"
                           >
                             <FaTrash size={14} />
@@ -496,6 +508,46 @@ const AttributeList: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h5 className="text-lg font-semibold text-gray-800">Xác nhận xóa</h5>
+              <button
+                className="text-gray-500 hover:text-gray-700"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setAttributeToDelete(null);
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Bạn có chắc chắn muốn xóa thuộc tính <span className="font-medium text-red-600">{attributeToDelete?.name}</span> không? Hành động này không thể hoàn tác.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-all duration-200"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setAttributeToDelete(null);
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                className="px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                onClick={confirmDelete}
+              >
+                Xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

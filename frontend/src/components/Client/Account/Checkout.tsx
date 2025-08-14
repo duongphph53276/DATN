@@ -38,6 +38,7 @@ const Checkout: React.FC = () => {
   const [shippingFee, setShippingFee] = useState(0);
 
   useEffect(() => {
+    
     migrateOldCart();
 
     try {
