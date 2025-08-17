@@ -254,180 +254,180 @@ class OrderController {
   }
 
   async createOrder(req, res) {
-  try {
-    console.log('Create order request body:', JSON.stringify(req.body, null, 2));
-    
-    const {
-      user_id,
-      quantity,
-      total_amount,
-      voucher_id,
-      payment_method,
-      address_id,
-      order_details
-    } = req.body;
+    try {
+      console.log('Create order request body:', JSON.stringify(req.body, null, 2));
 
-    if (!user_id || !quantity || !total_amount || !payment_method || !address_id || !order_details) {
-      console.log('Missing required fields:', {
-        user_id: !!user_id,
-        quantity: !!quantity,
-        total_amount: !!total_amount,
-        payment_method: !!payment_method,
-        address_id: !!address_id,
-        order_details: !!order_details
-      });
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required data'
-      });
-    }
+      const {
+        user_id,
+        quantity,
+        total_amount,
+        voucher_id,
+        payment_method,
+        address_id,
+        order_details
+      } = req.body;
 
-    const userExists = await UserModel.findById(user_id).lean();
-    if (!userExists) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    if (!Array.isArray(order_details) || order_details.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Order details must be a non-empty array'
-      });
-    }
-
-    for (const detail of order_details) {
-      if (!detail.product_id || !detail.variant_id || !detail.name || !detail.price || !detail.quantity) {
-        console.log('Invalid order detail:', detail);
+      if (!user_id || !quantity || !total_amount || !payment_method || !address_id || !order_details) {
+        console.log('Missing required fields:', {
+          user_id: !!user_id,
+          quantity: !!quantity,
+          total_amount: !!total_amount,
+          payment_method: !!payment_method,
+          address_id: !!address_id,
+          order_details: !!order_details
+        });
         return res.status(400).json({
           success: false,
-          message: 'Each order detail must include product_id, variant_id, name, price, and quantity'
+          message: 'Missing required data'
         });
       }
-    }
 
-    // Get address
-    const address = await AddressModel.findById(address_id);
-    if (!address) {
-      return res.status(404).json({
-        success: false,
-        message: 'Address not found'
-      });
-    }
-
-    // Calculate shipping fee
-    const shippingFee = calculateShippingFee(address.city);
-
-    // Validate voucher if provided
-    if (voucher_id) {
-      const voucher = await VoucherModel.findById(voucher_id);
-      if (!voucher) {
+      const userExists = await UserModel.findById(user_id).lean();
+      if (!userExists) {
         return res.status(404).json({
           success: false,
-          message: 'Voucher not found'
+          message: 'User not found'
         });
       }
-      if (voucher.quantity <= voucher.used_quantity) {
+
+      if (!Array.isArray(order_details) || order_details.length === 0) {
         return res.status(400).json({
           success: false,
-          message: 'Voucher has no remaining uses'
+          message: 'Order details must be a non-empty array'
         });
       }
-      const userVoucherUsage = await OrderModel.countDocuments({
+
+      for (const detail of order_details) {
+        if (!detail.product_id || !detail.variant_id || !detail.name || !detail.price || !detail.quantity) {
+          console.log('Invalid order detail:', detail);
+          return res.status(400).json({
+            success: false,
+            message: 'Each order detail must include product_id, variant_id, name, price, and quantity'
+          });
+        }
+      }
+
+      // Get address
+      const address = await AddressModel.findById(address_id);
+      if (!address) {
+        return res.status(404).json({
+          success: false,
+          message: 'Address not found'
+        });
+      }
+
+      // Calculate shipping fee
+      const shippingFee = calculateShippingFee(address.city);
+
+      // Validate voucher if provided
+      if (voucher_id) {
+        const voucher = await VoucherModel.findById(voucher_id);
+        if (!voucher) {
+          return res.status(404).json({
+            success: false,
+            message: 'Voucher not found'
+          });
+        }
+        if (voucher.quantity <= voucher.used_quantity) {
+          return res.status(400).json({
+            success: false,
+            message: 'Voucher has no remaining uses'
+          });
+        }
+        const userVoucherUsage = await OrderModel.countDocuments({
+          user_id,
+          voucher_id,
+          status: { $ne: 'cancelled' }
+        });
+        if (userVoucherUsage >= voucher.usage_limit_per_user) {
+          return res.status(400).json({
+            success: false,
+            message: 'User has exceeded voucher usage limit'
+          });
+        }
+      }
+
+      // Create new order
+      const newOrder = new OrderModel({
         user_id,
+        quantity,
+        total_amount,
+        shipping_fee: shippingFee,
         voucher_id,
-        status: { $ne: 'cancelled' }
+        payment_method,
+        address_id
       });
-      if (userVoucherUsage >= voucher.usage_limit_per_user) {
-        return res.status(400).json({
-          success: false,
-          message: 'User has exceeded voucher usage limit'
-        });
+
+      const savedOrder = await newOrder.save();
+
+      const orderDetailsData = order_details.map(detail => ({
+        order_id: savedOrder._id,
+        product_id: detail.product_id,
+        variant_id: detail.variant_id,
+        name: detail.name,
+        price: detail.price,
+        quantity: detail.quantity,
+        image: detail.image
+      }));
+
+      const savedOrderDetails = await OrderDetailModel.insertMany(orderDetailsData);
+
+      if (voucher_id) {
+        await VoucherModel.findByIdAndUpdate(
+          voucher_id,
+          { $inc: { used_quantity: 1 } }
+        );
       }
-    }
 
-    // Create new order
-    const newOrder = new OrderModel({
-      user_id,
-      quantity,
-      total_amount,
-      shipping_fee: shippingFee,
-      voucher_id,
-      payment_method,
-      address_id
-    });
+      const orderDetailsWithInfo = await Promise.all(
+        savedOrderDetails.map(async (detail) => {
+          const [product, variant] = await Promise.all([
+            Product.findById(detail.product_id).lean(),
+            ProductVariant.findById(detail.variant_id).lean()
+          ]);
 
-    const savedOrder = await newOrder.save();
-
-    const orderDetailsData = order_details.map(detail => ({
-      order_id: savedOrder._id,
-      product_id: detail.product_id,
-      variant_id: detail.variant_id,
-      name: detail.name,
-      price: detail.price,
-      quantity: detail.quantity,
-      image: detail.image
-    }));
-
-    const savedOrderDetails = await OrderDetailModel.insertMany(orderDetailsData);
-
-    if (voucher_id) {
-      await VoucherModel.findByIdAndUpdate(
-        voucher_id,
-        { $inc: { used_quantity: 1 } }
+          return {
+            ...detail,
+            product,
+            variant
+          };
+        })
       );
-    }
 
-    const orderDetailsWithInfo = await Promise.all(
-      savedOrderDetails.map(async (detail) => {
-        const [product, variant] = await Promise.all([
-          Product.findById(detail.product_id).lean(),
-          ProductVariant.findById(detail.variant_id).lean()
-        ]);
+      const [voucher, addressInfo, user] = await Promise.all([
+        savedOrder.voucher_id ? VoucherModel.findById(savedOrder.voucher_id).lean() : null,
+        AddressModel.findById(savedOrder.address_id).lean(),
+        OrderController.populateUserInfo(savedOrder.user_id)
+      ]);
 
-        return {
-          ...detail,
-          product,
-          variant
-        };
-      })
-    );
-
-    const [voucher, addressInfo, user] = await Promise.all([
-      savedOrder.voucher_id ? VoucherModel.findById(savedOrder.voucher_id).lean() : null,
-      AddressModel.findById(savedOrder.address_id).lean(),
-      OrderController.populateUserInfo(savedOrder.user_id)
-    ]);
-
-    try {
-      await createOrderSuccessNotification(user_id, savedOrder._id.toString());
-      await createNewOrderAdminNotification(savedOrder._id.toString(), total_amount);
-    } catch (notificationError) {
-      console.error('Error creating notifications:', notificationError);
-    }
-
-    res.status(201).json({
-      success: true,
-      message: 'Order created successfully',
-      data: {
-        ...savedOrder.toObject(),
-        user: user,
-        voucher: voucher,
-        address: addressInfo,
-        order_details: orderDetailsWithInfo
+      try {
+        await createOrderSuccessNotification(user_id, savedOrder._id.toString());
+        await createNewOrderAdminNotification(savedOrder._id.toString(), total_amount);
+      } catch (notificationError) {
+        console.error('Error creating notifications:', notificationError);
       }
-    });
 
-  } catch (error) {
-    console.error('❌ Error in createOrder:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
-    });
+      res.status(201).json({
+        success: true,
+        message: 'Order created successfully',
+        data: {
+          ...savedOrder.toObject(),
+          user: user,
+          voucher: voucher,
+          address: addressInfo,
+          order_details: orderDetailsWithInfo
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Error in createOrder:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+      });
+    }
   }
-}
 
   /**
    * @desc    Update order status
@@ -506,7 +506,7 @@ class OrderController {
       if (status === 'delivered') {
         updateData.delivered_at = new Date();
       }
-      
+
       if (status === 'shipping' && shipper_id) {
         updateData.shipper_id = shipper_id;
       }
@@ -534,7 +534,7 @@ class OrderController {
 
       try {
         await createOrderStatusNotification(updatedOrder.user_id.toString(), updatedOrder._id.toString(), status);
-        
+
         if (status === 'shipping' && shipper_id) {
           const customer = await OrderController.populateUserInfo(updatedOrder.user_id);
           const customerName = customer ? customer.name : 'Khách hàng';
@@ -665,11 +665,11 @@ class OrderController {
 
       // Debug: Kiểm tra tất cả đơn hàng của user này trong DB
       const allUserOrders = await OrderModel.find({ user_id }).sort({ created_at: -1 }).lean();
-      console.log('🔍 getOrdersByUserId - ALL orders for this user:', allUserOrders.map(o => ({ 
-        id: o._id, 
-        date: o.created_at, 
+      console.log('🔍 getOrdersByUserId - ALL orders for this user:', allUserOrders.map(o => ({
+        id: o._id,
+        date: o.created_at,
         status: o.status,
-        total_amount: o.total_amount 
+        total_amount: o.total_amount
       })));
 
       const ordersWithDetails = await Promise.all(
@@ -767,7 +767,7 @@ class OrderController {
         : {};
 
       const stats = await OrderModel.aggregate([
-        { 
+        {
           $match: {
             ...matchStage,
             status: 'delivered'
@@ -790,7 +790,7 @@ class OrderController {
           $group: {
             _id: '$status',
             count: { $sum: 1 },
-            total_amount: { 
+            total_amount: {
               $sum: {
                 $cond: [
                   { $eq: ['$status', 'delivered'] },
@@ -809,7 +809,7 @@ class OrderController {
           $group: {
             _id: '$payment_method',
             count: { $sum: 1 },
-            total_amount: { 
+            total_amount: {
               $sum: {
                 $cond: [
                   { $eq: ['$status', 'delivered'] },
@@ -823,7 +823,7 @@ class OrderController {
       ]);
 
       const topCustomers = await OrderModel.aggregate([
-        { 
+        {
           $match: {
             ...matchStage,
             status: 'delivered'
@@ -883,7 +883,7 @@ class OrderController {
   async getMonthlyRevenue(req, res) {
     try {
       const { year = new Date().getFullYear() } = req.query;
-      
+
       const monthlyStats = await OrderModel.aggregate([
         {
           $match: {
@@ -952,7 +952,7 @@ class OrderController {
       }
 
       const filter = { shipper_id };
-      
+
       if (status) {
         filter.status = status;
       } else {
@@ -1097,11 +1097,11 @@ class OrderController {
       }
 
       const updateData = { status };
-      
+
       if (status === 'delivered') {
         updateData.delivered_at = new Date();
       }
-      
+
       if (status === 'cancelled' && cancel_reason) {
         updateData.cancel_reason = cancel_reason;
       }
@@ -1140,10 +1140,10 @@ class OrderController {
         shipper: shipper
       };
 
-      const message = status === 'delivered' 
+      const message = status === 'delivered'
         ? 'Order status updated to delivered successfully'
         : 'Order delivery cancelled successfully';
-        
+
       res.status(200).json({
         success: true,
         message: message,
@@ -1167,7 +1167,7 @@ class OrderController {
     try {
       const { id } = req.params;
       const { cancel_reason, cancel_images } = req.body;
-      const userId = req.user?.id || req.body.user_id; 
+      const userId = req.user?.id || req.body.user_id;
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({
@@ -1212,7 +1212,7 @@ class OrderController {
           reason: cancel_reason.trim(),
           images: cancel_images || [],
           requested_at: new Date(),
-          status: 'pending' 
+          status: 'pending'
         }
       };
 
@@ -1270,7 +1270,7 @@ class OrderController {
   async handleCancelRequest(req, res) {
     try {
       const { id } = req.params;
-      const { action, admin_note } = req.body; 
+      const { action, admin_note } = req.body;
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({
@@ -1421,7 +1421,7 @@ class OrderController {
           reason: return_reason.trim(),
           images: return_images || [],
           requested_at: new Date(),
-          status: 'pending' 
+          status: 'pending'
         }
       };
 
@@ -1479,7 +1479,7 @@ class OrderController {
   async handleReturnRequest(req, res) {
     try {
       const { id } = req.params;
-      const { action, admin_note } = req.body; 
+      const { action, admin_note } = req.body;
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({
@@ -1763,28 +1763,28 @@ class OrderController {
 
     try {
       const cancelResult = await OrderModel.updateMany(
-        { 
+        {
           $or: [
             { "cancel_request.status": { $exists: false } },
             { "cancel_request.status": null },
             { "cancel_request.status": "" }
           ]
         },
-        { 
-          $unset: { cancel_request: "" } 
+        {
+          $unset: { cancel_request: "" }
         }
       );
 
       const returnResult = await OrderModel.updateMany(
-        { 
+        {
           $or: [
             { "return_request.status": { $exists: false } },
             { "return_request.status": null },
             { "return_request.status": "" }
           ]
         },
-        { 
-          $unset: { return_request: "" } 
+        {
+          $unset: { return_request: "" }
         }
       );
 

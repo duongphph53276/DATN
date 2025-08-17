@@ -46,7 +46,7 @@ const Checkout: React.FC = () => {
   const [isUpdatingUserInfo, setIsUpdatingUserInfo] = useState(false);
 
   useEffect(() => {
-    
+
     migrateOldCart();
 
     try {
@@ -135,7 +135,7 @@ const Checkout: React.FC = () => {
     setAddress(selectedAddress);
     setAddressId(selectedAddress._id);
     setErrorMessage(null);
-    
+
     // Calculate shipping fee when address is selected
     try {
       const response = await calculateShippingFee({ address_id: selectedAddress._id });
@@ -429,27 +429,27 @@ const Checkout: React.FC = () => {
         const validatedOrderDetails = cartItems.map((item, index) => {
           const productId = item.variant?.product_id || item._id || item.id;
           const variantId = item.variant?._id;
-          
+
           if (!productId) {
             throw new Error(`Sản phẩm thứ ${index + 1} không có ID hợp lệ`);
           }
-          
+
           if (!item.name) {
             throw new Error(`Sản phẩm thứ ${index + 1} không có tên hợp lệ`);
           }
-          
+
           if (!variantId) {
             throw new Error(`Sản phẩm "${item.name}" không có variant hợp lệ`);
           }
-          
+
           if (!item.price || isNaN(item.price) || item.price <= 0) {
             throw new Error(`Sản phẩm "${item.name}" có giá không hợp lệ`);
           }
-          
+
           if (!item.quantity || isNaN(item.quantity) || item.quantity <= 0) {
             throw new Error(`Sản phẩm "${item.name}" có số lượng không hợp lệ`);
           }
-          
+
           return {
             product_id: productId,
             variant_id: variantId,
@@ -486,7 +486,7 @@ const Checkout: React.FC = () => {
         }
 
         const totalQuantity = cartItems.reduce((total, item) => total + item.quantity, 0);
-        
+
         // Validate total quantity
         if (!totalQuantity || isNaN(totalQuantity) || totalQuantity <= 0) {
           throw new Error('Số lượng sản phẩm không hợp lệ.');
@@ -507,7 +507,7 @@ const Checkout: React.FC = () => {
         orderData.order_details.forEach((detail, index) => {
           console.log(`Item ${index + 1}:`, JSON.stringify(detail, null, 2));
         });
-        
+
         // Log validation info
         console.log('Validation info:', {
           user_id: orderData.user_id,
@@ -521,8 +521,20 @@ const Checkout: React.FC = () => {
 
         if (orderData) {
           try {
-            const result = await dispatch(createOrder(orderData)).unwrap();
-            
+            const result = await dispatch(createOrder(orderData)).unwrap();      
+
+            // Cập nhật số lượng tồn kho sau khi tạo đơn hàng thành công
+            for (const item of cartItems) {
+              if (item.variant?._id) { // Chỉ cập nhật nếu ID variant tồn tại
+                try {
+                  await updateVariantQuantity(item.variant._id, item.quantity, 'deduct');
+                } catch (error) {
+                  console.error(`Lỗi khi cập nhật số lượng cho variant ${item.variant._id}:`, error);
+                  setErrorMessage(`Đơn hàng đã được tạo nhưng lỗi khi cập nhật số lượng sản phẩm "${item.name}".`);
+                  setLoading(false);
+                }
+              }
+            }
             // Chỉ xóa giỏ hàng và hiển thị thông báo thành công khi đặt hàng thành công
             clearUserCart();
             localStorage.removeItem('appliedDiscount');
@@ -530,7 +542,7 @@ const Checkout: React.FC = () => {
             // Chuyển hướng đến trang thông báo đặt hàng thành công
             const orderId = result?.data?._id || 'N/A';
             const paymentMethodText = paymentMethod === 'cod' ? 'Thanh toán khi nhận hàng' : 'Thanh toán VNPay';
-            
+
             navigate(`/order-success?orderId=${orderId}&totalAmount=${finalTotal}&paymentMethod=${encodeURIComponent(paymentMethodText)}`);
           } catch (error: any) {
             console.error('Lỗi khi đặt hàng:', error);

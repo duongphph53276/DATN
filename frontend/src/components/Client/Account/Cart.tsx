@@ -55,7 +55,7 @@ const Cart: React.FC = () => {
   }, []);
 
   const increaseQty = (item: CartItem) => {
-    const stockQty = item.variant?.stock_quantity ?? item.quantityInStock ?? 0;
+    const stockQty = item.variant?.quantity ?? item.quantityInStock ?? 0;
     if (item.quantity + 1 > stockQty) {
       ToastError(`Chỉ còn ${stockQty} sản phẩm trong kho!`);
       return;
@@ -77,7 +77,7 @@ const Cart: React.FC = () => {
       ToastError("Số lượng phải là số nguyên dương!");
       return;
     }
-    const stockQty = item.variant?.stock_quantity ?? item.quantityInStock ?? 0;
+    const stockQty = item.variant?.quantity ?? item.quantityInStock ?? 0;
     if (qty > stockQty) {
       ToastError(`Chỉ còn ${stockQty} sản phẩm trong kho!`);
       return;
@@ -119,7 +119,7 @@ const Cart: React.FC = () => {
             {cartItems.map((item, idx) => {
               const itemKey = `${item.id}-${JSON.stringify(item.variant?.attributes)}-${idx}`;
               const displayQty = tempQuantities[itemKey] ?? item.quantity.toString();
-              const stockQty = item.variant?.stock_quantity ?? item.quantityInStock ?? 0;
+              const stockQty = item.variant?.quantity ?? item.quantityInStock ?? 0;
 
               return (
                 <div

@@ -26,6 +26,7 @@ type AddProductForm = {
     price: number;
     quantity: number;
     image?: string;
+    import_price?: number; // Thêm trường import_price
     attributes: { attribute_id: string; value_id: string }[];
   }[];
 };
@@ -53,6 +54,7 @@ const AddProduct = () => {
   const [existingVariants, setExistingVariants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [formattedPrices, setFormattedPrices] = useState<string[]>([]);
+  const [formattedImportPrices, setFormattedImportPrices] = useState<string[]>([]); // Thêm state cho format import_price
 
   const validationSchema = yup.object().shape({
     name: yup
@@ -79,6 +81,12 @@ const AddProduct = () => {
           .min(0, "Số lượng không được âm")
           .typeError("Số lượng phải là một số"),
         image: yup.mixed().nullable(),
+        import_price: yup // Thêm validation cho import_price
+          .number()
+          .required("Giá nhập là bắt buộc")
+          .min(0, "Giá nhập không được âm")
+          .typeError("Giá nhập phải là một số")
+          .lessThan(yup.ref("price"), "Giá nhập phải nhỏ hơn giá bán"),
         attributes: yup
           .array()
           .of(
@@ -159,7 +167,7 @@ const AddProduct = () => {
       },
     },
     defaultValues: {
-      variants: [{ price: undefined, quantity: 0, attributes: [{ attribute_id: "", value_id: "" }] }],
+      variants: [{ price: undefined, quantity: 0, import_price: 0, attributes: [{ attribute_id: "", value_id: "" }] }], // Thêm default cho import_price
     },
   });
 
@@ -211,6 +219,17 @@ const AddProduct = () => {
     });
     setValue(`variants.${index}.price`, rawValue ? Number(rawValue) : undefined);
     trigger(`variants.${index}.price`);
+  };
+
+  const handleImportPriceChange = (index: number, value: string) => { // Thêm hàm xử lý format cho import_price
+    const rawValue = value.replace(/,/g, "");
+    setFormattedImportPrices((prev) => {
+      const newPrices = [...prev];
+      newPrices[index] = formatNumber(rawValue);
+      return newPrices;
+    });
+    setValue(`variants.${index}.import_price`, rawValue ? Number(rawValue) : undefined);
+    trigger(`variants.${index}.import_price`);
   };
 
   const { getRootProps: getImageRootProps, getInputProps: getImageInputProps } = useDropzone({
@@ -324,7 +343,7 @@ const AddProduct = () => {
       const variantPromises = data.variants.map(async (variant, index) => {
         let variantImage = variant.image;
         if (variantImages[index] instanceof File) variantImage = await uploadToCloudinary(variantImages[index]);
-        return { ...variant, image: variantImage };
+        return { ...variant, image: variantImage }; // import_price đã có trong variant
       });
       const updatedVariants = await Promise.all(variantPromises);
 
@@ -355,15 +374,17 @@ const AddProduct = () => {
   };
 
   const handleAddVariant = () => {
-    append({ price: 0, quantity: 0, attributes: [{ attribute_id: "", value_id: "" }] });
+    append({ price: 0, quantity: 0, import_price: 0, attributes: [{ attribute_id: "", value_id: "" }] }); // Thêm default import_price
     setVariantImages([...variantImages, null]);
     setFormattedPrices([...formattedPrices, ""]);
+    setFormattedImportPrices([...formattedImportPrices, ""]); // Thêm cho import_price
   };
 
   const handleRemoveVariant = (index: number) => {
     remove(index);
     setVariantImages(variantImages.filter((_, i) => i !== index));
     setFormattedPrices(formattedPrices.filter((_, i) => i !== index));
+    setFormattedImportPrices(formattedImportPrices.filter((_, i) => i !== index)); // Xóa cho import_price
   };
 
   const handleAddAttribute = (variantIndex: number) => {
@@ -457,7 +478,7 @@ const AddProduct = () => {
             <div className="p-4">
               {fields.map((field, index) => (
                 <div key={field.id} className="border border-gray-200 p-4 mb-4 rounded-lg">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4"> {/* Thay cols-2 thành cols-3 để thêm import_price */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Giá (VND)</label>
                       <input
@@ -473,6 +494,23 @@ const AddProduct = () => {
                       />
                       {errors.variants?.[index]?.price && (
                         <p className="text-red-500 text-sm mt-1">{errors.variants[index].price.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Giá nhập (VND)</label> {/* Thêm input cho import_price */}
+                      <input
+                        type="text"
+                        value={formattedImportPrices[index] || ""}
+                        onChange={(e) => handleImportPriceChange(index, e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.import_price ? "border-red-500" : "border-gray-300"}`}
+                        placeholder="Giá nhập (ví dụ: 500,000)"
+                      />
+                      <input
+                        type="hidden"
+                        {...register(`variants.${index}.import_price`)}
+                      />
+                      {errors.variants?.[index]?.import_price && (
+                        <p className="text-red-500 text-sm mt-1">{errors.variants[index].import_price.message}</p>
                       )}
                     </div>
                     <div>

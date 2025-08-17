@@ -43,11 +43,16 @@ const ListProduct: React.FC = () => {
           })
         );
 
+        // Sắp xếp sản phẩm theo createdAt giảm dần (mới nhất ở trên)
+        const sortedProducts = productsWithVariants.sort((a, b) => {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+
         const categoryRes = await getCategories();
         const categoriesData = categoryRes.data.data || [];
 
-        setProducts(productsWithVariants);
-        setFilteredProducts(productsWithVariants);
+        setProducts(sortedProducts);
+        setFilteredProducts(sortedProducts);
         setCategories(categoriesData);
       } catch (error) {
         console.error("Lỗi lấy dữ liệu:", error);
@@ -89,9 +94,16 @@ const ListProduct: React.FC = () => {
         const prices = product.variants.map((v) => v.price);
         const minPrice = Math.min(...prices);
         const maxPrice = Math.max(...prices);
-        const [min, max] = priceFilter.split("-").map(Number);
-        // Check if the product's price range overlaps with the selected range
-        return minPrice <= max && (max === undefined || maxPrice >= min);
+        const parts = priceFilter.split("-").map(Number);
+        const min = parts[0];
+        const max = parts[1];
+        if (isNaN(max)) {
+          // For ranges like "1000001" (over 1,000,000)
+          return minPrice >= min;
+        } else {
+          // For ranges with min-max
+          return minPrice <= max && maxPrice >= min;
+        }
       });
     }
 
@@ -260,7 +272,6 @@ const ListProduct: React.FC = () => {
                 <span className="hidden sm:inline">Đặt lại</span>
               </button>
             )}
-
 
 
             {/* Add Product Button */}

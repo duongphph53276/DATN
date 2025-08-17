@@ -159,6 +159,7 @@ const handleAddToCart = (product: any) => {
   const selectedVariant = selectedVariants[product._id];
   const productAttributes = selectedAttributes[product._id] || {};
 
+  // Kiểm tra bắt buộc variant (đã có, giữ nguyên)
   const requiredAttributes = attributes.filter((attr: any) =>
     product.variants.some((variant: any) =>
       variant.attributes.some((a: any) => a.attribute_id === attr._id)
@@ -173,10 +174,10 @@ const handleAddToCart = (product: any) => {
     return;
   }
 
-  // Lấy giỏ hàng theo user đúng cách
+  // Lấy giỏ hàng
   const cart = loadUserCart();
 
-  // Tìm sản phẩm đã có trong giỏ (đúng variant)
+  // Tìm item tồn tại (đúng variant)
   const existingCartItem = cart.find((item: any) => {
     if (selectedVariant) {
       return item._id === product._id && item.variant?._id === selectedVariant._id;
@@ -186,23 +187,24 @@ const handleAddToCart = (product: any) => {
 
   const existingQuantity = existingCartItem ? existingCartItem.quantity : 0;
 
-  // Lấy số lượng tồn kho đúng
+  // Tính tồn kho từ API (hợp lý để check trước add)
   const stockQuantity = selectedVariant
-    ? selectedVariant.stock_quantity ?? selectedVariant.quantity ?? 0
-    : product.stock_quantity ?? product.quantity ?? 0;
+    ? selectedVariant.quantity ?? selectedVariant.stock_quantity ?? 0  // Map nếu API dùng stock_quantity
+    : product.quantity ?? product.stock_quantity ?? 0;
 
   if (existingQuantity + 1 > stockQuantity) {
     ToastError("Số lượng trong kho không đủ để thêm sản phẩm này!");
     return;
   }
 
+  // Tạo variantAttributes (đã có)
   const variantAttributes = selectedVariant
     ? Object.entries(productAttributes)
         .map(([attrId, valueId]) => `${getAttributeName(attrId)}: ${getAttributeValue(valueId)}`)
         .join(", ")
-
     : "Không có thuộc tính";
 
+  // Tạo cartItem với quantity thống nhất
   const cartItem = {
     ...product,
     id: product._id,
@@ -214,13 +216,13 @@ const handleAddToCart = (product: any) => {
           _id: selectedVariant._id,
           product_id: selectedVariant.product_id,
           price: selectedVariant.price,
-          attributes: selectedVariant.attributes,
-          stock_quantity: stockQuantity,
+          attributes: selectedVariant.attributes,  // Giữ nguyên từ API
+          quantity: stockQuantity,  // Set quantity làm chuẩn tồn kho
         }
       : undefined,
     variantAttributes,
     quantity: 1,
-
+    quantityInStock: stockQuantity,  // Dự phòng cho không variant
   };
 
   addToUserCart(cartItem);

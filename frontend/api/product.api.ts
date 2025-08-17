@@ -9,7 +9,7 @@ export const getAllProducts = () => {
 // Lấy sản phẩm bán chạy
 export const getBestSellingProducts = (limit?: number) => {
   const params = limit ? `?limit=${limit}` : '';
-  return instance.get(`/products/best-selling${params}`);
+  return instance.get(`/product/best-selling${params}`);
 };
 
 // Lấy chi tiết sản phẩm theo ID

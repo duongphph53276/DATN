@@ -27,6 +27,7 @@ type EditProductForm = {
     price: number;
     quantity: number;
     image?: File | string;
+    import_price: number; // Thêm trường import_price
     attributes: { attribute_id: string; value_id: string }[];
   }[];
 };
@@ -67,6 +68,12 @@ const validationSchema = yup.object().shape({
         .min(0, "Số lượng không được âm")
         .typeError("Số lượng phải là một số"),
       image: yup.mixed().nullable(),
+      import_price: yup // Thêm validation cho import_price
+        .number()
+        .required("Giá nhập là bắt buộc")
+        .min(0, "Giá nhập không được âm")
+        .typeError("Giá nhập phải là một số")
+        .lessThan(yup.ref("price"), "Giá nhập phải nhỏ hơn giá bán"),
       attributes: yup
         .array()
         .of(
@@ -144,6 +151,7 @@ const EditProduct = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [formattedPrices, setFormattedPrices] = useState<string[]>([]);
+  const [formattedImportPrices, setFormattedImportPrices] = useState<string[]>([]); // Thêm state cho format import_price
   const [productData, setProductData] = useState<any>(null);
 
   const {
@@ -159,7 +167,7 @@ const EditProduct = () => {
     resolver: yupResolver(validationSchema),
     mode: "onChange",
     defaultValues: {
-      variants: [{ price: undefined, quantity: 0, attributes: [{ attribute_id: "", value_id: "" }] }],
+      variants: [{ price: 0, quantity: 0, import_price: 0, attributes: [{ attribute_id: "", value_id: "" }] }], // Thêm default cho import_price
     },
   });
 
@@ -291,13 +299,15 @@ const EditProduct = () => {
             _id: v._id,
             price: v.price || 0,
             quantity: v.quantity || 0,
+            import_price: v.import_price || 0, // Thêm import_price
             image: v.image || "",
             attributes: v.attributes?.map((a: any) => ({
               attribute_id: a.attribute_id?._id || a.attribute_id || "",
               value_id: a.value_id?._id || a.value_id || "",
             })) || [{ attribute_id: "", value_id: "" }],
-          })) : [{ price: 0, quantity: 0, attributes: [{ attribute_id: "", value_id: "" }] }]);
+          })) : [{ price: 0, quantity: 0, import_price: 0, attributes: [{ attribute_id: "", value_id: "" }] }]);
           setFormattedPrices(variants.length > 0 ? variants.map((v: any) => (v.price || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")) : ["0"]);
+          setFormattedImportPrices(variants.length > 0 ? variants.map((v: any) => (v.import_price || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")) : ["0"]); // Thêm cho import_price
           setVariantImages(variants.length > 0 ? variants.map((v: any) => null) : [null]);
         }
       } catch (error) {
@@ -324,6 +334,7 @@ const EditProduct = () => {
         });
         setValue(`variants.${index}.price`, undefined, { shouldValidate: false });
         trigger(`variants.${index}.price`);
+        trigger(`variants.${index}.import_price`); // Re-validate import_price
       } else {
         const numValue = parseInt(sanitizedValue, 10);
         console.log("Number value:", numValue);
@@ -344,9 +355,50 @@ const EditProduct = () => {
         });
         setValue(`variants.${index}.price`, numValue, { shouldValidate: true });
         trigger(`variants.${index}.price`);
+        trigger(`variants.${index}.import_price`); // Re-validate import_price
       }
     } catch (error) {
       console.error("Lỗi trong handlePriceChange:", error);
+    }
+  };
+
+  const handleImportPriceChange = (index: number, value: string) => { // Thêm hàm xử lý format cho import_price
+    console.log("Input value for import_price:", value);
+    const sanitizedValue = value.replace(/[^0-9]/g, "");
+    console.log("Sanitized value for import_price:", sanitizedValue);
+
+    try {
+      if (sanitizedValue === "") {
+        setFormattedImportPrices((prev) => {
+          const newPrices = [...prev];
+          newPrices[index] = "";
+          return newPrices;
+        });
+        setValue(`variants.${index}.import_price`, undefined, { shouldValidate: false });
+        trigger(`variants.${index}.import_price`);
+      } else {
+        const numValue = parseInt(sanitizedValue, 10);
+        console.log("Number value for import_price:", numValue);
+        if (isNaN(numValue)) {
+          setFormattedImportPrices((prev) => {
+            const newPrices = [...prev];
+            newPrices[index] = prev[index] || "";
+            return newPrices;
+          });
+          trigger(`variants.${index}.import_price`);
+          return;
+        }
+        const formattedValue = numValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        setFormattedImportPrices((prev) => {
+          const newPrices = [...prev];
+          newPrices[index] = formattedValue;
+          return newPrices;
+        });
+        setValue(`variants.${index}.import_price`, numValue, { shouldValidate: true });
+        trigger(`variants.${index}.import_price`);
+      }
+    } catch (error) {
+      console.error("Lỗi trong handleImportPriceChange:", error);
     }
   };
 
@@ -394,7 +446,7 @@ const EditProduct = () => {
         let variantImage = variant.image;
         if (variantImages[index] instanceof File) variantImage = await uploadToCloudinary(variantImages[index]);
         else if (typeof variant.image === "string") variantImage = variant.image;
-        return { ...variant, image: variantImage };
+        return { ...variant, image: variantImage }; // import_price đã có trong variant
       });
       const updatedVariants = await Promise.all(variantPromises);
       const payload = {
@@ -420,15 +472,17 @@ const EditProduct = () => {
   };
 
   const handleAddVariant = () => {
-    append({ price: 0, quantity: 0, attributes: [{ attribute_id: "", value_id: "" }] });
+    append({ price: 0, quantity: 0, import_price: 0, attributes: [{ attribute_id: "", value_id: "" }] }); // Thêm default import_price
     setVariantImages([...variantImages, null]);
-    setFormattedPrices([...formattedPrices, ""]);
+    setFormattedPrices([...formattedPrices, "0"]);
+    setFormattedImportPrices([...formattedImportPrices, "0"]); // Thêm cho import_price
   };
 
   const handleRemoveVariant = (index: number) => {
     remove(index);
     setVariantImages(variantImages.filter((_, i) => i !== index));
     setFormattedPrices(formattedPrices.filter((_, i) => i !== index));
+    setFormattedImportPrices(formattedImportPrices.filter((_, i) => i !== index)); // Xóa cho import_price
   };
 
   const handleAddAttribute = (variantIndex: number) => {
@@ -520,7 +574,7 @@ const EditProduct = () => {
             <div className="p-4">
               {fields.map((field, index) => (
                 <div key={field.id} className="border border-gray-200 p-4 mb-4 rounded-lg">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4"> {/* Thay cols-2 thành cols-3 để thêm import_price */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Giá (VND)</label>
                       <input
@@ -532,6 +586,19 @@ const EditProduct = () => {
                       />
                       {errors.variants?.[index]?.price && (
                         <p className="text-red-500 text-sm mt-1">{errors.variants[index].price.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Giá nhập (VND)</label> {/* Thêm input cho import_price */}
+                      <input
+                        type="text"
+                        value={formattedImportPrices[index] || ""}
+                        onChange={(e) => handleImportPriceChange(index, e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.variants?.[index]?.import_price ? "border-red-500" : "border-gray-300"}`}
+                        placeholder="Giá nhập"
+                      />
+                      {errors.variants?.[index]?.import_price && (
+                        <p className="text-red-500 text-sm mt-1">{errors.variants[index].import_price.message}</p>
                       )}
                     </div>
                     <div>
