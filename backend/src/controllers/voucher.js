@@ -11,7 +11,6 @@ const voucherSchema = yup.object().shape({
   value: yup.number().required().min(0),
   quantity: yup.number().required().min(1),
   min_order_value: yup.number().required().min(0),
-  max_user_number: yup.number().required().min(0),
   start_date: yup.date().required(),
   end_date: yup.date().required().min(yup.ref('start_date'), 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu'),
   applicable_products: yup.array().of(yup.string().matches(/^[0-9a-fA-F]{24}$/, 'ID sản phẩm không hợp lệ')),
@@ -26,17 +25,15 @@ export const ListVoucher = async (req, res) => {
   }
 };
 
+// ================== 1. SỬA BACKEND CONTROLLER ==================
+
 export const CreateVoucher = async (req, res) => {
   try {
     await voucherSchema.validate(req.body, { abortEarly: false });
-    const { value, min_order_value, applicable_products } = req.body;
+    const { value, discount_type, min_order_value, applicable_products } = req.body;
 
-    if (min_order_value >= value) {
-      return res.status(400).json({
-        message: "Giá trị đơn hàng tối thiểu phải nhỏ hơn giá trị giảm giá",
-        status: false,
-      });
-    }
+    // XÓA BỎ logic sai: if (min_order_value >= value)
+    // Không nên so sánh trực tiếp min_order_value với value
 
     if (applicable_products && applicable_products.length > 0) {
       const selectedProducts = await Product.find({ _id: { $in: applicable_products } });
@@ -46,13 +43,16 @@ export const CreateVoucher = async (req, res) => {
           status: false,
         });
       }
-      const minPrice = Math.min(...selectedProducts.map(p => p.price));
-
-      if (value >= minPrice) {
-        return res.status(400).json({
-          message: `Giá trị giảm giá phải nhỏ hơn giá sản phẩm thấp nhất (${minPrice.toLocaleString('vi-VN')}đ)`,
-          status: false,
-        });
+      
+      // SỬA LẠI: Chỉ kiểm tra với fixed discount
+      if (discount_type === 'fixed') {
+        const minPrice = Math.min(...selectedProducts.map(p => p.price));
+        if (value >= minPrice) {
+          return res.status(400).json({
+            message: `Giá trị giảm giá phải nhỏ hơn giá sản phẩm thấp nhất (${minPrice.toLocaleString('vi-VN')}đ)`,
+            status: false,
+          });
+        }
       }
     }
 
@@ -88,14 +88,9 @@ export const UpdateVoucher = async (req, res) => {
   try {
     const validatedData = await voucherSchema.validate(req.body, { abortEarly: false });
     const { id } = req.params;
-    const { value, min_order_value, applicable_products } = validatedData;
+    const { value, discount_type, min_order_value, applicable_products } = validatedData;
 
-    if (min_order_value >= value) {
-      return res.status(400).json({
-        message: 'Giá trị đơn hàng tối thiểu phải nhỏ hơn giá trị giảm giá',
-        status: false,
-      });
-    }
+    // XÓA BỎ logic sai: if (min_order_value >= value)
 
     if (applicable_products && applicable_products.length > 0) {
       const selectedProducts = await Product.find({ _id: { $in: applicable_products } });
@@ -105,13 +100,16 @@ export const UpdateVoucher = async (req, res) => {
           status: false,
         });
       }
-      const minPrice = Math.min(...selectedProducts.map(p => p.price));
-
-      if (value >= minPrice) {
-        return res.status(400).json({
-          message: `Giá trị giảm giá phải nhỏ hơn giá sản phẩm thấp nhất (${minPrice.toLocaleString('vi-VN')}đ)`,
-          status: false,
-        });
+      
+      // SỬA LẠI: Chỉ kiểm tra với fixed discount
+      if (discount_type === 'fixed') {
+        const minPrice = Math.min(...selectedProducts.map(p => p.price));
+        if (value >= minPrice) {
+          return res.status(400).json({
+            message: `Giá trị giảm giá phải nhỏ hơn giá sản phẩm thấp nhất (${minPrice.toLocaleString('vi-VN')}đ)`,
+            status: false,
+          });
+        }
       }
     }
 

@@ -192,68 +192,67 @@ const Checkout: React.FC = () => {
   }, [totalPrice, appliedDiscount]);
 
   const validateDiscountCode = async (code: string): Promise<{ isValid: boolean; discount?: DiscountInfo; error?: string }> => {
-    if (!code || code.trim() === '') {
-      return { isValid: false, error: 'Vui lòng nhập mã giảm giá' };
-    }
+  if (!code || code.trim() === '') {
+    return { isValid: false, error: 'Vui lòng nhập mã giảm giá' };
+  }
 
-    if (!userInfo?._id) {  // Check để tránh lỗi nếu user chưa login
-      return { isValid: false, error: 'Bạn cần đăng nhập để áp dụng mã giảm giá' };
-    }
+  if (!userInfo?._id) {
+    return { isValid: false, error: 'Bạn cần đăng nhập để áp dụng mã giảm giá' };
+  }
 
-    try {
-      const response = await applyVoucher({
-        code: code.trim().toUpperCase(),
-        user_id: userInfo._id  // Truyền user_id từ userInfo (là ObjectId hợp lệ)
-      });
-      console.log(response);
+  try {
+    const response = await applyVoucher({
+      code: code.trim().toUpperCase(),
+      user_id: userInfo._id
+    });
 
-      if (response.status) {
-        const discount: DiscountInfo = response.data;
-        console.log(discount, 'hẹ hẹ ');
+    if (response.status) {
+      const discount: DiscountInfo = response.data;
+      
+      const now = new Date();
+      const startDate = new Date(discount.start_date);
+      const endDate = new Date(discount.end_date);
 
-        const now = new Date();
-        const startDate = new Date(discount.start_date);
-        const endDate = new Date(discount.end_date);
-
-        if (!discount.is_active) {
-          return { isValid: false, error: 'Mã giảm giá không còn hiệu lực' };
-        }
-
-        if (now < startDate) {
-          return { isValid: false, error: 'Mã giảm giá chưa có hiệu lực' };
-        }
-
-        if (now > endDate) {
-          return { isValid: false, error: 'Mã giảm giá đã hết hạn' };
-        }
-
-        if (discount.used_quantity >= discount.quantity) {
-          return { isValid: false, error: 'Mã giảm giá đã hết lượt sử dụng' };
-        }
-
-        console.log(totalPrice, discount.min_order_value);
-
-        if (totalPrice < discount.min_order_value) {
-          return {
-            isValid: false,
-            error: `Đơn hàng tối thiểu ${discount.min_order_value.toLocaleString('vi-VN')}₫ để sử dụng mã này`
-          };
-        }
-
-        return { isValid: true, discount };
+      if (!discount.is_active) {
+        return { isValid: false, error: 'Mã giảm giá không còn hiệu lực' };
       }
 
+      if (now < startDate) {
+        return { isValid: false, error: 'Mã giảm giá chưa có hiệu lực' };
+      }
+
+      if (now > endDate) {
+        return { isValid: false, error: 'Mã giảm giá đã hết hạn' };
+      }
+
+      // SỬA LẠI: Sử dụng remaining từ backend hoặc tính lại
+      const remaining = discount.remaining || (discount.quantity - (discount.used_quantity || 0));
+      
+      if (remaining <= 0) {
+        return { isValid: false, error: 'Mã giảm giá đã hết lượt sử dụng' };
+      }
+
+      if (totalPrice < discount.min_order_value) {
+        return {
+          isValid: false,
+          error: `Đơn hàng tối thiểu ${discount.min_order_value.toLocaleString('vi-VN')}₫ để sử dụng mã này`
+        };
+      }
+
+      return { isValid: true, discount };
+    }
+
+    return { isValid: false, error: response.message || 'Mã giảm giá không tồn tại' };
+  } catch (error: any) {
+    if (error.response?.status === 404) {
       return { isValid: false, error: 'Mã giảm giá không tồn tại' };
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        return { isValid: false, error: 'Mã giảm giá không tồn tại' };
-      }
-      if (error.response?.status === 400) {
-        return { isValid: false, error: error.response.data.message || 'Mã giảm giá không hợp lệ' };
-      }
-      return { isValid: false, error: 'Lỗi khi kiểm tra mã giảm giá' };
     }
-  };
+    if (error.response?.status === 400) {
+      return { isValid: false, error: error.response.data.message || 'Mã giảm giá không hợp lệ' };
+    }
+    return { isValid: false, error: 'Lỗi khi kiểm tra mã giảm giá' };
+  }
+};
 
   const handleApplyDiscount = async () => {
     if (!discountCode.trim()) {

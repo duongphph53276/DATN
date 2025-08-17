@@ -19,28 +19,28 @@ const ListVoucher: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState(0);
 
-useEffect(() => {
-  const fetchVouchers = async () => {
-    try {
-      const response = await axios.get<IVoucherResponse>('http://localhost:5000/vouchers');
-      if (response.data.status) {
-        // Sort theo _id descending (mới nhất lên đầu)
-        const sortedVouchers = response.data.data.sort((a, b) => b._id.localeCompare(a._id));
-        setVouchers(sortedVouchers);
-        setFilteredVouchers(sortedVouchers);
-      } else {
-        setError(response.data.message);
+  useEffect(() => {
+    const fetchVouchers = async () => {
+      try {
+        const response = await axios.get<IVoucherResponse>('http://localhost:5000/vouchers');
+        if (response.data.status) {
+          // Sort theo _id descending (mới nhất lên đầu)
+          const sortedVouchers = response.data.data.sort((a, b) => b._id.localeCompare(a._id));
+          setVouchers(sortedVouchers);
+          setFilteredVouchers(sortedVouchers);
+        } else {
+          setError(response.data.message);
+        }
+      } catch (err) {
+        const errorResponse = err as IErrorResponse;
+        setError(errorResponse.message || 'Lỗi khi tải danh sách voucher');
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      const errorResponse = err as IErrorResponse;
-      setError(errorResponse.message || 'Lỗi khi tải danh sách voucher');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  fetchVouchers();
-}, []);
+    fetchVouchers();
+  }, []);
 
   // Filter and search logic
   useEffect(() => {
@@ -67,15 +67,16 @@ useEffect(() => {
       result = result.filter((voucher) => {
         const startDate = new Date(voucher.start_date);
         const endDate = new Date(voucher.end_date);
+        const remaining = voucher.quantity - (voucher.used_quantity || 0);  // Tính remaining
         
         if (statusFilter === 'active') {
-          return now >= startDate && now <= endDate && voucher.quantity > 0;
+          return now >= startDate && now <= endDate && remaining > 0;
         } else if (statusFilter === 'expired') {
           return now > endDate;
         } else if (statusFilter === 'upcoming') {
           return now < startDate;
         } else if (statusFilter === 'out_of_stock') {
-          return voucher.quantity === 0;
+          return remaining <= 0;  // Dùng remaining <= 0
         }
         return true;
       });
@@ -106,10 +107,11 @@ useEffect(() => {
     const now = new Date();
     const startDate = new Date(voucher.start_date);
     const endDate = new Date(voucher.end_date);
+    const remaining = voucher.quantity - (voucher.used_quantity || 0);  // Tính remaining
     
     if (now < startDate) return 'upcoming';
     if (now > endDate) return 'expired';
-    if (voucher.quantity === 0) return 'out_of_stock';
+    if (remaining <= 0) return 'out_of_stock';  // Dùng remaining thay vì quantity === 0
     return 'active';
   };
 
@@ -207,8 +209,6 @@ useEffect(() => {
                 <span className="hidden sm:inline">Đặt lại</span>
               </button>
             )}
-
-
 
             {/* Add Voucher Button */}
             <button
@@ -312,7 +312,10 @@ useEffect(() => {
                 <th className="p-4 font-semibold text-gray-900">Mã voucher</th>
                 <th className="p-4 font-semibold text-gray-900">Loại</th>
                 <th className="p-4 font-semibold text-gray-900">Giá trị</th>
+                <th className="p-4 font-semibold text-gray-900">Giá trị đơn hàng tối thiểu</th>
                 <th className="p-4 font-semibold text-gray-900">Số lượng</th>
+                <th className="p-4 font-semibold text-gray-900">Lượt đã dùng</th> {/* THÊM: Để check used_quantity */}
+                <th className="p-4 font-semibold text-gray-900">Lượt còn lại</th> {/* THÊM: Để check remaining */}
                 <th className="p-4 font-semibold text-gray-900">Ngày bắt đầu</th>
                 <th className="p-4 font-semibold text-gray-900">Ngày kết thúc</th>
                 <th className="p-4 font-semibold text-gray-900">Trạng thái</th>
@@ -323,6 +326,7 @@ useEffect(() => {
               {filteredVouchers.length > 0 ? (
                 filteredVouchers.map(voucher => {
                   const status = getVoucherStatus(voucher);
+                  const remaining = voucher.quantity - (voucher.used_quantity || 0);
                   return (
                     <tr key={voucher._id} className="hover:bg-gray-50/50 border-b border-gray-100/50 transition-colors duration-200">
                       <td className="p-4">
@@ -337,7 +341,18 @@ useEffect(() => {
                         </span>
                       </td>
                       <td className="p-4">
+                        <span className="font-semibold text-gray-900">
+                          {voucher.min_order_value?.toLocaleString() || '0'} VND
+                        </span>
+                      </td>
+                      <td className="p-4">
                         <span className="font-medium text-gray-900">{voucher.quantity}</span>
+                      </td>
+                      <td className="p-4">
+                        <span className="font-medium text-gray-900">{voucher.used_quantity || 0}</span> {/* THÊM */}
+                      </td>
+                      <td className="p-4">
+                        <span className="font-medium text-gray-900">{remaining}</span> {/* THÊM */}
                       </td>
                       <td className="p-4">
                         <span className="text-gray-600 text-sm">
@@ -390,7 +405,7 @@ useEffect(() => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={8} className="text-center py-12">
+                  <td colSpan={11} className="text-center py-12"> {/* SỬA: colSpan=11 vì thêm 3 cột */}
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
                         <FaSearch className="text-gray-400 text-xl" />
