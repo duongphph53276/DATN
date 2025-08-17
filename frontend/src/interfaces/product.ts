@@ -1,6 +1,7 @@
 import { IVariant } from "./variant";
 
 export interface IProduct {
+  import_price: string;
   _id?: string | number; // ID MongoDB
   name: string;
   images?: string;

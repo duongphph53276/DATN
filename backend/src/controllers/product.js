@@ -47,6 +47,7 @@ export const createProduct = async (req, res) => {
           price: variant.price,
           quantity: variant.quantity,
           image: variant.image || "",
+          import_price: variant.import_price || 0, // Thêm import_price từ body, default 0 nếu không gửi
         });
         console.log("Variant created:", newVariant); // Log để kiểm tra
 
@@ -268,6 +269,7 @@ export const updateProduct = async (req, res) => {
               price: variant.price,
               quantity: variant.quantity,
               image: variant.image || "",
+              import_price: variant.import_price || 0, // Thêm import_price từ body, default 0 nếu không gửi
             },
             { new: true, runValidators: true }
           );
@@ -281,6 +283,7 @@ export const updateProduct = async (req, res) => {
             price: variant.price,
             quantity: variant.quantity,
             image: variant.image || "",
+            import_price: variant.import_price || 0, // Thêm import_price
           });
           variantId = updatedVariant._id;
         }

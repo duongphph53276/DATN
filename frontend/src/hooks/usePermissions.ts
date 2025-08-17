@@ -43,7 +43,11 @@ export const usePermissions = () => {
       const response = await api.get('/user/permissions');
 
       const data: UserWithPermissions = response.data;
-      setUserPermissions(data.permissions);
+      console.log('Raw permissions from API:', data.permissions);
+      // Filter out null or undefined permissions
+      const validPermissions = data.permissions.filter(permission => permission && permission.name);
+      console.log('Valid permissions after filtering:', validPermissions);
+      setUserPermissions(validPermissions);
       setUserInfo(data.user);
       setError(null);
     } catch (err: any) {
@@ -54,7 +58,7 @@ export const usePermissions = () => {
   };
 
   const hasPermission = (permissionName: string): boolean => {
-    return userPermissions.some(permission => permission.name === permissionName);
+    return userPermissions.some(permission => permission && permission.name === permissionName);
   };
 
   const hasAnyPermission = (permissionNames: string[]): boolean => {

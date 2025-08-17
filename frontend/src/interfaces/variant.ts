@@ -9,6 +9,7 @@ export interface IVariant {
   _id?: string | number; 
   product_id: string | number; 
   price: number;
+  import_price: number;
   quantity: number;
   image?: string;
   sold_quantity?: number;

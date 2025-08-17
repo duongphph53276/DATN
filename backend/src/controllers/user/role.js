@@ -62,7 +62,9 @@ export const getRolePermissions = async (req, res) => {
     const rolePermissions = await RolePermissionModel.find({ role_id: roleId })
       .populate('permission_id', 'name description');
     
-    const permissions = rolePermissions.map(rp => rp.permission_id);
+    const permissions = rolePermissions
+      .map(rp => rp.permission_id)
+      .filter(permission => permission !== null && permission !== undefined);
     
     res.json(permissions);
   } catch (error) {
@@ -115,7 +117,9 @@ export const getAvailablePermissions = async (req, res) => {
     const assignedPermissions = await RolePermissionModel.find({ role_id: roleId })
       .populate('permission_id', '_id');
     
-    const assignedIds = assignedPermissions.map(ap => ap.permission_id._id.toString());
+    const assignedIds = assignedPermissions
+      .filter(ap => ap.permission_id && ap.permission_id._id)
+      .map(ap => ap.permission_id._id.toString());
     
     // Lọc ra permissions chưa được gán
     const availablePermissions = allPermissions.filter(permission => 

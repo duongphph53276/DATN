@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../../../middleware/axios';
-import { FaBan, FaUserShield, FaClock, FaExclamationTriangle } from 'react-icons/fa';
+import { FaBan, FaUserShield, FaClock, FaExclamationTriangle, FaLock } from 'react-icons/fa';
 
 const EditUser: React.FC = () => {
   const { id } = useParams<{ id?: string }>();
@@ -131,12 +131,6 @@ const EditUser: React.FC = () => {
       return;
     }
 
-    // Kiểm tra quyền thay đổi password
-    if (user.password && currentUser?.role_id?.name !== 'admin') {
-      setError('Bạn không có quyền thay đổi mật khẩu của người khác');
-      return;
-    }
-
     // Kiểm tra thông tin ban
     if (banInfo.isBanned && (!banInfo.banDuration || !banInfo.banReason)) {
       setError('Vui lòng chọn thời gian cấm và nhập lý do cấm');
@@ -145,30 +139,12 @@ const EditUser: React.FC = () => {
 
     try {
       const updateData: any = {
-        email: user.email,
-        name: user.name,
-        phone: user.phone,
         status: user.status,
       };
 
       // Chỉ gửi role_id nếu có giá trị hợp lệ
       if (user.role_id && user.role_id.trim() !== '') {
         updateData.role_id = user.role_id;
-      }
-
-      // Chỉ gửi address_id nếu có giá trị hợp lệ
-      if (user.address_id && user.address_id.trim() !== '') {
-        updateData.address_id = user.address_id;
-      }
-
-      // Chỉ gửi avatar nếu có giá trị
-      if (user.avatar && user.avatar.trim() !== '') {
-        updateData.avatar = user.avatar;
-      }
-
-      // Chỉ gửi password nếu có giá trị mới và là admin
-      if (user.password && user.password.trim() !== '' && currentUser?.role_id?.name === 'admin') {
-        updateData.password = user.password;
       }
 
       // Thêm thông tin ban nếu user bị cấm
@@ -202,9 +178,6 @@ const EditUser: React.FC = () => {
     );
   }
 
-  const isCurrentUserAdmin = currentUser?.role_id?.name === 'admin';
-  const isEditingOwnAccount = currentUser?._id === id;
-
   return (
     <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg p-6">
       <div className="mb-6">
@@ -212,7 +185,7 @@ const EditUser: React.FC = () => {
           <FaUserShield className="text-blue-500" />
           Chỉnh sửa người dùng
         </h1>
-        <p className="text-gray-500 mt-1">Cập nhật thông tin người dùng</p>
+        <p className="text-gray-500 mt-1">Chỉ có thể thay đổi vai trò và trạng thái tài khoản</p>
       </div>
 
       {error && (
@@ -225,62 +198,70 @@ const EditUser: React.FC = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Thông tin cơ bản */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-            <input
-              type="email"
-              value={user.email}
-              onChange={(e) => setUser({ ...user, email: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            />
-          </div>
-
-          {/* Chỉ hiển thị password field cho admin hoặc khi sửa tài khoản của chính mình */}
-          {(isCurrentUserAdmin || isEditingOwnAccount) && (
+        {/* Thông tin cơ bản - Chỉ hiển thị, không cho phép chỉnh sửa */}
+        <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-200/50">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <FaLock className="text-gray-500" />
+            Thông tin cơ bản (Chỉ xem)
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Mật khẩu</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
               <input
-                type="password"
-                value={user.password}
-                onChange={(e) => setUser({ ...user, password: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Nhập để thay đổi mật khẩu"
+                type="email"
+                value={user.email}
+                disabled
+                className="w-full p-3 border border-gray-300 rounded-xl bg-gray-100 text-gray-600 cursor-not-allowed"
               />
-              {!isCurrentUserAdmin && (
-                <p className="text-xs text-gray-500 mt-1">Chỉ có thể thay đổi mật khẩu của chính mình</p>
-              )}
             </div>
-          )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Tên</label>
-            <input
-              type="text"
-              value={user.name}
-              onChange={(e) => setUser({ ...user, name: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Tên</label>
+              <input
+                type="text"
+                value={user.name}
+                disabled
+                className="w-full p-3 border border-gray-300 rounded-xl bg-gray-100 text-gray-600 cursor-not-allowed"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Số điện thoại</label>
-            <input
-              type="text"
-              value={user.phone}
-              onChange={(e) => setUser({ ...user, phone: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Số điện thoại</label>
+              <input
+                type="text"
+                value={user.phone}
+                disabled
+                className="w-full p-3 border border-gray-300 rounded-xl bg-gray-100 text-gray-600 cursor-not-allowed"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Avatar URL</label>
+              <input
+                type="text"
+                value={user.avatar}
+                disabled
+                className="w-full p-3 border border-gray-300 rounded-xl bg-gray-100 text-gray-600 cursor-not-allowed"
+                placeholder="https://example.com/avatar.jpg"
+              />
+            </div>
           </div>
+        </div>
+
+        {/* Vai trò - Cho phép chỉnh sửa */}
+        <div className="bg-blue-50/50 rounded-xl p-6 border border-blue-200/50">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <FaUserShield className="text-blue-500" />
+            Vai trò (Có thể chỉnh sửa)
+          </h3>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Vai trò</label>
             <select
               value={user.role_id}
               onChange={(e) => setUser({ ...user, role_id: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-3 border border-blue-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             >
               <option value="">Chọn vai trò</option>
@@ -291,24 +272,13 @@ const EditUser: React.FC = () => {
               ))}
             </select>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Avatar URL</label>
-            <input
-              type="text"
-              value={user.avatar}
-              onChange={(e) => setUser({ ...user, avatar: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="https://example.com/avatar.jpg"
-            />
-          </div>
         </div>
 
-        {/* Trạng thái và cấm người dùng */}
-        <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-200/50">
+        {/* Trạng thái và cấm người dùng - Cho phép chỉnh sửa */}
+        <div className="bg-red-50/50 rounded-xl p-6 border border-red-200/50">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <FaBan className="text-red-500" />
-            Trạng thái tài khoản
+            Trạng thái tài khoản (Có thể chỉnh sửa)
           </h3>
 
           <div className="space-y-4">
@@ -317,7 +287,7 @@ const EditUser: React.FC = () => {
               <select
                 value={user.status}
                 onChange={(e) => handleBanChange(e.target.value === 'block')}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full p-3 border border-red-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
               >
                 <option value="active">Hoạt động</option>
                 <option value="block">Cấm đăng nhập</option>
@@ -326,7 +296,7 @@ const EditUser: React.FC = () => {
 
             {/* Thông tin cấm */}
             {banInfo.isBanned && (
-              <div className="space-y-4 p-4 bg-red-50/50 rounded-xl border border-red-200/50">
+              <div className="space-y-4 p-4 bg-red-100/50 rounded-xl border border-red-300/50">
                 <div>
                   <label className="block text-sm font-medium text-red-700 mb-2 flex items-center gap-2">
                     <FaClock />

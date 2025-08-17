@@ -125,6 +125,7 @@ const ProductDetailAdmin = () => {
                   <tr>
                     <th className="px-4 py-3 border-b font-medium">Ảnh</th>
                     <th className="px-4 py-3 border-b font-medium">Giá</th>
+                    <th className="px-4 py-3 border-b font-medium">Giá nhập</th>
                     <th className="px-4 py-3 border-b font-medium">Số lượng</th>
                     <th className="px-4 py-3 border-b font-medium">Số lượng đã bán</th>
                     <th className="px-4 py-3 border-b font-medium">Thuộc tính</th>
@@ -147,6 +148,9 @@ const ProductDetailAdmin = () => {
                       <td className="px-4 py-3 border-b text-red-600 font-semibold">
                         {variant.price.toLocaleString()}đ
                       </td>
+                      <td className="px-4 py-3 border-b text-red-600 font-semibold">
+                        {variant.import_price.toLocaleString()}đ
+                      </td>
                       <td className="px-4 py-3 border-b">{variant.quantity}</td>
                       <td className="px-4 py-3 border-b">{variant.sold_quantity}</td>
                       <td className="px-4 py-3 border-b space-y-1">
@@ -157,7 +161,6 @@ const ProductDetailAdmin = () => {
                           </div>
                         ))}
                       </td>
-
                     </tr>
                   ))}
                   {variants.length === 0 && (

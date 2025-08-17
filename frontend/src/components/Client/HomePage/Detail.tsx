@@ -6,7 +6,7 @@ import ReactStars from "react-stars";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import { ToastSucess, ToastError } from "../../../utils/toast";
-import { addToUserCart, loadUserCart } from "../../../utils/cartUtils";  // Đảm bảo import loadUserCart
+import { addToUserCart, loadUserCart, updateCartItemQuantity } from "../../../utils/cartUtils";  // Thêm import updateCartItemQuantity
 
 // Import CartItem interface
 interface CartItem {
@@ -54,6 +54,8 @@ const DetailsPage = () => {
   const [selectedAttributes, setSelectedAttributes] = useState<{ [attributeId: string]: string }>({});
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [quantity, setQuantity] = useState<number>(1);
+  const [tempQuantity, setTempQuantity] = useState<string>("1");
+  const [existingQuantity, setExistingQuantity] = useState<number>(0);
   const [attributes, setAttributes] = useState<any[]>([]);
   const [attributeValues, setAttributeValues] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -119,7 +121,7 @@ const DetailsPage = () => {
 
         if (cartItem) {
           // Cập nhật số lượng
-          setQuantity(cartItem.quantity);
+          setExistingQuantity(cartItem.quantity);
 
           // Cập nhật thuộc tính đã chọn
           const selectedAttrs: { [key: string]: string } = {};
@@ -168,6 +170,24 @@ const DetailsPage = () => {
   }, [id]);
 
   useEffect(() => {
+    if (!product) return;
+
+    const cart = loadUserCart();
+    let cartItem = null;
+    if (selectedVariant) {
+      cartItem = cart.find(
+        (item: CartItem) => item.id === product._id && item.variant?._id === selectedVariant._id
+      );
+    } else {
+      cartItem = cart.find(
+        (item: CartItem) => item.id === product._id && !item.variant
+      );
+    }
+    const newExisting = cartItem?.quantity || 0;
+    setExistingQuantity(newExisting);
+  }, [selectedVariant, product]);
+
+  useEffect(() => {
     const handleCartUpdated = () => {
       const cart = loadUserCart();
       const cartItem = cart.find(
@@ -183,7 +203,7 @@ const DetailsPage = () => {
       );
 
       if (cartItem) {
-        setQuantity(cartItem.quantity);
+        setExistingQuantity(cartItem.quantity);
         const selectedAttrs: { [key: string]: string } = {};
         if (cartItem.variant?.attributes) {
           cartItem.variant.attributes.forEach((attr: any) => {
@@ -199,7 +219,7 @@ const DetailsPage = () => {
           setSelectedVariant(matchedVariant || null);
         }
       } else {
-        setQuantity(1);
+        setExistingQuantity(0);
         setSelectedAttributes({});
         setSelectedVariant(null);
       }
@@ -262,94 +282,116 @@ const DetailsPage = () => {
     return parsePrice(product?.price);
   };
 
-  const handleAddToCart = async () => {
-  if (!product) return;
-
-  // Lấy giỏ hàng hiện tại
-  const cart = loadUserCart();
-
-  // Xác định key để tìm đúng sản phẩm/biến thể
-  const cartItem = cart.find((item: any) =>
-    item.id === product._id &&
-    (
-      selectedVariant
-        ? item.variant?._id === selectedVariant._id
-        : !item.variant
-    )
-  );
-
-  // Số lượng đã có sẵn trong giỏ hàng
-  const existingQty = cartItem ? cartItem.quantity : 0;
-
-  // Số lượng còn lại trong kho
-  const stockQty = selectedVariant
-    ? selectedVariant.quantity
-    : product.quantity;
-
-  // Nếu tổng số lượng sau khi thêm > tồn kho → chặn
-  if (existingQty + quantity > stockQty) {
-    ToastError(`Chỉ còn ${stockQty} sản phẩm trong kho!`);
-    return;
-  }
-
-  // ... phần kiểm tra thuộc tính như hiện tại
-  if (product.variants?.length) {
-    const requiredAttributes = attributes.filter((attr: any) =>
-      product.variants.some((variant: any) =>
-        variant.attributes.some((a: any) => a.attribute_id === attr._id)
-      )
-    );
-    const allAttributesSelected = requiredAttributes.every(
-      (attr: any) => selectedAttributes[attr._id]
-    );
-    if (!selectedVariant || !allAttributesSelected) {
-      ToastError("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
+  const increaseQty = () => {
+    const stockQty = selectedVariant ? selectedVariant.quantity : product.quantity || 0;
+    const maxAdd = stockQty - existingQuantity;
+    if (quantity + 1 > maxAdd) {
+      ToastError(`Chỉ còn ${stockQty} sản phẩm trong kho!`);
       return;
     }
-    if (selectedVariant.quantity === 0) {
-      ToastError("Sản phẩm này đã hết hàng!");
-      return;
-    }
-  } else {
-    if (product.quantity === 0) {
-      ToastError("Sản phẩm này đã hết hàng!");
-      return;
-    }
-  }
-
-  // ... tạo cartItem như cũ
-  const variantAttributes = selectedVariant
-    ? Object.entries(selectedAttributes)
-      .map(([attrId, valueId]) => `${getAttributeName(attrId)}: ${getAttributeValue(valueId)}`)
-      .join(", ")
-    : "Không có thuộc tính";
-
-  const newCartItem = {
-    id: product._id || id,
-    _id: product._id || id,
-    name: product.name || "Sản phẩm không tên",
-    image: selectedVariant?.image || product.images || product.image || "https://via.placeholder.com/420",
-    price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
-    variant: selectedVariant
-      ? {
-          _id: selectedVariant._id,
-          product_id: selectedVariant.product_id,
-          price: selectedVariant.price,
-          quantity: selectedVariant.quantity,
-          attributes: selectedVariant.attributes.map((attr: any) => ({
-            attribute_id: attr.attribute_id,
-            value_id: attr.value_id,
-          })),
-        }
-      : undefined,
-    variantAttributes,
-    quantity,
-
+    setQuantity(quantity + 1);
+    setTempQuantity((quantity + 1).toString());
   };
 
-  addToUserCart(newCartItem);
-  ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
-};
+  const decreaseQty = () => {
+    if (quantity > 1) {
+      setQuantity(quantity - 1);
+      setTempQuantity((quantity - 1).toString());
+    }
+  };
+
+  const handleQuantityChange = (newQty: string) => {
+    const qty = parseInt(newQty, 10);
+    const stockQty = selectedVariant ? selectedVariant.quantity : product.quantity || 0;
+    const maxAdd = stockQty - existingQuantity;
+    if (isNaN(qty) || qty < 1) {
+      ToastError("Số lượng phải là số nguyên dương!");
+      setTempQuantity(quantity.toString());
+      return;
+    }
+    if (qty > maxAdd) {
+      ToastError(`Chỉ còn ${stockQty} sản phẩm trong kho!`);
+      setTempQuantity(quantity.toString());
+      return;
+    }
+    setQuantity(qty);
+    setTempQuantity(qty.toString());
+  };
+
+  const handleAddToCart = async () => {
+    if (!product) return;
+
+    // Kiểm tra thuộc tính
+    if (product.variants?.length) {
+      const requiredAttributes = attributes.filter((attr: any) =>
+        product.variants.some((variant: any) =>
+          variant.attributes.some((a: any) => a.attribute_id === attr._id)
+        )
+      );
+      const allAttributesSelected = requiredAttributes.every(
+        (attr: any) => selectedAttributes[attr._id]
+      );
+      if (!selectedVariant || !allAttributesSelected) {
+        ToastError("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
+        return;
+      }
+      if (selectedVariant.quantity === 0) {
+        ToastError("Sản phẩm này đã hết hàng!");
+        return;
+      }
+    } else {
+      if (product.quantity === 0) {
+        ToastError("Sản phẩm này đã hết hàng!");
+        return;
+      }
+    }
+
+    // Kiểm tra số lượng với tồn kho
+    const stockQty = selectedVariant ? selectedVariant.quantity : product.quantity;
+    const newQty = existingQuantity + quantity;
+    if (newQty > stockQty) {
+      ToastError(`Chỉ còn ${stockQty} sản phẩm trong kho!`);
+      return;
+    }
+
+    if (existingQuantity > 0) {
+      // Cập nhật số lượng nếu đã có trong giỏ
+      updateCartItemQuantity(product._id, selectedVariant, newQty);
+      ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
+    } else {
+      // Thêm mới nếu chưa có
+      const variantAttributes = selectedVariant
+        ? Object.entries(selectedAttributes)
+          .map(([attrId, valueId]) => `${getAttributeName(attrId)}: ${getAttributeValue(valueId)}`)
+          .join(", ")
+        : "Không có thuộc tính";
+
+      const newCartItem = {
+        id: product._id || id,
+        _id: product._id || id,
+        name: product.name || "Sản phẩm không tên",
+        image: selectedVariant?.image || product.images || product.image || "https://via.placeholder.com/420",
+        price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
+        variant: selectedVariant
+          ? {
+              _id: selectedVariant._id,
+              product_id: selectedVariant.product_id,
+              price: selectedVariant.price,
+              quantity: selectedVariant.quantity,
+              attributes: selectedVariant.attributes.map((attr: any) => ({
+                attribute_id: attr.attribute_id,
+                value_id: attr.value_id,
+              })),
+            }
+          : undefined,
+        variantAttributes,
+        quantity,
+      };
+
+      addToUserCart(newCartItem);
+      ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
+    }
+  };
 
   const handleReviewSubmit = async () => {
     if (!rating) {
@@ -393,6 +435,8 @@ const DetailsPage = () => {
   }
 
   const displayedPrice = selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product);
+  const stockQty = selectedVariant ? selectedVariant.quantity : product.quantity || 0;
+  const maxAdd = stockQty - existingQuantity;
 
   const benefits = [
     "100% bông trắng tinh khiết",
@@ -530,14 +574,28 @@ const DetailsPage = () => {
             <h4 className="font-medium mb-2">Số lượng:</h4>
             <div className="flex justify-center md:justify-start items-center gap-3">
               <button
-                onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                onClick={decreaseQty}
                 className="w-8 h-8 rounded-full bg-gray-100 text-xl text-gray-600 hover:bg-gray-200 transition"
               >
                 –
               </button>
-              <span className="text-lg font-semibold">{quantity}</span>
+              <input
+                type="number"
+                min="1"
+                max={maxAdd}
+                value={tempQuantity}
+                onChange={(e) => setTempQuantity(e.target.value)}
+                onBlur={() => handleQuantityChange(tempQuantity)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+                className="w-16 text-center border rounded-lg text-base font-medium focus:outline-none focus:ring-2 focus:ring-pink-400"
+              />
               <button
-                onClick={() => setQuantity((prev) => prev + 1)}
+                onClick={increaseQty}
                 className="w-8 h-8 rounded-full bg-gray-100 text-xl text-gray-600 hover:bg-gray-200 transition"
               >
                 +
@@ -546,6 +604,13 @@ const DetailsPage = () => {
             
             {/* Hiển thị số lượng tồn kho */}
             <div className="mt-2 text-sm text-gray-600">
+              {existingQuantity > 0 && (
+                <div>
+                  <span className="font-medium text-blue-600 mr-2 ">
+                  Đã có trong giỏ: {existingQuantity} sản phẩm
+                </span>
+                </div>
+              )}
               {product.variants?.length > 0 ? (
                 selectedVariant ? (
                   <span className={`font-medium ${selectedVariant.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>

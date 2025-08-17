@@ -20,8 +20,12 @@ const productVariantSchema = new mongoose.Schema({
     sold_quantity: {
         type: Number,
         default: 0
+    },
+    import_price: { 
+        type: Number,
+        default: 0,  // Sử dụng default để tránh vấn đề với dữ liệu cũ
+        required: false  // Đặt false để tương thích ngược; có thể đặt true nếu chỉ áp dụng cho dữ liệu mới
     }
-
 }, { timestamps: true, versionKey: false });
 
 export default mongoose.models.ProductVariant || mongoose.model("ProductVariant", productVariantSchema);

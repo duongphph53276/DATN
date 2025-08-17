@@ -12,8 +12,7 @@ const connectDB = async () => {
 };
 // const connectDB = async () => {
 //   try {
-//     await mongoose.connect('mongodb://127.0.0.1:27017/FuzzyBear');
-
+//    await mongoose.connect('mongodb://127.0.0.1:27017/FuzzyBear');
 //     console.log('Kết nối DB thành công');
 //   } catch (error) {
 //     console.error('Kết nối DB thất bại:', error);

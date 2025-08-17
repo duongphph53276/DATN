@@ -8,7 +8,9 @@
     "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "create-admin": "node ./src/scripts/createAdmin.js",
-    "create-employee": "node ./src/scripts/createEmployee.js"
+    "create-employee": "node ./src/scripts/createEmployee.js",
+    "verify-users": "node ./src/scripts/verifyExistingUsers.js",
+    "check-user": "node ./src/scripts/checkUserStatus.js"
   },
   "keywords": [],
   "author": "",

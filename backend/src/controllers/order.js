@@ -253,18 +253,10 @@ class OrderController {
     }
   }
 
-  /**
-   * @desc    Create new order
-   * @route   POST /api/orders
-   * @access  Private
-   */
   async createOrder(req, res) {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try {
       console.log('Create order request body:', JSON.stringify(req.body, null, 2));
-      
+
       const {
         user_id,
         quantity,
@@ -308,13 +300,6 @@ class OrderController {
       for (const detail of order_details) {
         if (!detail.product_id || !detail.variant_id || !detail.name || !detail.price || !detail.quantity) {
           console.log('Invalid order detail:', detail);
-          console.log('Missing fields:', {
-            product_id: !!detail.product_id,
-            variant_id: !!detail.variant_id,
-            name: !!detail.name,
-            price: !!detail.price,
-            quantity: !!detail.quantity
-          });
           return res.status(400).json({
             success: false,
             message: 'Each order detail must include product_id, variant_id, name, price, and quantity'
@@ -322,27 +307,21 @@ class OrderController {
         }
       }
 
-      // Get address to calculate shipping fee
-      console.log('🔍 Looking for address_id:', address_id);
-      const address = await AddressModel.findById(address_id).session(session);
-      console.log('🏠 Found address:', address);
-      
+      // Get address
+      const address = await AddressModel.findById(address_id);
       if (!address) {
-        console.log('❌ Address not found for ID:', address_id);
         return res.status(404).json({
           success: false,
           message: 'Address not found'
         });
       }
 
-      // Calculate shipping fee based on city
-      console.log('🏙️ Address city:', address.city);
+      // Calculate shipping fee
       const shippingFee = calculateShippingFee(address.city);
-      console.log('💰 Calculated shipping fee:', shippingFee);
 
       // Validate voucher if provided
       if (voucher_id) {
-        const voucher = await VoucherModel.findById(voucher_id).session(session);
+        const voucher = await VoucherModel.findById(voucher_id);
         if (!voucher) {
           return res.status(404).json({
             success: false,
@@ -355,12 +334,11 @@ class OrderController {
             message: 'Voucher has no remaining uses'
           });
         }
-        // Check per-user usage limit
         const userVoucherUsage = await OrderModel.countDocuments({
           user_id,
           voucher_id,
           status: { $ne: 'cancelled' }
-        }).session(session);
+        });
         if (userVoucherUsage >= voucher.usage_limit_per_user) {
           return res.status(400).json({
             success: false,
@@ -369,16 +347,7 @@ class OrderController {
         }
       }
 
-      console.log('📦 Creating new order with data:', {
-        user_id,
-        quantity,
-        total_amount,
-        shipping_fee: shippingFee,
-        voucher_id,
-        payment_method,
-        address_id
-      });
-
+      // Create new order
       const newOrder = new OrderModel({
         user_id,
         quantity,
@@ -389,9 +358,7 @@ class OrderController {
         address_id
       });
 
-      console.log('💾 Saving order to database...');
-      const savedOrder = await newOrder.save({ session });
-      console.log('✅ Order saved successfully:', savedOrder._id);
+      const savedOrder = await newOrder.save();
 
       const orderDetailsData = order_details.map(detail => ({
         order_id: savedOrder._id,
@@ -403,14 +370,12 @@ class OrderController {
         image: detail.image
       }));
 
-      const savedOrderDetails = await OrderDetailModel.insertMany(orderDetailsData, { session });
+      const savedOrderDetails = await OrderDetailModel.insertMany(orderDetailsData);
 
-      // Update voucher used_quantity if voucher is used
       if (voucher_id) {
         await VoucherModel.findByIdAndUpdate(
           voucher_id,
-          { $inc: { used_quantity: 1 } },
-          { session }
+          { $inc: { used_quantity: 1 } }
         );
       }
 
@@ -422,9 +387,9 @@ class OrderController {
           ]);
 
           return {
-            ...detail.toObject(),
-            product: product,
-            variant: variant
+            ...detail,
+            product,
+            variant
           };
         })
       );
@@ -435,14 +400,13 @@ class OrderController {
         OrderController.populateUserInfo(savedOrder.user_id)
       ]);
 
-      await session.commitTransaction();
-
       try {
         await createOrderSuccessNotification(user_id, savedOrder._id.toString());
         await createNewOrderAdminNotification(savedOrder._id.toString(), total_amount);
       } catch (notificationError) {
         console.error('Error creating notifications:', notificationError);
       }
+
       res.status(201).json({
         success: true,
         message: 'Order created successfully',
@@ -454,28 +418,14 @@ class OrderController {
           order_details: orderDetailsWithInfo
         }
       });
+
     } catch (error) {
       console.error('❌ Error in createOrder:', error);
-      console.error('❌ Error stack:', error.stack);
-      await session.abortTransaction();
-
-      if (error.name === 'ValidationError') {
-        console.log('❌ Validation error:', Object.values(error.errors).map(err => err.message));
-        return res.status(400).json({
-          success: false,
-          message: 'Validation error',
-          errors: Object.values(error.errors).map(err => err.message)
-        });
-      }
-
-      console.log('❌ Internal server error:', error.message);
       res.status(500).json({
         success: false,
         message: 'Internal server error',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
       });
-    } finally {
-      session.endSession();
     }
   }
 
@@ -556,7 +506,7 @@ class OrderController {
       if (status === 'delivered') {
         updateData.delivered_at = new Date();
       }
-      
+
       if (status === 'shipping' && shipper_id) {
         updateData.shipper_id = shipper_id;
       }
@@ -584,7 +534,7 @@ class OrderController {
 
       try {
         await createOrderStatusNotification(updatedOrder.user_id.toString(), updatedOrder._id.toString(), status);
-        
+
         if (status === 'shipping' && shipper_id) {
           const customer = await OrderController.populateUserInfo(updatedOrder.user_id);
           const customerName = customer ? customer.name : 'Khách hàng';
@@ -715,11 +665,11 @@ class OrderController {
 
       // Debug: Kiểm tra tất cả đơn hàng của user này trong DB
       const allUserOrders = await OrderModel.find({ user_id }).sort({ created_at: -1 }).lean();
-      console.log('🔍 getOrdersByUserId - ALL orders for this user:', allUserOrders.map(o => ({ 
-        id: o._id, 
-        date: o.created_at, 
+      console.log('🔍 getOrdersByUserId - ALL orders for this user:', allUserOrders.map(o => ({
+        id: o._id,
+        date: o.created_at,
         status: o.status,
-        total_amount: o.total_amount 
+        total_amount: o.total_amount
       })));
 
       const ordersWithDetails = await Promise.all(
@@ -817,7 +767,7 @@ class OrderController {
         : {};
 
       const stats = await OrderModel.aggregate([
-        { 
+        {
           $match: {
             ...matchStage,
             status: 'delivered'
@@ -840,7 +790,7 @@ class OrderController {
           $group: {
             _id: '$status',
             count: { $sum: 1 },
-            total_amount: { 
+            total_amount: {
               $sum: {
                 $cond: [
                   { $eq: ['$status', 'delivered'] },
@@ -859,7 +809,7 @@ class OrderController {
           $group: {
             _id: '$payment_method',
             count: { $sum: 1 },
-            total_amount: { 
+            total_amount: {
               $sum: {
                 $cond: [
                   { $eq: ['$status', 'delivered'] },
@@ -873,7 +823,7 @@ class OrderController {
       ]);
 
       const topCustomers = await OrderModel.aggregate([
-        { 
+        {
           $match: {
             ...matchStage,
             status: 'delivered'
@@ -933,7 +883,7 @@ class OrderController {
   async getMonthlyRevenue(req, res) {
     try {
       const { year = new Date().getFullYear() } = req.query;
-      
+
       const monthlyStats = await OrderModel.aggregate([
         {
           $match: {
@@ -1002,7 +952,7 @@ class OrderController {
       }
 
       const filter = { shipper_id };
-      
+
       if (status) {
         filter.status = status;
       } else {
@@ -1147,11 +1097,11 @@ class OrderController {
       }
 
       const updateData = { status };
-      
+
       if (status === 'delivered') {
         updateData.delivered_at = new Date();
       }
-      
+
       if (status === 'cancelled' && cancel_reason) {
         updateData.cancel_reason = cancel_reason;
       }
@@ -1190,10 +1140,10 @@ class OrderController {
         shipper: shipper
       };
 
-      const message = status === 'delivered' 
+      const message = status === 'delivered'
         ? 'Order status updated to delivered successfully'
         : 'Order delivery cancelled successfully';
-        
+
       res.status(200).json({
         success: true,
         message: message,
@@ -1217,7 +1167,7 @@ class OrderController {
     try {
       const { id } = req.params;
       const { cancel_reason, cancel_images } = req.body;
-      const userId = req.user?.id || req.body.user_id; 
+      const userId = req.user?.id || req.body.user_id;
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({
@@ -1262,7 +1212,7 @@ class OrderController {
           reason: cancel_reason.trim(),
           images: cancel_images || [],
           requested_at: new Date(),
-          status: 'pending' 
+          status: 'pending'
         }
       };
 
@@ -1320,7 +1270,7 @@ class OrderController {
   async handleCancelRequest(req, res) {
     try {
       const { id } = req.params;
-      const { action, admin_note } = req.body; 
+      const { action, admin_note } = req.body;
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({
@@ -1471,7 +1421,7 @@ class OrderController {
           reason: return_reason.trim(),
           images: return_images || [],
           requested_at: new Date(),
-          status: 'pending' 
+          status: 'pending'
         }
       };
 
@@ -1529,7 +1479,7 @@ class OrderController {
   async handleReturnRequest(req, res) {
     try {
       const { id } = req.params;
-      const { action, admin_note } = req.body; 
+      const { action, admin_note } = req.body;
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({
@@ -1813,28 +1763,28 @@ class OrderController {
 
     try {
       const cancelResult = await OrderModel.updateMany(
-        { 
+        {
           $or: [
             { "cancel_request.status": { $exists: false } },
             { "cancel_request.status": null },
             { "cancel_request.status": "" }
           ]
         },
-        { 
-          $unset: { cancel_request: "" } 
+        {
+          $unset: { cancel_request: "" }
         }
       );
 
       const returnResult = await OrderModel.updateMany(
-        { 
+        {
           $or: [
             { "return_request.status": { $exists: false } },
             { "return_request.status": null },
             { "return_request.status": "" }
           ]
         },
-        { 
-          $unset: { return_request: "" } 
+        {
+          $unset: { return_request: "" }
         }
       );
 
