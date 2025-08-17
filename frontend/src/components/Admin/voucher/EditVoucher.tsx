@@ -16,7 +16,6 @@ const EditVoucher = () => {
     end_date: '',
     quantity: 0,
     min_order_value: 0,
-    max_user_number: 0,
     applicable_products: [],
   });
 
@@ -64,7 +63,6 @@ const EditVoucher = () => {
             end_date: new Date(v.end_date).toISOString().split('T')[0],
             quantity: v.quantity || 0,
             min_order_value: v.min_order_value || 0,
-            max_user_number: v.max_user_number || 0,
             applicable_products: v.applicable_products || [],
           });
           if (v.applicable_products?.length) {
@@ -112,7 +110,7 @@ const EditVoucher = () => {
       return;
     }
 
-    if (['quantity', 'max_user_number'].includes(name)) {
+    if (['quantity'].includes(name)) {
       const numValue = parseInt(cleaned || '0');
       setFormData(prev => ({ ...prev, [name]: numValue }));
       return;
@@ -262,32 +260,20 @@ const EditVoucher = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-600">Giá trị đơn hàng tối thiểu ({getUnit()})</label>
+              <label className="block text-sm font-medium text-gray-600">Giá trị đơn hàng tối thiểu (VND)</label>
               <input
                 name="min_order_value"
                 value={formatInputValue(formData.min_order_value)}
                 onChange={handleChange}
                 required
                 className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder={`Nhập giá trị tối thiểu (${getUnit()})`}
+                placeholder="Nhập giá trị tối thiểu (VND)"
                 onKeyPress={(e) => !/[0-9]/.test(e.key) && e.preventDefault()}
               />
               {error.errors?.min_order_value && <p className="text-red-500 text-sm mt-1">{error.errors.min_order_value}</p>}
             </div>
           </div>
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-600">Số người dùng tối đa</label>
-              <input
-                name="max_user_number"
-                value={formatInputValue(formData.max_user_number)}
-                onChange={handleChange}
-                required
-                className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Nhập số người dùng tối đa"
-                onKeyPress={(e) => !/[0-9]/.test(e.key) && e.preventDefault()}
-              />
-            </div>
             <div>
               <label className="block text-sm font-medium text-gray-600">Ngày bắt đầu</label>
               <input

@@ -15,7 +15,6 @@ const AddVoucher = () => {
     end_date: '',
     quantity: 0,
     min_order_value: 0,
-    max_user_number: 0,
     applicable_products: [],
   });
   const [error, setError] = useState<{ message?: string; errors?: Record<string, string> }>({});
@@ -60,55 +59,65 @@ const AddVoucher = () => {
   const getUnit = () => (formData.discount_type === 'percentage' ? '%' : 'VND');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-  const { name, value } = e.target;
+    const { name, value } = e.target;
 
-  if (name === 'discount_type') {
-    setFormData(prev => ({ ...prev, [name]: value as 'percentage' | 'fixed' }));
-    setError({});
-    return;
-  }
+    if (name === 'discount_type') {
+      setFormData(prev => ({ ...prev, [name]: value as 'percentage' | 'fixed' }));
+      setError({});
+      return;
+    }
 
-  const cleaned = value.replace(/\./g, '');
+    const cleaned = value.replace(/\./g, '');
 
-  if (name === 'value' || name === 'min_order_value') {
-    const numValue = parseFloat(cleaned || '0');
-    const fieldErrors: Record<string, string> = {};
+    if (name === 'value' || name === 'min_order_value') {
+      const numValue = parseFloat(cleaned || '0');
+      const fieldErrors: Record<string, string> = {};
 
-    if (name === 'value') {
-      if (formData.discount_type === 'percentage' && (numValue < 0 || numValue > 100)) {
-        fieldErrors.value = 'Phần trăm từ 0 đến 100';
-      } else if (formData.discount_type === 'fixed' && numValue < 0) {
-        fieldErrors.value = 'Tiền không âm';
+      if (name === 'value') {
+        if (formData.discount_type === 'percentage') {
+          if (numValue <= 0 || numValue > 100) {
+            fieldErrors.value = 'Giá trị phần trăm phải từ 1% đến 100%';
+          }
+        } else if (formData.discount_type === 'fixed') {
+          if (numValue <= 0) {
+            fieldErrors.value = 'Giá trị giảm giá phải lớn hơn 0';
+          }
+        }
       }
+
+      // CẬP NHẬT VALIDATE min_order_value
+      if (name === 'min_order_value') {
+        if (isNaN(numValue)) {
+          fieldErrors.min_order_value = 'Giá trị đơn hàng tối thiểu phải là một số hợp lệ';
+        } else if (numValue < 0) {
+          fieldErrors.min_order_value = 'Giá trị đơn hàng tối thiểu không được nhỏ hơn 0';
+        } else if (numValue > 100000000) {
+          fieldErrors.min_order_value = 'Giá trị đơn hàng tối thiểu không được vượt quá 100,000,000 VND';
+        }
+      }
+
+      setError(prev => ({ ...prev, errors: { ...prev.errors, ...fieldErrors } }));
+      setFormData(prev => ({ ...prev, [name]: numValue }));
+      return;
     }
 
-    if (name === 'min_order_value' && numValue < 0) {
-      fieldErrors.min_order_value = 'Giá trị đơn hàng tối thiểu không được nhỏ hơn 0';
+    if (['quantity'].includes(name)) {
+      const numValue = parseInt(cleaned || '0');
+      if (numValue < 0) {
+        setError(prev => ({ ...prev, errors: { ...prev.errors, [name]: `${name} không được âm` } }));
+      } else {
+        setError(prev => {
+          const newErrors = { ...prev.errors };
+          delete newErrors[name];
+          return { ...prev, errors: newErrors };
+        });
+      }
+      setFormData(prev => ({ ...prev, [name]: numValue }));
+      return;
     }
 
-    setError(prev => ({ ...prev, errors: { ...prev.errors, ...fieldErrors } }));
-    setFormData(prev => ({ ...prev, [name]: numValue }));
-    return;
-  }
-
-  if (['quantity', 'max_user_number'].includes(name)) {
-    const numValue = parseInt(cleaned || '0');
-    if (numValue < 0) {
-      setError(prev => ({ ...prev, errors: { ...prev.errors, [name]: `${name} không được âm` } }));
-    } else {
-      setError(prev => {
-        const newErrors = { ...prev.errors };
-        delete newErrors[name];
-        return { ...prev, errors: newErrors };
-      });
-    }
-    setFormData(prev => ({ ...prev, [name]: numValue }));
-    return;
-  }
-
-  setFormData(prev => ({ ...prev, [name]: value }));
-};
-
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
@@ -137,72 +146,97 @@ const AddVoucher = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const start = new Date(formData.start_date);
-  const end = new Date(formData.end_date);
+    const start = new Date(formData.start_date);
+    const end = new Date(formData.end_date);
 
-  if (start > end) {
-    setError({
-      message: 'Ngày không hợp lệ',
-      errors: {
-        start_date: 'Ngày bắt đầu không được lớn hơn ngày kết thúc',
-        end_date: 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu',
-      },
-    });
-    return;
-  }
-
-  // Check min_order_value > value cho mọi loại discount_type
-  
-
-  if (!formData.code.trim() || !formData.start_date || !formData.end_date || Number(formData.value) <= 0) {
-    setError({ message: 'Vui lòng nhập đầy đủ thông tin' });
-    return;
-  }
-
-  if (productSelectionType === 'specific' && selectedProducts.length === 0) {
-    setError({ message: 'Vui lòng chọn ít nhất một sản phẩm' });
-    return;
-  }
-
-  try {
-    const payload: IAddVoucherRequest = {
-      ...formData,
-      value: Number(formData.value),
-      min_order_value: Number(formData.min_order_value),
-      start_date: new Date(formData.start_date).toISOString(),
-      end_date: new Date(formData.end_date).toISOString(),
-      applicable_products: productSelectionType === 'all' ? [] : selectedProducts,
-      description: undefined,
-      usage_limit_per_user: undefined,
-    };
-
-    const response = await axios.post('http://localhost:5000/vouchers', payload);
-    if (response.data.status) {
-      alert('Thêm voucher thành công');
-      navigate('/admin/voucher');
-    } else {
-      setError({ message: response.data.message });
+    if (start > end) {
+      setError({
+        message: 'Ngày không hợp lệ',
+        errors: {
+          start_date: 'Ngày bắt đầu không được lớn hơn ngày kết thúc',
+          end_date: 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu',
+        },
+      });
+      return;
     }
-  } catch (err) {
-    if (axios.isAxiosError(err) && err.response?.data) {
-      const e = err.response.data as IErrorResponse;
-      if (e && typeof e.error === 'object') {
-        setError({ message: e.message, errors: e.error });
+
+    // VALIDATE CƠ BẢN
+    if (!formData.code.trim() || !formData.start_date || !formData.end_date || Number(formData.value) <= 0) {
+      setError({ message: 'Vui lòng nhập đầy đủ thông tin bắt buộc' });
+      return;
+    }
+
+    // VALIDATE GIA TRỊ GIẢM GIÁ
+    if (formData.discount_type === 'percentage' && (Number(formData.value) <= 0 || Number(formData.value) > 100)) {
+      setError({ message: 'Giá trị phần trăm phải từ 1% đến 100%' });
+      return;
+    }
+
+    if (formData.discount_type === 'fixed' && Number(formData.value) <= 0) {
+      setError({ message: 'Giá trị giảm giá phải lớn hơn 0' });
+      return;
+    }
+
+    // VALIDATE MIN_ORDER_VALUE
+    if (typeof formData.min_order_value !== 'number' || isNaN(Number(formData.min_order_value))) {
+      setError({ message: 'Giá trị đơn hàng tối thiểu phải là một số hợp lệ' });
+      return;
+    }
+
+    if (Number(formData.min_order_value) < 0) {
+      setError({ message: 'Giá trị đơn hàng tối thiểu không được nhỏ hơn 0' });
+      return;
+    }
+
+    if (Number(formData.min_order_value) > 100000000) {
+      setError({ message: 'Giá trị đơn hàng tối thiểu không được vượt quá 100,000,000 VND' });
+      return;
+    }
+
+    if (productSelectionType === 'specific' && selectedProducts.length === 0) {
+      setError({ message: 'Vui lòng chọn ít nhất một sản phẩm' });
+      return;
+    }
+
+    try {
+      const payload: IAddVoucherRequest = {
+        ...formData,
+        value: Number(formData.value),
+        min_order_value: Number(formData.min_order_value),
+        start_date: new Date(formData.start_date).toISOString(),
+        end_date: new Date(formData.end_date).toISOString(),
+        applicable_products: productSelectionType === 'all' ? [] : selectedProducts,
+        description: undefined,
+        usage_limit_per_user: 1, // Mặc định 1 lần sử dụng mỗi user
+      };
+
+      const response = await axios.post('http://localhost:5000/vouchers', payload);
+      if (response.data.status) {
+        alert('Thêm voucher thành công');
+        navigate('/admin/voucher');
       } else {
-        setError({ message: e?.message || 'Lỗi khi thêm voucher' });
+        setError({ message: response.data.message });
       }
-    } else {
-      setError({ message: 'Lỗi không xác định' });
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data) {
+        const e = err.response.data as IErrorResponse;
+        if (e && typeof e.error === 'object') {
+          setError({ message: e.message, errors: e.error });
+        } else {
+          setError({ message: e?.message || 'Lỗi khi thêm voucher' });
+        }
+      } else {
+        setError({ message: 'Lỗi không xác định' });
+      }
     }
-  }
-};
+  };
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-800 mb-6">Thêm Voucher Mới</h1>
-        
+
         {error.message && (
           <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg">
             {error.message}
@@ -271,14 +305,14 @@ const AddVoucher = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-600">Giá trị đơn hàng tối thiểu ({getUnit()})</label>
+              <label className="block text-sm font-medium text-gray-600">Giá trị đơn hàng tối thiểu (VND)</label>
               <input
                 name="min_order_value"
                 value={formatInputValue(formData.min_order_value)}
                 onChange={handleChange}
                 required
                 className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder={`Nhập giá trị tối thiểu (${getUnit()})`}
+                placeholder="Nhập giá trị tối thiểu (VND)"
                 onKeyPress={(e) => !/[0-9]/.test(e.key) && e.preventDefault()}
               />
               {error.errors?.min_order_value && <p className="text-red-500 text-sm mt-1">{error.errors.min_order_value}</p>}
@@ -286,19 +320,6 @@ const AddVoucher = () => {
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-600">Số người dùng tối đa</label>
-              <input
-                name="max_user_number"
-                value={formatInputValue(formData.max_user_number)}
-                onChange={handleChange}
-                required
-                className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Nhập số người dùng tối đa"
-                onKeyPress={(e) => !/[0-9]/.test(e.key) && e.preventDefault()}
-              />
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-600">Ngày bắt đầu</label>
               <input
