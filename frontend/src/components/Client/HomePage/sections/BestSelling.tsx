@@ -267,9 +267,6 @@ const BestSelling: React.FC = () => {
                   </Link>
                   
                     <div className="text-rose-500 font-bold mt-2">{displayedPrice.toLocaleString()}₫</div>
-                                         <div className="text-xs text-gray-500 mt-1">
-                       Đã bán: {product.total_sold || 0} sản phẩm
-                     </div>
                     {product.variants?.length > 0 && (
                       <div className="mt-1 space-y-3">
                         {attributes.map((attr) => {

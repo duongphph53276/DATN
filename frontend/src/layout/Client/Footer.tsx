@@ -192,17 +192,7 @@ const Footer = () => {
                     </li>
                   </ul>
                 </div>
-                <div>
-                  <p className="font-semibold text-pink-100 mb-2">🌆 Hồ Chí Minh | 8:30 - 23:00</p>
-                  <p className="text-sm flex items-center">
-                    <FaMapMarkerAlt className="mr-2 text-pink-200 text-xs" />
-                    228 Lê Văn Sỹ, P.1, Tân Bình - 097 989 6616
-                  </p>
-                </div>
-                <div className="pt-2">
-                  <p className="font-semibold text-pink-100">📞 Mua sỉ: 03.9797.6616</p>
-                  <p className="text-sm">🎧 Hotline SP/DV: 039.333.6616</p>
-                </div>
+                
               </div>
             </div>
 
@@ -218,10 +208,7 @@ const Footer = () => {
                   <p className="text-sm">STK: <span className="font-bold">13324816911019</span></p>
                   <p className="text-sm">Chủ TK: Nguyễn Phương Hoa – CN Láng Hạ</p>
                 </div>
-                <div className="bg-white/10 rounded-lg p-4">
-                  <p className="text-sm italic mb-2">💳 Xem chi tiết các TK ngân hàng</p>
-                  <p className="text-sm">📱 Paypal / Momo / Shopee Pay</p>
-                </div>
+                
               </div>
             </div>
 
@@ -255,15 +242,7 @@ const Footer = () => {
                   </li>
                 </ul>
 
-                <div className="bg-white/10 rounded-lg p-4 mt-4">
-                  <h4 className="font-bold text-pink-100 mb-2">🏢 Hộ kinh doanh Bemori</h4>
-                  <p className="text-sm mb-1">
-                    Số 19 ngõ 23 Nguyễn Khuyến, TDP 5, P. Văn Quán, Q. Hà Đông, Hà Nội
-                  </p>
-                  <p className="text-sm mb-1">📞 SĐT: 0979836886</p>
-                  <p className="text-sm mb-1">📋 Mã số ĐKKD: 0108977908-001</p>
-                  <p className="text-sm">📧 Email: <a href="mailto:gaubongonline6@gmail.com" className="underline hover:text-pink-200">gaubongonline6@gmail.com</a></p>
-                </div>
+                
               </div>
             </div>
 
@@ -280,59 +259,7 @@ const Footer = () => {
                   <p className="text-sm font-semibold">Gấu Bông Online</p>
                 </div>
 
-                <div>
-                  <h4 className="font-bold text-pink-100 mb-3">🌟 Xem Gấu Bông Với</h4>
-                  <div className="grid grid-cols-3 gap-3">
-                    <a
-                      href="https://facebook.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white text-lg hover:bg-white/30 hover:scale-110 transition-all duration-300"
-                    >
-                      <FaFacebookF />
-                    </a>
-                    <a
-                      href="https://instagram.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white text-lg hover:bg-white/30 hover:scale-110 transition-all duration-300"
-                    >
-                      <FaInstagram />
-                    </a>
-                    <a
-                      href="https://youtube.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white text-lg hover:bg-white/30 hover:scale-110 transition-all duration-300"
-                    >
-                      <FaYoutube />
-                    </a>
-                    <a
-                      href="https://shopee.vn"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white text-lg hover:bg-white/30 hover:scale-110 transition-all duration-300"
-                    >
-                      <FaShopify />
-                    </a>
-                    <a
-                      href="https://tiktok.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white text-lg hover:bg-white/30 hover:scale-110 transition-all duration-300"
-                    >
-                      <FaTiktok />
-                    </a>
-                    <a
-                      href="https://maps.google.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white text-lg hover:bg-white/30 hover:scale-110 transition-all duration-300"
-                    >
-                      <FaMapMarkerAlt />
-                    </a>
-                  </div>
-                </div>
+                
               </div>
             </div>
           </div>

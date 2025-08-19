@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FaMapMarkerAlt, FaPlus, FaEdit, FaTrash, FaStar, FaStar as FaStarOutline } from 'react-icons/fa';
 import { Address } from '../../../interfaces/user';
+import { getProvinces } from '../../../services/api/shipping';
 
 const AddressManagement: React.FC = () => {
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -15,6 +16,7 @@ const AddressManagement: React.FC = () => {
     country: 'Việt Nam',
     is_default: false
   });
+  const [provinces, setProvinces] = useState<string[]>([]);
 
   // Lấy danh sách địa chỉ
   const fetchAddresses = async () => {
@@ -48,10 +50,20 @@ const AddressManagement: React.FC = () => {
 
   useEffect(() => {
     fetchAddresses();
+    (async () => {
+      try {
+        const response = await getProvinces();
+        if (response.status === 200) {
+          setProvinces(response.data.data || []);
+        }
+      } catch (error) {
+        // Không chặn UI nếu lỗi lấy tỉnh, vẫn cho nhập tay
+      }
+    })();
   }, []);
 
   // Xử lý thay đổi input
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
@@ -233,15 +245,20 @@ const AddressManagement: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Thành phố/Tỉnh</label>
-                  <input
-                    type="text"
+                  <select
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
                     className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-pink-400"
-                    placeholder="Nhập thành phố/tỉnh..."
                     required
-                  />
+                  >
+                    <option value="">Chọn tỉnh thành ({provinces.length} tỉnh)</option>
+                    {provinces.map((province, index) => (
+                      <option key={index} value={province}>
+                        {province}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Mã bưu điện</label>
