@@ -68,6 +68,23 @@ export const getMonthlyRevenue = async (year?: number) => {
   return response.data;
 };
 
+// Lấy doanh thu theo ngày trong tháng
+export const getDailyRevenue = async (year?: number, month?: number) => {
+  const y = year || new Date().getFullYear();
+  const m = month || new Date().getMonth() + 1; // 1-12
+  const response = await api.get(`/orders/daily-revenue?year=${y}&month=${m}`);
+  return response.data;
+};
+
+// Lấy doanh thu theo năm trong khoảng
+export const getYearlyRevenue = async (startYear?: number, endYear?: number) => {
+  const currentYear = new Date().getFullYear();
+  const start = startYear || currentYear - 4;
+  const end = endYear || currentYear;
+  const response = await api.get(`/orders/yearly-revenue?start_year=${start}&end_year=${end}`);
+  return response.data;
+};
+
 // Lấy phân bố danh mục
 export const getCategoryDistribution = async () => {
   const response = await api.get('/categories/distribution');

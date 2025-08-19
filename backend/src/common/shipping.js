@@ -1,11 +1,6 @@
-// Danh sách 6 thành phố trực thuộc Trung ương (Freeship)
+// Danh sách tỉnh/thành được miễn phí vận chuyển
 const FREE_SHIPPING_CITIES = [
-  'Hà Nội',
-  'Thành phố Hồ Chí Minh', 
-  'Hải Phòng',
-  'Đà Nẵng',
-  'Cần Thơ',
-  'Huế'
+  'Hà Nội'
 ];
 
 // Danh sách 34 tỉnh thành (28 tỉnh sau sáp nhập + 6 thành phố trực thuộc Trung ương)
@@ -51,7 +46,7 @@ const ALL_PROVINCES = [
 
 // Hàm tính phí ship dựa trên tỉnh thành
 const calculateShippingFee = (city) => {
-  if (!city) return 10000; // Mặc định 10k nếu không có thành phố
+  if (!city) return 30000; // Mặc định 30k nếu không có thành phố
   
   // Kiểm tra xem có phải thành phố freeship không
   const isFreeShipping = FREE_SHIPPING_CITIES.some(freeCity => 
@@ -59,7 +54,7 @@ const calculateShippingFee = (city) => {
     freeCity.toLowerCase().includes(city.toLowerCase())
   );
   
-  return isFreeShipping ? 0 : 10000;
+  return isFreeShipping ? 0 : 30000;
 };
 
 // Hàm kiểm tra xem tỉnh thành có hợp lệ không

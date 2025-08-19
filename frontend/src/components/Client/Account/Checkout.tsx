@@ -106,7 +106,7 @@ const Checkout: React.FC = () => {
             }
           } catch (error) {
             console.error('Lỗi khi tính phí ship:', error);
-            setShippingFee(10000);
+            setShippingFee(30000);
           }
         } else if (addresses.length > 0) {
           setAddress(addresses[0]);
@@ -119,7 +119,7 @@ const Checkout: React.FC = () => {
             }
           } catch (error) {
             console.error('Lỗi khi tính phí ship:', error);
-            setShippingFee(10000);
+            setShippingFee(30000);
           }
         }
       } else {
@@ -144,7 +144,7 @@ const Checkout: React.FC = () => {
       }
     } catch (error) {
       console.error('Lỗi khi tính phí ship:', error);
-      setShippingFee(10000); // Default to 10k if error
+      setShippingFee(30000); // Default to 30k if error
     }
   };
 

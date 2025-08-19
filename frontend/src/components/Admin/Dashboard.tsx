@@ -12,7 +12,7 @@ import {
   Cell
 } from "recharts";
 import { usePermissions } from '../../hooks/usePermissions';
-import { getDashboardData, DashboardStats } from '../../services/api/dashboard';
+import { getDashboardData, DashboardStats, getMonthlyRevenue, getDailyRevenue, getYearlyRevenue } from '../../services/api/dashboard';
 import { 
   Shield, 
   User, 
@@ -31,6 +31,10 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [granularity, setGranularity] = useState<'day' | 'month' | 'year'>('month');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [revenueData, setRevenueData] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,6 +53,27 @@ const Dashboard = () => {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const loadRevenue = async () => {
+      try {
+        if (granularity === 'month') {
+          const res = await getMonthlyRevenue(selectedYear);
+          setRevenueData(res.data || []);
+        } else if (granularity === 'day') {
+          const res = await getDailyRevenue(selectedYear, selectedMonth);
+          setRevenueData(res.data || []);
+        } else {
+          const res = await getYearlyRevenue(selectedYear - 4, selectedYear);
+          setRevenueData(res.data || []);
+        }
+      } catch (e) {
+        console.error('Load revenue data error:', e);
+        setRevenueData([]);
+      }
+    };
+    loadRevenue();
+  }, [granularity, selectedYear, selectedMonth]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -201,17 +226,36 @@ const Dashboard = () => {
         {/* Revenue Chart */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Doanh thu theo tháng</h3>
+            <div className="flex items-center gap-3">
+              <h3 className="text-lg font-semibold text-gray-900">Doanh thu</h3>
+              <select className="border rounded-md px-2 py-1 text-sm" value={granularity} onChange={(e) => setGranularity(e.target.value as any)}>
+                <option value="day">Theo ngày</option>
+                <option value="month">Theo tháng</option>
+                <option value="year">Theo năm</option>
+              </select>
+              <select className="border rounded-md px-2 py-1 text-sm" value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))}>
+                {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+              {granularity === 'day' && (
+                <select className="border rounded-md px-2 py-1 text-sm" value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))}>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                    <option key={m} value={m}>Tháng {m}</option>
+                  ))}
+                </select>
+              )}
+            </div>
             <TrendingUp className="w-5 h-5 text-blue-600" />
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={dashboardData.monthlyRevenue}>
+            <LineChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
+              <XAxis dataKey={granularity === 'day' ? 'day' : granularity === 'month' ? 'month' : 'year'} stroke="#6b7280" fontSize={12} />
               <YAxis stroke="#6b7280" fontSize={12} />
               <Tooltip 
                 formatter={(value: any) => [formatCurrency(value), 'Doanh thu']}
-                labelFormatter={(label) => `Tháng ${label}`}
+                labelFormatter={(label) => granularity === 'day' ? `Ngày ${label}` : granularity === 'month' ? `Tháng ${label}` : `Năm ${label}`}
               />
               <Line 
                 type="monotone" 

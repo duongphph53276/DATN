@@ -541,6 +541,10 @@ const DetailsPage = () => {
             <span className="text-3xl text-pink-500 font-semibold">{displayedPrice.toLocaleString()}₫</span>
             {product.oldPrice && <span className="line-through text-gray-400 text-lg">{parsePrice(product.oldPrice).toLocaleString()}₫</span>}
           </div>
+          <div className="text-sm text-gray-600">Tổng đã bán: {Array.isArray(product.variants) && product.variants.length > 0
+            ? product.variants.reduce((sum: number, v: any) => sum + (v.sold_quantity || 0), 0)
+            : (product.total_sold || 0)} sản phẩm
+          </div>
 
           {product.variants?.length > 0 && (
             <div className="mb-1">

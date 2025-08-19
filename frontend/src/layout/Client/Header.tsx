@@ -270,9 +270,7 @@ const Header = () => {
               </div>
             );
           })}
-          <Link to="/goc-cua-gau" className="hover:text-rose-100 transition-colors duration-200 font-semibold">
-            GÓC CỦA GẤU ▾
-          </Link>
+          
           <Link to="/all-products" className="hover:text-rose-100 transition-colors duration-200 font-semibold">
             TẤT CẢ SP ▾
           </Link>

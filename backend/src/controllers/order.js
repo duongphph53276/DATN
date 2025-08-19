@@ -934,6 +934,113 @@ class OrderController {
   }
 
   /**
+   * @desc    Get daily revenue for a specific month
+   * @route   GET /api/orders/daily-revenue?year=YYYY&month=MM
+   * @access  Private
+   */
+  async getDailyRevenue(req, res) {
+    try {
+      const { year = new Date().getFullYear(), month = new Date().getMonth() + 1 } = req.query;
+      const yearNum = parseInt(year);
+      const monthNum = parseInt(month) - 1; // JS month 0-based
+
+      const startDate = new Date(yearNum, monthNum, 1);
+      const endDate = new Date(yearNum, monthNum + 1, 1);
+
+      const dailyStats = await OrderModel.aggregate([
+        {
+          $match: {
+            created_at: { $gte: startDate, $lt: endDate },
+            status: 'delivered'
+          }
+        },
+        {
+          $group: {
+            _id: { day: { $dayOfMonth: '$created_at' } },
+            revenue: { $sum: '$total_amount' },
+            orders: { $sum: 1 }
+          }
+        },
+        { $sort: { '_id.day': 1 } }
+      ]);
+
+      const daysInMonth = new Date(yearNum, monthNum + 1, 0).getDate();
+      const result = Array.from({ length: daysInMonth }, (_, idx) => {
+        const day = idx + 1;
+        const stat = dailyStats.find(s => s._id.day === day);
+        return {
+          day,
+          revenue: stat ? stat.revenue : 0,
+          orders: stat ? stat.orders : 0
+        };
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Daily revenue retrieved successfully',
+        data: result
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+      });
+    }
+  }
+
+  /**
+   * @desc    Get yearly revenue for a range of years
+   * @route   GET /api/orders/yearly-revenue?start_year=YYYY&end_year=YYYY
+   * @access  Private
+   */
+  async getYearlyRevenue(req, res) {
+    try {
+      const currentYear = new Date().getFullYear();
+      const startYear = parseInt(req.query.start_year) || currentYear - 4; // last 5 years by default
+      const endYear = parseInt(req.query.end_year) || currentYear;
+
+      const startDate = new Date(startYear, 0, 1);
+      const endDate = new Date(endYear + 1, 0, 1);
+
+      const yearlyStats = await OrderModel.aggregate([
+        {
+          $match: {
+            created_at: { $gte: startDate, $lt: endDate },
+            status: 'delivered'
+          }
+        },
+        {
+          $group: {
+            _id: { year: { $year: '$created_at' } },
+            revenue: { $sum: '$total_amount' },
+            orders: { $sum: 1 }
+          }
+        },
+        { $sort: { '_id.year': 1 } }
+      ]);
+
+      const result = [];
+      for (let y = startYear; y <= endYear; y++) {
+        const stat = yearlyStats.find(s => s._id.year === y);
+        result.push({ year: y, revenue: stat ? stat.revenue : 0, orders: stat ? stat.orders : 0 });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Yearly revenue retrieved successfully',
+        data: result
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+      });
+    }
+  }
+
+  /**
    * @desc    Get orders for shipper
    * @route   GET /api/orders/shipper/:shipper_id
    * @access  Private (Shipper only)
