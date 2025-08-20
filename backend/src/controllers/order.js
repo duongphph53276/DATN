@@ -766,6 +766,7 @@ class OrderController {
         ? { created_at: dateFilter }
         : {};
 
+      // Tính tổng đơn hàng và doanh thu từ OrderModel (chỉ 'delivered')
       const stats = await OrderModel.aggregate([
         {
           $match: {
@@ -783,6 +784,91 @@ class OrderController {
           }
         }
       ]);
+
+      // Tính tổng chi phí từ OrderDetailModel (join với Order để filter 'delivered', join với ProductVariant để lấy import_price)
+      const costAggregation = await OrderDetailModel.aggregate([
+        {
+          $lookup: {
+            from: 'orders', // Collection name của OrderModel
+            localField: 'order_id',
+            foreignField: '_id',
+            as: 'order'
+          }
+        },
+        { $unwind: { path: '$order', preserveNullAndEmptyArrays: true } },
+        {
+          $match: {
+            'order.status': 'delivered',
+            ...(Object.keys(matchStage).length > 0 ? { 'order.created_at': matchStage.created_at } : {}),
+          }
+        },
+        {
+          $lookup: {
+            from: 'productvariants',
+            let: { variantId: { $toObjectId: "$variant_id" } },
+            pipeline: [
+              { $match: { $expr: { $eq: ["$_id", "$$variantId"] } } }
+            ],
+            as: "variant"
+          }
+        },
+        { $unwind: { path: '$variant', preserveNullAndEmptyArrays: true } },
+        {
+          $group: {
+            _id: null,
+            total_cost: {
+              $sum: {
+                $multiply: [
+                  '$quantity',
+                  { $ifNull: ['$variant.import_price', 0] }
+                ]
+              }
+            }
+          }
+        }
+      ]);
+
+      const totalCost = costAggregation[0]?.total_cost || 0;
+      const totalRevenue = stats[0]?.total_revenue || 0;
+      const totalProfit = totalRevenue - totalCost;
+
+      //top product
+      const topProducts = await OrderDetailModel.aggregate([
+        {
+          $lookup: {
+            from: 'orders',
+            localField: 'order_id',
+            foreignField: '_id',
+            as: 'order'
+          }
+        },
+        { $unwind: { path: '$order', preserveNullAndEmptyArrays: true } },
+        {
+          $match: {
+            'order.status': 'delivered',
+            ...(Object.keys(matchStage).length > 0 ? { 'order.created_at': matchStage.created_at } : {}),
+          }
+        },
+        {
+          $group: {
+            _id: '$product_id',
+            total_quantity: { $sum: '$quantity' },
+            total_revenue: { $sum: { $multiply: ['$quantity', '$price'] } }
+          }
+        },
+        { $sort: { total_quantity: -1 } },
+        { $limit: 10 }
+      ]);
+
+      const topProductsWithInfo = await Promise.all(
+        topProducts.map(async (prod) => {
+          const product = await Product.findById(prod._id).lean();
+          return {
+            ...prod,
+            product: product
+          };
+        })
+      );
 
       const statusBreakdown = await OrderModel.aggregate([
         { $match: matchStage },
@@ -855,11 +941,16 @@ class OrderController {
         success: true,
         message: 'Order statistics retrieved successfully',
         data: {
-          overall_stats: stats[0] || {
-            total_orders: 0,
-            total_revenue: 0,
-            average_order_value: 0,
-            total_quantity: 0
+          overall_stats: {
+            ...(stats[0] || {
+              total_orders: 0,
+              total_revenue: 0,
+              average_order_value: 0,
+              total_quantity: 0
+            }),
+            total_profit: totalProfit,
+            total_cost: totalCost, // Optional, để debug
+            top_products: topProductsWithInfo
           },
           status_breakdown: statusBreakdown,
           payment_method_breakdown: paymentMethodBreakdown,
@@ -1266,7 +1357,7 @@ class OrderController {
   }
 
   /**
-   * @desc    Request to cancel order (user initiated)
+   * @desc    Request to cancel order (user initiated) - chỉ khi pending/preparing
    * @route   POST /api/orders/:id/request-cancel
    * @access  Private
    */

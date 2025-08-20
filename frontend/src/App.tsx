@@ -53,6 +53,7 @@ import AllOrders from './components/Shipper/AllOrders';
 import ShippingOrders from './components/Shipper/ShippingOrders';
 import DeliveredOrders from './components/Shipper/DeliveredOrders';
 import CancelledOrders from './components/Shipper/CancelledOrders';
+import SearchResults from './components/Client/HomePage/SearchResults';
 
 const SimpleProtectedRoute = ({ children, requiresAdmin = false }: { children: JSX.Element; requiresAdmin?: boolean }) => {
   const token = localStorage.getItem("token");
@@ -98,6 +99,7 @@ function App() {
       element: <ClientLayout />,
       children: [
         { path: "", element: <Home /> },
+        { path: "search" , element: <SearchResults/>},
         { path: "category/:slug", element: <CategoryPage /> },
         { path: "product/:id", element: <DetailsPage /> },
         { path: "cart", element: <SimpleProtectedRoute><Cart /></SimpleProtectedRoute> },
