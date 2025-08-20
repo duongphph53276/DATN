@@ -1,16 +1,31 @@
-// components/ProductFilters.tsx
-import   { useState } from "react";
+import { useState, useEffect } from "react";
+import { getCategories } from "../../../api/category.api";
 
 const ProductFilters = ({ onFilter }: { onFilter: (filters: any) => void }) => {
   const [category, setCategory] = useState("");
   const [priceRange, setPriceRange] = useState("");
+  const [status, setStatus] = useState("");
+  const [categories, setCategories] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await getCategories();
+        setCategories(res.data?.data || []); // API trả về {data: [...]}
+      } catch (err) {
+        console.error("Lỗi khi load categories:", err);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const handleFilter = () => {
-    onFilter({ category, priceRange });
+    onFilter({ category, priceRange, status });
   };
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-white shadow rounded-xl">
+      {/* Danh mục */}
       <div>
         <label className="mr-2 font-semibold">Danh mục:</label>
         <select
@@ -19,18 +34,18 @@ const ProductFilters = ({ onFilter }: { onFilter: (filters: any) => void }) => {
           className="border rounded px-3 py-2"
         >
           <option value="">Tất cả</option>
-          <option value="couple">Gấu Couple</option>
-          <option value="mini">Gấu Mini</option>
-          <option value="babythree">BaByThree</option>
-          <option value="big">Gấu To </option>
-          <option value="graduate">Gấu Tốt Nghiệp </option>
-          <option value="cosplay">Gấu Cosplay </option>
-          <option value="other">Khác </option>
+          {categories.map((cat) => (
+            <option key={cat._id} value={cat._id}>
+              {cat.name}
+            </option>
+          ))}
         </select>
       </div>
+
+      {/* Giá */}
       <div>
         <label className="mr-2 font-semibold">Giá:</label>
-        <select 
+        <select
           value={priceRange}
           onChange={(e) => setPriceRange(e.target.value)}
           className="border rounded px-3 py-2"
@@ -41,6 +56,22 @@ const ProductFilters = ({ onFilter }: { onFilter: (filters: any) => void }) => {
           <option value="300+">Trên 300k</option>
         </select>
       </div>
+
+      {/* Trạng thái
+      <div>
+        <label className="mr-2 font-semibold">Trạng thái:</label>
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className="border rounded px-3 py-2"
+        >
+          <option value="">Tất cả</option>
+          <option value="bestseller">Bán chạy</option>
+          <option value="new">Mới</option>
+        </select>
+      </div> */}
+
+      {/* Nút lọc */}
       <button
         onClick={handleFilter}
         className="bg-rose-500 text-white px-4 py-2 rounded-xl hover:bg-rose-600"

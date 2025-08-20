@@ -115,6 +115,9 @@ export const getAllProducts = async (req, res) => {
       }
       query = { category_id: new mongoose.Types.ObjectId(category) };
     }
+    if (req.query.search) {
+      query.name = { $regex: req.query.search, $options: "i" };
+    }
 
     console.log("Query:", query); // Log để debug
 
@@ -374,7 +377,7 @@ export const deleteProduct = async (req, res) => {
 export const getProductStatistics = async (req, res) => {
   try {
     const totalProducts = await Product.countDocuments();
-    
+
     // Thống kê sản phẩm theo danh mục
     const categoryStats = await Product.aggregate([
       {

@@ -5,6 +5,8 @@ export interface DashboardStats {
   totalRevenue: number;
   totalUsers: number;
   totalProducts: number;
+  totalProfit: number;
+  totalCost: number;
   orderStatusBreakdown: Array<{
     status: string;
     count: number;
@@ -24,12 +26,23 @@ export interface DashboardStats {
   monthlyRevenue: Array<{
     month: string;
     revenue: number;
+    profit: number; // Thêm nếu cần theo tháng
     orders: number;
   }>;
   categoryDistribution: Array<{
     name: string;
     value: number;
     color: string;
+  }>;
+  topProducts: Array<{
+    _id: string;
+    total_quantity: number;
+    total_revenue: number;
+    product: {
+      name: string;
+      images:string;
+      // Có thể thêm image, description nếu cần
+    };
   }>;
 }
 
@@ -38,7 +51,7 @@ export const getOrderStatistics = async (startDate?: string, endDate?: string) =
   const params = new URLSearchParams();
   if (startDate) params.append('start_date', startDate);
   if (endDate) params.append('end_date', endDate);
-  
+
   const response = await api.get(`/orders/statistics?${params.toString()}`);
   return response.data;
 };
@@ -123,7 +136,10 @@ export const getDashboardData = async (): Promise<DashboardStats> => {
       orderStatusBreakdown: orderStats.data.status_breakdown || [],
       recentOrders: recentOrders.data?.data?.orders || [],
       monthlyRevenue: monthlyRevenue.data || [],
-      categoryDistribution: categoryDistribution.data || []
+      categoryDistribution: categoryDistribution.data || [],
+      totalProfit: orderStats.data.overall_stats.total_profit || 0,
+      totalCost: orderStats.data.overall_stats.total_cost || 0,
+      topProducts: orderStats.data.overall_stats.top_products || []
     };
   } catch (error) {
     console.error('Error fetching dashboard data:', error);

@@ -119,8 +119,8 @@ const Dashboard = () => {
             <Activity className="w-8 h-8 text-red-600" />
           </div>
           <p className="text-red-600 font-medium">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Thử lại
@@ -184,6 +184,36 @@ const Dashboard = () => {
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
               <DollarSign className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Lợi nhuận</p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">{formatCurrency(dashboardData.totalProfit)}</p>
+              <div className="flex items-center mt-2 text-indigo-600">
+                <TrendingUp className="w-4 h-4 mr-1" />
+                <span className="text-sm font-medium">Tổng lợi nhuận</span>
+              </div>
+            </div>
+            <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
+              <DollarSign className="w-6 h-6 text-indigo-600" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Chi phí</p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">{formatCurrency(dashboardData.totalCost)}</p>
+              <div className="flex items-center mt-2 text-indigo-600">
+                <TrendingUp className="w-4 h-4 mr-1" />
+                <span className="text-sm font-medium">Tổng chi phí</span>
+              </div>
+            </div>
+            <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
+              <DollarSign className="w-6 h-6 text-indigo-600" />
             </div>
           </div>
         </div>
@@ -253,14 +283,14 @@ const Dashboard = () => {
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey={granularity === 'day' ? 'day' : granularity === 'month' ? 'month' : 'year'} stroke="#6b7280" fontSize={12} />
               <YAxis stroke="#6b7280" fontSize={12} />
-              <Tooltip 
+              <Tooltip
                 formatter={(value: any) => [formatCurrency(value), 'Doanh thu']}
                 labelFormatter={(label) => granularity === 'day' ? `Ngày ${label}` : granularity === 'month' ? `Tháng ${label}` : `Năm ${label}`}
               />
-              <Line 
-                type="monotone" 
-                dataKey="revenue" 
-                stroke="#3b82f6" 
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                stroke="#3b82f6"
                 strokeWidth={3}
                 dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
                 activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
@@ -296,8 +326,8 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 gap-4 mt-4">
             {dashboardData.categoryDistribution.map((item, index) => (
               <div key={index} className="flex items-center space-x-2">
-                <div 
-                  className="w-3 h-3 rounded-full" 
+                <div
+                  className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: item.color }}
                 ></div>
                 <span className="text-sm text-gray-600">{item.name}</span>
@@ -307,10 +337,10 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Recent Orders & User Info */}
+      {/* Recent Orders, Top Products & User Info */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Orders */}
-        <div className="lg:col-span-2 bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Đơn hàng gần đây</h3>
             <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
@@ -342,6 +372,40 @@ const Dashboard = () => {
               <div className="text-center py-8 text-gray-500">
                 <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>Chưa có đơn hàng nào</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Top Products */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Top 10 sản phẩm bán chạy</h3>
+            <Package className="w-5 h-5 text-orange-600" />
+          </div>
+          <div className="space-y-4">
+            {dashboardData.topProducts.length > 0 ? (
+              dashboardData.topProducts.map((prod, index) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-xl">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                      {/* <Package className="w-5 h-5 text-orange-600" /> */}
+                      <img src={prod.product?.images} alt="" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{prod.product?.name || 'Sản phẩm'}</p>
+                     
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-gray-900">{prod.total_quantity.toLocaleString('vi-VN')} sản phẩm</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>Chưa có dữ liệu</p>
               </div>
             )}
           </div>

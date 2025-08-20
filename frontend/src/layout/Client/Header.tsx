@@ -14,6 +14,14 @@ const Header = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const isLoggedIn = !!localStorage.getItem("token");
+  const [searchQuery, setSearchQuery] = useState("");
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`); // Chuyển hướng đến trang search với query param
+      setSearchQuery(""); // Optional: Clear input sau khi search
+    }
+  };
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -82,10 +90,10 @@ const Header = () => {
 
   // Hàm lấy subcategories cho một category cha
   const getSubCategories = (parentId: string) => {
-    return categories.filter((cat) => 
-      cat.parent_id && 
-      (typeof cat.parent_id === 'string' 
-        ? cat.parent_id === parentId 
+    return categories.filter((cat) =>
+      cat.parent_id &&
+      (typeof cat.parent_id === 'string'
+        ? cat.parent_id === parentId
         : cat.parent_id._id === parentId)
     );
   };
@@ -100,16 +108,21 @@ const Header = () => {
           <span className="text-2xl font-bold text-pink-500">FUZZYBEAR</span>
         </Link>
         <div className="flex-1 max-w-md mx-6">
-          <div className="relative">
+          <form onSubmit={handleSearch} className="relative"> {/* Wrap vào form để hỗ trợ Enter */}
             <input
               type="text"
               placeholder="Nhập sản phẩm cần tìm"
               className="w-full border border-rose-300 rounded-md py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-rose-200"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)} // Xử lý onChange
             />
-            <button className="absolute right-2 top-1/2 transform -translate-y-1/2 text-rose-500 hover:text-rose-700">
+            <button
+              type="submit" // Type submit để trigger form
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-rose-500 hover:text-rose-700"
+            >
               <FaSearch size={18} />
             </button>
-          </div>
+          </form>
         </div>
         <div className="flex items-center space-x-6 relative">
           <div className="flex items-center text-rose-300 font-medium space-x-2">
@@ -142,7 +155,7 @@ const Header = () => {
                 <FaUser size={20} />
               </button>
             )}
-            
+
             {showUserMenu && (
               <div className="absolute right-0 mt-3 w-56 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
                 {isLoggedIn ? (
@@ -171,7 +184,7 @@ const Header = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Menu Items */}
                     <div className="py-2">
                       <Link
@@ -238,14 +251,13 @@ const Header = () => {
           {limitedParentCategories.map((category) => {
             const subCategories = getSubCategories(category._id);
             const hasSubCategories = subCategories.length > 0;
-            
+
             return (
               <div key={category._id} className="relative group">
                 <Link
                   to={`/category/${category.slug}`}
-                  className={`flex items-center gap-1 hover:text-rose-100 transition-colors duration-200 ${
-                    hasSubCategories ? 'cursor-pointer' : ''
-                  }`}
+                  className={`flex items-center gap-1 hover:text-rose-100 transition-colors duration-200 ${hasSubCategories ? 'cursor-pointer' : ''
+                    }`}
                 >
                   {category.name}
                   {hasSubCategories && (
@@ -270,7 +282,7 @@ const Header = () => {
               </div>
             );
           })}
-          
+
           <Link to="/all-products" className="hover:text-rose-100 transition-colors duration-200 font-semibold">
             TẤT CẢ SP ▾
           </Link>
