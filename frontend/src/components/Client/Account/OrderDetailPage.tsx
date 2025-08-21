@@ -53,6 +53,8 @@ const OrderDetailPage = () => {
             if (id) {
                 try {
                     const res = await getOrderById(id);
+                    console.log('Order data received:', res.data);
+                    console.log('Shipping fee:', res.data.shipping_fee);
                     setOrderData(res.data);
                 } catch (err) {
                     console.error('Error fetching order:', err);
@@ -521,9 +523,19 @@ const OrderDetailPage = () => {
                             <span className="text-gray-600 font-medium">Tạm tính:</span>
                             <span className="font-bold text-lg text-gray-800">{formatPrice(calculateTotal(orderData?.order_details))}</span>
                         </div>
+                        {/* Debug info */}
+                        <div className="text-xs text-gray-500 mt-2 p-2 bg-gray-100 rounded">
+                            Debug: Tạm tính = {calculateTotal(orderData?.order_details)}, 
+                            Phí ship = {orderData?.shipping_fee}, 
+                            Tổng = {orderData?.total_amount}
+                        </div>
                         <div className="flex justify-between items-center py-4 px-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-200/50">
                             <span className="text-gray-600 font-medium">Phí vận chuyển:</span>
-                            <span className="font-bold text-lg text-green-600">Miễn phí</span>
+                            {orderData?.shipping_fee === 0 ? (
+                                <span className="font-bold text-lg text-green-600">🚚 Miễn phí</span>
+                            ) : (
+                                <span className="font-bold text-lg text-gray-800">{formatPrice(orderData?.shipping_fee || 0)}</span>
+                            )}
                         </div>
                         {orderData?.voucher_id && orderData?.voucher && (
                             <div className="flex justify-between items-center py-4 px-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl border border-purple-200/50">
