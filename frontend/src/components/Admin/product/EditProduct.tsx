@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useForm, SubmitHandler, useFieldArray } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { getProductById, updateProduct } from "../../../../api/product.api";
@@ -7,8 +7,7 @@ import { uploadToCloudinary } from "../../../lib/cloudinary";
 import { getAllAttributes, getAttributeValues } from "../../../../api/attribute.api";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
+import QuillEditor from "../../common/QuillEditor";
 import { useDropzone } from "react-dropzone";
 import ImageGallery from "react-image-gallery";
 import "react-image-gallery/styles/css/image-gallery.css";
@@ -42,6 +41,13 @@ const quillModules = {
     ["clean"],
   ],
 };
+
+const quillFormats = [
+  'header',
+  'bold', 'italic', 'underline', 'strike',
+  'list', 'bullet',
+  'link', 'image'
+];
 
 const validationSchema = yup.object().shape({
   name: yup
@@ -556,12 +562,14 @@ const EditProduct = () => {
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả (Tùy chọn)</label>
-                <ReactQuill
+                <QuillEditor
                   value={watch("description") || ""}
                   onChange={(value) => setValue("description", value)}
                   className={errors.description ? "border-red-500" : ""}
                   placeholder="Mô tả sản phẩm"
                   modules={quillModules}
+                  formats={quillFormats}
+                  theme="snow"
                 />
                 {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
               </div>

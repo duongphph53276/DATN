@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { IVoucher, IVoucherResponse, IErrorResponse } from '../../../interfaces/voucher';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../../middleware/axios';
 import { FaFilter, FaSearch, FaUndo, FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 
@@ -22,7 +22,7 @@ const ListVoucher: React.FC = () => {
   useEffect(() => {
     const fetchVouchers = async () => {
       try {
-        const response = await axios.get<IVoucherResponse>('http://localhost:5000/vouchers');
+        const response = await api.get<IVoucherResponse>('/vouchers');
         if (response.data.status) {
           // Sort theo _id descending (mới nhất lên đầu)
           const sortedVouchers = response.data.data.sort((a, b) => b._id.localeCompare(a._id));
@@ -118,7 +118,7 @@ const ListVoucher: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Bạn có chắc muốn xóa voucher này?')) {
       try {
-        const response = await axios.delete(`http://localhost:5000/vouchers/${id}`);
+        const response = await api.delete(`/vouchers/${id}`);
         if (response.data.status) {
           setVouchers(vouchers.filter(voucher => voucher._id !== id));
           alert('Xóa voucher thành công');
@@ -314,16 +314,15 @@ const ListVoucher: React.FC = () => {
                 <th className="p-4 font-semibold text-gray-900">Giá trị</th>
                 <th className="p-4 font-semibold text-gray-900">Giá trị đơn hàng tối thiểu</th>
                 <th className="p-4 font-semibold text-gray-900">Số lượng</th>
-                <th className="p-4 font-semibold text-gray-900">Lượt đã dùng</th> {/* THÊM: Để check used_quantity */}
-                <th className="p-4 font-semibold text-gray-900">Lượt còn lại</th> {/* THÊM: Để check remaining */}
+                <th className="p-4 font-semibold text-gray-900">Lượt đã dùng</th>
+                <th className="p-4 font-semibold text-gray-900">Lượt còn lại</th>
                 <th className="p-4 font-semibold text-gray-900">Ngày bắt đầu</th>
                 <th className="p-4 font-semibold text-gray-900">Ngày kết thúc</th>
                 <th className="p-4 font-semibold text-gray-900">Trạng thái</th>
                 <th className="p-4 font-semibold text-gray-900">Hành động</th>
               </tr>
             </thead>
-            <tbody>
-              {filteredVouchers.length > 0 ? (
+            <tbody>{filteredVouchers.length > 0 ? (
                 filteredVouchers.map(voucher => {
                   const status = getVoucherStatus(voucher);
                   const remaining = voucher.quantity - (voucher.used_quantity || 0);
@@ -349,10 +348,10 @@ const ListVoucher: React.FC = () => {
                         <span className="font-medium text-gray-900">{voucher.quantity}</span>
                       </td>
                       <td className="p-4">
-                        <span className="font-medium text-gray-900">{voucher.used_quantity || 0}</span> {/* THÊM */}
+                        <span className="font-medium text-gray-900">{voucher.used_quantity || 0}</span>
                       </td>
                       <td className="p-4">
-                        <span className="font-medium text-gray-900">{remaining}</span> {/* THÊM */}
+                        <span className="font-medium text-gray-900">{remaining}</span>
                       </td>
                       <td className="p-4">
                         <span className="text-gray-600 text-sm">
@@ -405,7 +404,7 @@ const ListVoucher: React.FC = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={11} className="text-center py-12"> {/* SỬA: colSpan=11 vì thêm 3 cột */}
+                  <td colSpan={11} className="text-center py-12">
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
                         <FaSearch className="text-gray-400 text-xl" />
@@ -415,8 +414,7 @@ const ListVoucher: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              )}
-            </tbody>
+              )}</tbody>
           </table>
         </div>
 
