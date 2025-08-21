@@ -1,24 +1,30 @@
 import dotenv from 'dotenv';
-import { createDefaultRoles } from '../data/roles.js';
 import connectDB from '../config/db.js';
+import { createDefaultRoles } from '../data/roles.js';
 
 // Load environment variables
 dotenv.config();
 
 const setupRoles = async () => {
   try {
-    await connectDB();
-    console.log('🔄 Đang setup roles và permissions...\n');
+    console.log('🔄 Bắt đầu setup roles và permissions...');
     
+    // Kết nối database
+    await connectDB();
+    
+    // Tạo roles và gán permissions
     await createDefaultRoles();
     
-    console.log('\n✅ Hoàn thành setup roles và permissions!');
-    console.log('💡 Bây giờ bạn có thể đăng nhập và sử dụng hệ thống.');
+    console.log('🎉 Hoàn thành setup roles và permissions!');
+    console.log('📋 Các roles đã được tạo:');
+    console.log('   👑 Admin - Có tất cả permissions');
+    console.log('   👨‍💼 Employee - Có permissions quản lý sản phẩm, đơn hàng, v.v.');
+    console.log('   🚚 Shipper - Có permissions giao hàng');
     
+    process.exit(0);
   } catch (error) {
     console.error('❌ Lỗi khi setup roles:', error);
-  } finally {
-    process.exit(0);
+    process.exit(1);
   }
 };
 
