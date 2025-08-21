@@ -14,12 +14,14 @@ const Login: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [popupContent, setPopupContent] = useState<{ message: string; banReason: string; bannedUntil: string } | null>(null);
+  const [isEmailNotVerified, setIsEmailNotVerified] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
+    setIsEmailNotVerified(false);
     setLoading(true);
 
     try {
@@ -57,9 +59,16 @@ const Login: React.FC = () => {
       
       if (error.response?.status === 403) {
         const { message, banReason, bannedUntil } = error.response.data;
-        const banDate = bannedUntil ? new Date(bannedUntil).toLocaleString('vi-VN') : 'không xác định';
-        setPopupContent({ message, banReason, bannedUntil: banDate });
-        setIsPopupOpen(true);
+        
+        // Kiểm tra xem có phải lỗi chưa verify email không
+        if (message && message.includes('xác thực email')) {
+          setIsEmailNotVerified(true);
+        } else {
+          // Xử lý trường hợp tài khoản bị ban
+          const banDate = bannedUntil ? new Date(bannedUntil).toLocaleString('vi-VN') : 'không xác định';
+          setPopupContent({ message, banReason, bannedUntil: banDate });
+          setIsPopupOpen(true);
+        }
       } else if (error.response?.status === 401) {
         setErrorMessage('Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.');
       } else if (error.response?.status === 400) {
@@ -122,6 +131,28 @@ const Login: React.FC = () => {
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
               <FaExclamationTriangle className="text-red-500 text-lg flex-shrink-0" />
               <p className="text-red-700 font-medium">{errorMessage}</p>
+            </div>
+          )}
+
+          {/* Email Not Verified Message */}
+          {isEmailNotVerified && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <FaEnvelope className="text-blue-500 text-sm" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-blue-800 font-semibold mb-2">Tài khoản chưa được xác thực</h4>
+                  <p className="text-blue-700 text-sm mb-3">
+                    Kiểm tra email của bạn và tiến hành xác thực tài khoản để có thể đăng nhập.
+                  </p>
+                  <div className="bg-blue-100 rounded-lg p-3">
+                    <p className="text-blue-800 text-sm font-medium">
+                      💡 <strong>Hướng dẫn:</strong> Mở email đã đăng ký, tìm thư từ Gấu Bông Shop và nhấp vào liên kết xác thực.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
