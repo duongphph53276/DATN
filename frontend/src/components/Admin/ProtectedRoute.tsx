@@ -14,7 +14,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredPermission, 
   fallbackPath = '/admin' 
 }) => {
-  const { hasPermission, loading, userInfo } = usePermissions();
+  const { hasPermission, isAdmin, loading, userInfo } = usePermissions();
 
   if (loading) {
     return (
@@ -30,8 +30,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Nếu có yêu cầu permission cụ thể và user không có quyền
-  if (requiredPermission && !hasPermission(requiredPermission)) {
-    return <NoPermission message={`Bạn cần quyền "${requiredPermission}" để truy cập trang này`} />;
+  if (requiredPermission) {
+    if (requiredPermission === 'admin') {
+      if (!isAdmin()) {
+        return <NoPermission message="Bạn cần quyền admin để truy cập trang này" />;
+      }
+    } else if (!hasPermission(requiredPermission)) {
+      return <NoPermission message={`Bạn cần quyền "${requiredPermission}" để truy cập trang này`} />;
+    }
   }
 
   return <>{children}</>;

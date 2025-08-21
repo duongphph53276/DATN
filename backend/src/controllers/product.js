@@ -6,6 +6,58 @@ import { generateSku } from "../utils/generateSku.js";
 import Reviews from '../models/reviews.js';
 import { OrderDetailModel } from '../models/OrderDetailModel.js';
 
+// Function để chuẩn hóa text tiếng Việt (bỏ dấu)
+const normalizeVietnameseText = (text) => {
+  if (!text) return '';
+  
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Loại bỏ các dấu thanh
+    .replace(/[đĐ]/g, 'd') // Thay đổi đ/Đ thành d
+    .replace(/\s+/g, ' ') // Chuẩn hóa khoảng trắng
+    .trim();
+};
+
+// Function để tạo regex pattern cho tìm kiếm tiếng Việt
+const createVietnameseSearchPattern = (searchText) => {
+  if (!searchText) return '';
+  
+  const normalizedSearch = normalizeVietnameseText(searchText);
+  
+  // Tạo pattern để match cả có dấu và không dấu
+  const patterns = [];
+  
+  // Pattern gốc (có thể có dấu hoặc không)
+  patterns.push(normalizedSearch);
+  
+  // Pattern với các biến thể dấu
+  const accentMap = {
+    'a': '[aàáảãạăằắẳẵặâầấẩẫậ]',
+    'e': '[eèéẻẽẹêềếểễệ]',
+    'i': '[iìíỉĩị]',
+    'o': '[oòóỏõọôồốổỗộơờớởỡợ]',
+    'u': '[uùúủũụưừứửữự]',
+    'y': '[yỳýỷỹỵ]',
+    'd': '[dđ]'
+  };
+  
+  let flexiblePattern = '';
+  for (let char of normalizedSearch) {
+    if (accentMap[char]) {
+      flexiblePattern += accentMap[char];
+    } else {
+      flexiblePattern += char;
+    }
+  }
+  
+  if (flexiblePattern !== normalizedSearch) {
+    patterns.push(flexiblePattern);
+  }
+  
+  return patterns.join('|');
+};
+
 export const createProduct = async (req, res) => {
   try {
     console.log("Payload received:", req.body); // Log payload để debug
@@ -116,7 +168,10 @@ export const getAllProducts = async (req, res) => {
       query = { category_id: new mongoose.Types.ObjectId(category) };
     }
     if (req.query.search) {
-      query.name = { $regex: req.query.search, $options: "i" };
+      const searchPattern = createVietnameseSearchPattern(req.query.search);
+      if (searchPattern) {
+        query.name = { $regex: searchPattern, $options: "i" };
+      }
     }
 
     console.log("Query:", query); // Log để debug

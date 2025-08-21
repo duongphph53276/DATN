@@ -1,4 +1,5 @@
 import { FaFacebookF, FaInstagram, FaMapMarkerAlt, FaShopify, FaTiktok, FaYoutube, FaPhoneAlt, FaEnvelope, FaHeart, FaGift, FaShieldAlt, FaTruck, FaCreditCard, FaHeadset } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -220,21 +221,32 @@ const Footer = () => {
               </h3>
               <div className="space-y-3">
                 <ul className="space-y-2">
-                  <li className="flex items-center text-sm hover:text-pink-200 transition-colors cursor-pointer">
-                    <FaGift className="mr-2 text-pink-200" />
-                    Chính sách bán buôn – sỉ
+                  <li>
+                    <Link 
+                      to="/chinh-sach-chung"
+                      className="flex items-center text-sm hover:text-pink-200 transition-colors cursor-pointer"
+                    >
+                      <FaShieldAlt className="mr-2 text-pink-200" />
+                      Chính sách chung
+                    </Link>
                   </li>
-                  <li className="flex items-center text-sm hover:text-pink-200 transition-colors cursor-pointer">
-                    <FaShieldAlt className="mr-2 text-pink-200" />
-                    Chính sách chung
+                  <li>
+                    <Link 
+                      to="/chinh-sach-bao-mat"
+                      className="flex items-center text-sm hover:text-pink-200 transition-colors cursor-pointer"
+                    >
+                      <FaShieldAlt className="mr-2 text-pink-200" />
+                      Chính sách bảo mật thông tin
+                    </Link>
                   </li>
-                  <li className="flex items-center text-sm hover:text-pink-200 transition-colors cursor-pointer">
-                    <FaShieldAlt className="mr-2 text-pink-200" />
-                    Chính sách bảo mật thông tin
-                  </li>
-                  <li className="flex items-center text-sm hover:text-pink-200 transition-colors cursor-pointer">
-                    <FaTruck className="mr-2 text-pink-200" />
-                    Bảo hành & Đổi trả
+                  <li>
+                    <Link 
+                      to="/bao-hanh-doi-tra"
+                      className="flex items-center text-sm hover:text-pink-200 transition-colors cursor-pointer"
+                    >
+                      <FaTruck className="mr-2 text-pink-200" />
+                      Bảo hành & Đổi trả
+                    </Link>
                   </li>
                   <li className="flex items-center text-sm hover:text-pink-200 transition-colors cursor-pointer">
                     <FaEnvelope className="mr-2 text-pink-200" />

@@ -33,7 +33,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 }
 
 const AllProducts: React.FC = () => {
-  const navigate = useNavigate();
+  
   const [filters, setFilters] = useState({ category: "", priceRange: "" });
   const [products, setProducts] = useState<any[]>([]);
   const [attributes, setAttributes] = useState<any[]>([]);
@@ -42,7 +42,7 @@ const AllProducts: React.FC = () => {
   const [selectedVariants, setSelectedVariants] = useState<{ [key: string]: any }>({});
   const [selectedAttributes, setSelectedAttributes] = useState<{ [productId: string]: { [attributeId: string]: string } }>({});
   const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 12;
+  const [productsPerPage, setProductsPerPage] = useState(20);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -76,7 +76,16 @@ const AllProducts: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
+    // Debug logging
+    console.log('Filters changed:', filters);
+    console.log('Total products:', products.length);
+    console.log('Filtered products:', filteredProducts.length);
   }, [filters]);
+
+  // Reset về trang 1 khi thay đổi số lượng hiển thị
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [productsPerPage]);
 
   const getAttributeName = (attributeId: string) => {
     const attribute = attributes.find((attr) => attr._id === attributeId);
@@ -105,7 +114,14 @@ const AllProducts: React.FC = () => {
     let matchPrice = true;
 
     if (category) {
-      matchCategory = product.category === category;
+      // Xử lý category_id có thể là string hoặc object
+      const productCategoryId = typeof product.category_id === 'string' 
+        ? product.category_id 
+        : product.category_id?._id;
+      matchCategory = productCategoryId === category;
+      
+      // Debug logging cho category matching
+      console.log('Product:', product.name, 'Category ID:', productCategoryId, 'Filter Category:', category, 'Match:', matchCategory);
     }
 
     if (priceRange) {
@@ -262,7 +278,32 @@ const handleAddToCart = (product: any) => {
 
         <ProductFilters onFilter={setFilters} />
 
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+        {/* Thanh điều khiển hiển thị */}
+        <div className="mt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center gap-4">
+            <span className="text-gray-600 font-medium">
+              Hiển thị {indexOfFirstProduct + 1} - {Math.min(indexOfLastProduct, filteredProducts.length)} trên tổng {filteredProducts.length} sản phẩm
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <label htmlFor="productsPerPage" className="text-gray-600 font-medium">
+              Hiển thị:
+            </label>
+            <select
+              id="productsPerPage"
+              value={productsPerPage}
+              onChange={(e) => setProductsPerPage(Number(e.target.value))}
+              className="border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+            >
+              <option value={20}>20 sản phẩm</option>
+              <option value={30}>30 sản phẩm</option>
+              <option value={50}>50 sản phẩm</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {currentProducts.length === 0 ? (
             <p className="col-span-full text-center text-gray-500">Không tìm thấy sản phẩm phù hợp.</p>
           ) : (
@@ -347,43 +388,90 @@ const handleAddToCart = (product: any) => {
           )}
         </div>
 
-        {/* Phân trang có Prev/Next */}
+        {/* Phân trang cải tiến */}
         {totalPages > 1 && (
-          <div className="flex justify-center mt-10 gap-2 flex-wrap items-center">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className={`px-4 py-2 rounded-lg border ${currentPage === 1
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-                }`}
-            >
-              « Prev
-            </button>
-
-            {Array.from({ length: totalPages }, (_, index) => (
+          <div className="mt-10 space-y-4">
+            {/* Thông tin phân trang */}
+            <div className="text-center text-gray-600">
+              Trang {currentPage} / {totalPages} • {filteredProducts.length} sản phẩm
+            </div>
+            
+            {/* Điều khiển phân trang */}
+            <div className="flex justify-center gap-2 flex-wrap items-center">
               <button
-                key={index + 1}
-                onClick={() => setCurrentPage(index + 1)}
-                className={`px-4 py-2 rounded-lg border ${currentPage === index + 1
-                  ? "bg-rose-500 text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-100"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className={`px-4 py-2 rounded-lg border transition-all duration-200 ${currentPage === 1
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-white text-gray-700 hover:bg-gray-100 hover:shadow-md"
                   }`}
               >
-                {index + 1}
+                « Trang trước
               </button>
-            ))}
 
-            <button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className={`px-4 py-2 rounded-lg border ${currentPage === totalPages
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-                }`}
-            >
-              Next »
-            </button>
+              {/* Logic hiển thị số trang thông minh */}
+              {(() => {
+                const getPageNumbers = () => {
+                  const pages = [];
+                  const maxVisiblePages = 5;
+                  
+                  if (totalPages <= maxVisiblePages) {
+                    // Hiển thị tất cả trang nếu ít hơn hoặc bằng maxVisiblePages
+                    for (let i = 1; i <= totalPages; i++) {
+                      pages.push(i);
+                    }
+                  } else {
+                    // Logic phức tạp hơn cho nhiều trang
+                    if (currentPage <= 3) {
+                      // Gần đầu
+                      pages.push(1, 2, 3, 4, '...', totalPages);
+                    } else if (currentPage >= totalPages - 2) {
+                      // Gần cuối
+                      pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+                    } else {
+                      // Ở giữa
+                      pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+                    }
+                  }
+                  
+                  return pages;
+                };
+
+                return getPageNumbers().map((page, index) => {
+                  if (page === '...') {
+                    return (
+                      <span key={`ellipsis-${index}`} className="px-2 py-2 text-gray-400">
+                        ...
+                      </span>
+                    );
+                  }
+                  
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page as number)}
+                      className={`px-4 py-2 rounded-lg border transition-all duration-200 ${currentPage === page
+                        ? "bg-rose-500 text-white border-rose-500 shadow-lg"
+                        : "bg-white text-gray-700 hover:bg-gray-100 hover:shadow-md"
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                });
+              })()}
+
+              <button
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className={`px-4 py-2 rounded-lg border transition-all duration-200 ${currentPage === totalPages
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-white text-gray-700 hover:bg-gray-100 hover:shadow-md"
+                  }`}
+              >
+                Trang sau »
+              </button>
+            </div>
           </div>
         )}
       </div>

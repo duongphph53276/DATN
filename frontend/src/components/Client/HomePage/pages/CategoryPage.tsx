@@ -32,7 +32,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
 const CategoryPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
+  
 
   const [categoryName, setCategoryName] = useState<string>("");
   const [products, setProducts] = useState<any[]>([]);

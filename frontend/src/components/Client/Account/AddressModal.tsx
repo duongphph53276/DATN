@@ -56,7 +56,7 @@ const AddressModal: React.FC<AddressModalProps> = ({
         console.log('🏛️ Danh sách tỉnh thành:', provincesData);
         setProvinces(provincesData);
       }
-    } catch (err) {
+    } catch {
       console.error('❌ Lỗi khi tải danh sách tỉnh thành:', err);
     }
   };
@@ -68,7 +68,7 @@ const AddressModal: React.FC<AddressModalProps> = ({
       if (response.status === 200) {
         setAddresses(response.data.data || []);
       }
-    } catch (err) {
+    } catch {
       setError('Lỗi khi tải danh sách địa chỉ');
     } finally {
       setLoading(false);

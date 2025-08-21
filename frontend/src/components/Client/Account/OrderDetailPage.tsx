@@ -59,6 +59,7 @@ const OrderDetailPage = () => {
                 }
             }
         };
+        
         getOrderData();
     }, [id]);
 

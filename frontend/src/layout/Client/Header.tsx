@@ -6,21 +6,193 @@ import NotificationBell from '../../components/common/NotificationBell';
 import api from "../../middleware/axios";
 import { User } from "../../interfaces/user";
 import { clearCartDisplay } from "../../utils/cartUtils";
+import { IProduct } from "../../interfaces/product";
+import { getSystemConfig } from "../../services/api/systemConfig";
 
 const Header = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const isLoggedIn = !!localStorage.getItem("token");
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<IProduct[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  
+  // Load system config for logo
+  const [systemConfig, setSystemConfig] = useState({ logo: '', favicon: '' });
+
+  // Load system config from API
+  useEffect(() => {
+    const loadSystemConfig = async () => {
+      try {
+        const config = await getSystemConfig();
+        setSystemConfig(config);
+      } catch (error) {
+        console.error('Error loading system config:', error);
+      }
+    };
+    
+    loadSystemConfig();
+    
+    // Poll for updates every 30 seconds
+    const interval = setInterval(loadSystemConfig, 30000);
+    
+    // Listen for logo updates
+    const handleLogoUpdate = (event: CustomEvent) => {
+      setSystemConfig(prev => ({ ...prev, logo: event.detail }));
+    };
+    
+    window.addEventListener('logoUpdated', handleLogoUpdate as EventListener);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('logoUpdated', handleLogoUpdate as EventListener);
+    };
+  }, []);
+
+  // Debounced search function
+  const performSearch = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await api.get(`/product?search=${encodeURIComponent(query)}`);
+      if (response.data.status) {
+        // Sắp xếp kết quả theo độ phù hợp
+        const sortedResults = response.data.data
+          .sort((a: IProduct, b: IProduct) => {
+            const aName = a.name.toLowerCase();
+            const bName = b.name.toLowerCase();
+            const queryLower = query.toLowerCase();
+            
+            // Ưu tiên kết quả bắt đầu bằng query
+            const aStartsWith = aName.startsWith(queryLower);
+            const bStartsWith = bName.startsWith(queryLower);
+            
+            if (aStartsWith && !bStartsWith) return -1;
+            if (!aStartsWith && bStartsWith) return 1;
+            
+            // Sau đó ưu tiên theo độ dài tên (ngắn hơn = phù hợp hơn)
+            return aName.length - bName.length;
+          })
+          .slice(0, 5); // Limit to 5 results
+        
+        setSearchResults(sortedResults);
+        setShowSearchResults(true);
+      }
+    } catch (error) {
+      console.error("Error searching products:", error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Function để highlight text trong kết quả tìm kiếm
+  const highlightText = (text: string, query: string) => {
+    if (!query.trim()) return text;
+    
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+    
+    return parts.map((part, index) => 
+      regex.test(part) ? (
+        <span key={index} className="bg-yellow-200 font-semibold">
+          {part}
+        </span>
+      ) : part
+    );
+  };
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showSearchResults || searchResults.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedIndex(prev => 
+          prev < searchResults.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedIndex(prev => 
+          prev > 0 ? prev - 1 : searchResults.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedIndex >= 0 && selectedIndex < searchResults.length) {
+          handleProductSelect(searchResults[selectedIndex]);
+        } else {
+          handleSearch(e);
+        }
+        break;
+      case 'Escape':
+        setShowSearchResults(false);
+        setSelectedIndex(-1);
+        break;
+    }
+  };
+
+  // Reset selected index when search results change
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [searchResults]);
+
+  // Handle search input change with debounce
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    // Clear previous timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    // Set new timeout for debounced search
+    const timeout = setTimeout(() => {
+      performSearch(query);
+    }, 300); // 300ms delay
+
+    setSearchTimeout(timeout);
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`); // Chuyển hướng đến trang search với query param
-      setSearchQuery(""); // Optional: Clear input sau khi search
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      setSearchQuery("");
+      setShowSearchResults(false);
     }
+  };
+
+  // Handle click outside search results
+  const handleClickOutside = (e: MouseEvent) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      setShowUserMenu(false);
+    }
+    if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+      setShowSearchResults(false);
+    }
+  };
+
+  // Handle product selection from search results
+  const handleProductSelect = (product: IProduct) => {
+    navigate(`/product/${product._id}`);
+    setSearchQuery("");
+    setShowSearchResults(false);
   };
 
   useEffect(() => {
@@ -29,7 +201,6 @@ const Header = () => {
         const response = await api.get("/category");
         if (response.data.status) {
           console.log("Fetched Categories:", response.data.data);
-          // Lấy tất cả danh mục để có thể tạo dropdown
           setCategories(response.data.data);
         }
       } catch (error) {
@@ -58,26 +229,41 @@ const Header = () => {
       }
     };
 
+    // Listen for system config changes
+    const handleStorageChange = () => {
+      const saved = localStorage.getItem('systemConfig');
+      if (saved) {
+        setSystemConfig(JSON.parse(saved));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('bannerConfigChange', handleStorageChange);
+
     fetchCategories();
     fetchUserProfile();
-  }, [isLoggedIn]);
 
-  const handleClickOutside = (e: MouseEvent) => {
-    if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-      setShowUserMenu(false);
-    }
-  };
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('bannerConfigChange', handleStorageChange);
+    };
+  }, [isLoggedIn]);
 
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [searchTimeout]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("user");
-    clearCartDisplay(); // Chỉ clear hiển thị, GIỮ cart trong localStorage
+    clearCartDisplay();
 
     setShowUserMenu(false);
     navigate("/");
@@ -104,24 +290,109 @@ const Header = () => {
     <header className="shadow-lg z-50 bg-white relative">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 h-20">
         <Link to="/" className="flex items-center space-x-2">
-          <img src="/logo.png" alt="Logo Bemori" className="h-10 w-auto" />
-          <span className="text-2xl font-bold text-pink-500">FUZZYBEAR</span>
+          {systemConfig.logo ? (
+            // Nếu có logo upload thì chỉ hiển thị logo
+            <img src={systemConfig.logo} alt="Logo Bemori" className="h-10 w-auto" />
+          ) : (
+            // Nếu không có logo upload thì hiển thị logo mặc định + text
+            <>
+              <img src="/logo.png" alt="Logo Bemori" className="h-10 w-auto" />
+              <span className="text-2xl font-bold text-pink-500">FUZZYBEAR</span>
+            </>
+          )}
         </Link>
-        <div className="flex-1 max-w-md mx-6">
-          <form onSubmit={handleSearch} className="relative"> {/* Wrap vào form để hỗ trợ Enter */}
+        <div className="flex-1 max-w-md mx-6" ref={searchRef}>
+          <form onSubmit={handleSearch} className="relative">
             <input
               type="text"
-              placeholder="Nhập sản phẩm cần tìm"
+              placeholder="Tìm kiếm sản phẩm (có thể gõ không dấu)..."
               className="w-full border border-rose-300 rounded-md py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-rose-200"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)} // Xử lý onChange
+              onChange={handleSearchChange}
+              onFocus={() => {
+                if (searchResults.length > 0) {
+                  setShowSearchResults(true);
+                }
+              }}
+              onKeyDown={handleKeyDown}
             />
             <button
-              type="submit" // Type submit để trigger form
+              type="submit"
               className="absolute right-2 top-1/2 transform -translate-y-1/2 text-rose-500 hover:text-rose-700"
             >
               <FaSearch size={18} />
             </button>
+            
+            {/* Search Results Dropdown */}
+            {showSearchResults && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+                {isSearching ? (
+                  <div className="p-4 text-center text-gray-500">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-rose-500 mx-auto"></div>
+                    <p className="mt-2">Đang tìm kiếm...</p>
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <>
+                    {searchResults.map((product, index) => (
+                                              <div
+                          key={product._id}
+                          className={`flex items-center p-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors duration-150 ${
+                            selectedIndex === index 
+                              ? 'bg-rose-100 border-rose-200' 
+                              : 'hover:bg-rose-50'
+                          }`}
+                          onClick={() => handleProductSelect(product)}
+                          onMouseEnter={() => setSelectedIndex(index)}
+                          onMouseLeave={() => setSelectedIndex(-1)}
+                        >
+                        <div className="w-12 h-12 rounded-lg overflow-hidden mr-3 flex-shrink-0">
+                          {product.images ? (
+                            <img
+                              src={product.images}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                              <FaSearch className="text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-gray-900 truncate">
+                            {highlightText(product.name, searchQuery)}
+                          </h4>
+                          {product.variants && product.variants.length > 0 && (
+                            <p className="text-xs text-rose-600 font-medium">
+                              {new Intl.NumberFormat('vi-VN', {
+                                style: 'currency',
+                                currency: 'VND'
+                              }).format(product.variants[0].price)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                                         <div className="p-3 border-t border-gray-100">
+                       <div className="text-xs text-gray-500 mb-2">
+                         Tìm thấy {searchResults.length} kết quả
+                       </div>
+                       <button
+                         type="submit"
+                         className="w-full text-center text-sm text-rose-600 hover:text-rose-700 font-medium"
+                         onClick={handleSearch}
+                       >
+                         Xem tất cả kết quả cho "{searchQuery}"
+                       </button>
+                     </div>
+                  </>
+                ) : searchQuery.trim() ? (
+                  <div className="p-4 text-center text-gray-500">
+                    <p>Không tìm thấy sản phẩm nào</p>
+                  </div>
+                ) : null}
+              </div>
+            )}
           </form>
         </div>
         <div className="flex items-center space-x-6 relative">

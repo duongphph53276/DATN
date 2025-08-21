@@ -52,7 +52,7 @@ const Checkout: React.FC = () => {
     try {
       const userCartItems = loadUserCart();
       setCartItems(userCartItems);
-    } catch (error) {
+    } catch {
       console.error('Lỗi khi tải giỏ hàng của user:', error);
       setErrorMessage('Lỗi khi tải giỏ hàng. Vui lòng thử lại.');
       setTimeout(() => setErrorMessage(null), 3000);
@@ -65,7 +65,7 @@ const Checkout: React.FC = () => {
         setAppliedDiscount(discountData);
         setDiscountCode(discountData.code);
         calculateDiscountAmount(discountData);
-      } catch (error) {
+      } catch {
         localStorage.removeItem('appliedDiscount');
       }
     }
@@ -104,7 +104,7 @@ const Checkout: React.FC = () => {
             if (shippingResponse.status === 200) {
               setShippingFee(shippingResponse.data.data.shipping_fee);
             }
-          } catch (error) {
+          } catch {
             console.error('Lỗi khi tính phí ship:', error);
             setShippingFee(30000);
           }

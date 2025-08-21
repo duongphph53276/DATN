@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
 import api from '../../../middleware/axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ICategory, ICategoryResponse } from '../../../interfaces/category';
 import { FaFilter, FaSearch, FaUndo, FaEdit, FaTrash, FaPlus, FaFolder, FaGripVertical } from 'react-icons/fa';
 import { ToastSucess } from '../../../utils/toast';
@@ -19,7 +19,7 @@ const ListCategory: React.FC = () => {
   const [levelFilter, setLevelFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
+
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [displayLimit, setDisplayLimit] = useState(6);
   const [showDisplayLimitModal, setShowDisplayLimitModal] = useState(false);
@@ -54,7 +54,7 @@ const ListCategory: React.FC = () => {
       result = result.filter(
         (category) =>
           category.name.toLowerCase().includes(lowerQuery) ||
-          category.slug.toLowerCase().includes(lowerQuery) ||
+          (category.slug && category.slug.toLowerCase().includes(lowerQuery)) ||
           (category.description && category.description.toLowerCase().includes(lowerQuery))
       );
     }
@@ -121,7 +121,6 @@ const ListCategory: React.FC = () => {
 
   // Drag and drop functions
   const handleDragStart = (e: React.DragEvent, id: string) => {
-    setIsDragging(true);
     setDraggedItem(id);
     e.dataTransfer.effectAllowed = 'move';
   };
@@ -159,13 +158,11 @@ const ListCategory: React.FC = () => {
     } catch (err: any) {
       setError(err.response?.data?.message || 'Không thể cập nhật thứ tự danh mục');
     } finally {
-      setIsDragging(false);
       setDraggedItem(null);
     }
   };
 
   const handleDragEnd = () => {
-    setIsDragging(false);
     setDraggedItem(null);
   };
 

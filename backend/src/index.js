@@ -19,12 +19,13 @@ import { getUserById, getUsers, updateUser, getUserWithPermissions, checkUserPer
 import { createRole, getRoleById, getRoles, updateRole, deleteRole, getRolePermissions, assignPermissionToRole, removePermissionFromRole, getAvailablePermissions } from './controllers/user/role.js';
 import path from "path";
 import { fileURLToPath } from "url";
-import upload from './middleware/upload.js';
+
 import { createPermission, deletePermission, getPermissionById, getPermissions, updatePermission } from './controllers/user/permission.js';
 import { createDefaultPermissions } from './data/permissions.js';
 import { createDefaultRoles } from './data/roles.js';
 import { initializeSocket } from './socket/socket.js';
 import notificationRoutes from './routes/notification.routes.js';
+import systemConfigRoutes from './routes/systemConfig.routes.js';
 
 import { AddToCart, ClearCart, GetCartByUser, RemoveFromCart } from './controllers/cart.js';
 import { checkPurchase, createReview, deleteReview, getAllReviews, getReviewById, getUserReviewByProduct, updateReview } from './controllers/reviews.js';
@@ -92,10 +93,11 @@ app.delete('/vouchers/:id', DeleteVoucher);
 app.get('/vouchers/:id', GetVoucherById); // ✅ Đúng: dùng controller của voucher
 
 // product routes
-app.post('/product/add', upload.fields([
-  { name: "images", maxCount: 1 },
-  { name: "album[]", maxCount: 10 }
-]), createProduct);
+// TODO: Update product upload to use Cloudinary instead of local upload
+// app.post('/product/add', upload.fields([
+//   { name: "images", maxCount: 1 },
+//   { name: "album[]", maxCount: 10 }
+// ]), createProduct);
 app.get('/category', ListCategory);
 app.get('/categories/distribution', getCategoryDistribution);
 
@@ -131,6 +133,8 @@ app.use('/payment', paymentRoutes);
 app.use('/shipping', shippingRoutes);
 //notification
 app.use('/notifications', notificationRoutes);
+//system config
+app.use('/system-config', systemConfigRoutes);
 app.get('/cart/:userId', GetCartByUser);
 app.post('/cart/add', AddToCart);
 app.put('/cart/remove', RemoveFromCart);
@@ -187,7 +191,7 @@ app.use('/shipper', shipperRouter);
 app.get('/verify-email', verifyEmail);
 
 
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
 
 app.use(express.json());
 

@@ -69,6 +69,10 @@ export const usePermissions = () => {
     return permissionNames.every(name => hasPermission(name));
   };
 
+  const isAdmin = (): boolean => {
+    return userInfo?.role?.name === 'admin' || hasPermission('admin');
+  };
+
   useEffect(() => {
     fetchUserPermissions();
   }, []);
@@ -81,6 +85,7 @@ export const usePermissions = () => {
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
+    isAdmin,
     refetch: fetchUserPermissions
   };
 }; 
