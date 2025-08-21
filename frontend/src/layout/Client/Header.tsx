@@ -7,10 +7,11 @@ import api from "../../middleware/axios";
 import { User } from "../../interfaces/user";
 import { clearCartDisplay } from "../../utils/cartUtils";
 import { IProduct } from "../../interfaces/product";
+import { getSystemConfig } from "../../services/api/systemConfig";
 
 const Header = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -20,8 +21,40 @@ const Header = () => {
   const [searchResults, setSearchResults] = useState<IProduct[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  
+  // Load system config for logo
+  const [systemConfig, setSystemConfig] = useState({ logo: '', favicon: '' });
+
+  // Load system config from API
+  useEffect(() => {
+    const loadSystemConfig = async () => {
+      try {
+        const config = await getSystemConfig();
+        setSystemConfig(config);
+      } catch (error) {
+        console.error('Error loading system config:', error);
+      }
+    };
+    
+    loadSystemConfig();
+    
+    // Poll for updates every 30 seconds
+    const interval = setInterval(loadSystemConfig, 30000);
+    
+    // Listen for logo updates
+    const handleLogoUpdate = (event: CustomEvent) => {
+      setSystemConfig(prev => ({ ...prev, logo: event.detail }));
+    };
+    
+    window.addEventListener('logoUpdated', handleLogoUpdate as EventListener);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('logoUpdated', handleLogoUpdate as EventListener);
+    };
+  }, []);
 
   // Debounced search function
   const performSearch = async (query: string) => {
@@ -196,8 +229,24 @@ const Header = () => {
       }
     };
 
+    // Listen for system config changes
+    const handleStorageChange = () => {
+      const saved = localStorage.getItem('systemConfig');
+      if (saved) {
+        setSystemConfig(JSON.parse(saved));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('bannerConfigChange', handleStorageChange);
+
     fetchCategories();
     fetchUserProfile();
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('bannerConfigChange', handleStorageChange);
+    };
   }, [isLoggedIn]);
 
   useEffect(() => {
@@ -241,8 +290,16 @@ const Header = () => {
     <header className="shadow-lg z-50 bg-white relative">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 h-20">
         <Link to="/" className="flex items-center space-x-2">
-          <img src="/logo.png" alt="Logo Bemori" className="h-10 w-auto" />
-          <span className="text-2xl font-bold text-pink-500">FUZZYBEAR</span>
+          {systemConfig.logo ? (
+            // Nếu có logo upload thì chỉ hiển thị logo
+            <img src={systemConfig.logo} alt="Logo Bemori" className="h-10 w-auto" />
+          ) : (
+            // Nếu không có logo upload thì hiển thị logo mặc định + text
+            <>
+              <img src="/logo.png" alt="Logo Bemori" className="h-10 w-auto" />
+              <span className="text-2xl font-bold text-pink-500">FUZZYBEAR</span>
+            </>
+          )}
         </Link>
         <div className="flex-1 max-w-md mx-6" ref={searchRef}>
           <form onSubmit={handleSearch} className="relative">

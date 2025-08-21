@@ -41,7 +41,7 @@ const AddressManagement: React.FC = () => {
       } else {
         setError(data.message);
       }
-    } catch (err) {
+    } catch {
       setError('Lỗi khi tải danh sách địa chỉ');
     } finally {
       setLoading(false);
@@ -56,7 +56,7 @@ const AddressManagement: React.FC = () => {
         if (response.status === 200) {
           setProvinces(response.data.data || []);
         }
-      } catch (error) {
+      } catch {
         // Không chặn UI nếu lỗi lấy tỉnh, vẫn cho nhập tay
       }
     })();
@@ -105,7 +105,7 @@ const AddressManagement: React.FC = () => {
       } else {
         setError(data.message);
       }
-    } catch (err) {
+    } catch {
       setError('Lỗi khi tạo địa chỉ');
     }
   };
@@ -135,7 +135,7 @@ const AddressManagement: React.FC = () => {
       } else {
         setError(data.message);
       }
-    } catch (err) {
+    } catch {
       setError('Lỗi khi cập nhật địa chỉ');
     }
   };
@@ -160,7 +160,7 @@ const AddressManagement: React.FC = () => {
       } else {
         setError(data.message);
       }
-    } catch (err) {
+    } catch {
       setError('Lỗi khi xóa địa chỉ');
     }
   };
@@ -186,7 +186,7 @@ const AddressManagement: React.FC = () => {
       } else {
         setError(data.message);
       }
-    } catch (err) {
+    } catch {
       setError('Lỗi khi đặt địa chỉ mặc định');
     }
   };

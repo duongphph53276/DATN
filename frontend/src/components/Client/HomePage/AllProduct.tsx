@@ -33,7 +33,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 }
 
 const AllProducts: React.FC = () => {
-  const navigate = useNavigate();
+  
   const [filters, setFilters] = useState({ category: "", priceRange: "" });
   const [products, setProducts] = useState<any[]>([]);
   const [attributes, setAttributes] = useState<any[]>([]);

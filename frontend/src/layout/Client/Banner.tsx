@@ -1,11 +1,14 @@
 // src/layout/Client/Banner.tsx
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import { getSystemConfig } from '../../services/api/systemConfig';
 
 interface Slide {
   bgGradient: string;
   title: string;
-  images: string[];
+  images?: string[];
+  image?: string;
+  isActive?: boolean;
 }
 
 const slides: Slide[] = [
@@ -34,11 +37,53 @@ const slides: Slide[] = [
 const Banner: React.FC = () => {
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const slide = slides[current];
+  const [loading, setLoading] = useState(true);
+  const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Load banner config from API
+  const [bannerConfig, setBannerConfig] = useState({
+    banners: slides,
+    autoSlideInterval: 5
+  });
 
-  const prev = () => setCurrent((i) => (i === 0 ? slides.length - 1 : i - 1));
-  const next = () => setCurrent((i) => (i === slides.length - 1 ? 0 : i + 1));
+  // Load config from API on component mount
+  useEffect(() => {
+    const loadBannerConfig = async () => {
+      try {
+        setLoading(true);
+        const config = await getSystemConfig();
+        console.log('Banner config from API:', config);
+        const activeBanners = config.banners.filter((banner: any) => banner.isActive);
+        console.log('Active banners:', activeBanners);
+        setBannerConfig({
+          banners: activeBanners.length > 0 ? activeBanners : slides,
+          autoSlideInterval: config.autoSlideInterval
+        });
+      } catch (error) {
+        console.error('Error loading banner config:', error);
+        // Fallback to default slides
+        setBannerConfig({
+          banners: slides,
+          autoSlideInterval: 5
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBannerConfig();
+
+    // Poll for updates every 30 seconds
+    const interval = setInterval(loadBannerConfig, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const activeSlides = bannerConfig?.banners || slides;
+  const slide = activeSlides[current] || activeSlides[0] || slides[0];
+
+  const prev = () => setCurrent((i) => (i === 0 ? activeSlides.length - 1 : i - 1));
+  const next = () => setCurrent((i) => (i === activeSlides.length - 1 ? 0 : i + 1));
 
   const goToSlide = (index: number) => {
     setCurrent(index);
@@ -46,10 +91,15 @@ const Banner: React.FC = () => {
 
   // Auto-slide effect
   useEffect(() => {
-    if (!isPaused) {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    
+    if (!isPaused && activeSlides.length > 1) {
+      const interval = bannerConfig?.autoSlideInterval || 5;
       intervalRef.current = setInterval(() => {
-        next();
-      }, 5000); // 5 seconds
+        setCurrent((i) => (i === activeSlides.length - 1 ? 0 : i + 1));
+      }, interval * 1000); // Convert to milliseconds
     }
 
     return () => {
@@ -57,7 +107,7 @@ const Banner: React.FC = () => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isPaused]);
+  }, [isPaused, bannerConfig?.autoSlideInterval, activeSlides.length]);
 
   const handleMouseEnter = () => {
     setIsPaused(true);
@@ -67,61 +117,110 @@ const Banner: React.FC = () => {
     setIsPaused(false);
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="relative overflow-hidden h-[400px] md:h-[500px] bg-gradient-to-r from-purple-200 via-pink-200 to-purple-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
+  // Safety check - if no slide is available, show a fallback
+  if (!slide) {
+    return (
+      <div className="relative overflow-hidden h-[400px] md:h-[500px] bg-gradient-to-r from-purple-200 via-pink-200 to-purple-50 flex items-center justify-center">
+        <p className="text-gray-600">Không có banner nào</p>
+      </div>
+    );
+  }
+
   return (
     <div 
-      className={`relative overflow-hidden h-[400px] md:h-[500px] ${slide.bgGradient}`}
+      className={`relative overflow-hidden h-[400px] md:h-[500px] ${slide?.bgGradient || 'bg-gradient-to-r from-purple-200 via-pink-200 to-purple-50'}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Nội dung text */}
-      {/* <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <h2 className="text-3xl md:text-5xl font-extrabold text-center text-purple-700 drop-shadow-lg">
-          {slide.title}
-        </h2>
-      </div> */}
-
-      {/* Ảnh */}
-      <div className="absolute inset-0 flex items-center justify-center gap-4 pointer-events-none">
-        {slide.images.map((src, i) => (
-          <img
-            key={i}
-            src={src}
-            alt={`banner-${i}`}
-            className={`object-contain transition-opacity duration-500 ${
-              i < 2 ? 'w-[1000px] md:w-[2400px]' : 'w-[300px] md:w-[400px]'
-            }`}
-          />
-        ))}
+      {/* Ảnh Banner */}
+      <div className="absolute inset-0">
+        {(() => { console.log('Current slide:', slide); return null; })()}
+        {slide.images ? (
+          // Original banner format with multiple images
+          <div className="flex items-center justify-center gap-4 w-full h-full px-4">
+            {slide.images.map((src: string, i: number) => (
+              <img
+                key={i}
+                src={src}
+                alt={`banner-${i}`}
+                className={`object-contain transition-all duration-500 ${
+                  i < 2 
+                    ? 'h-[380px] md:h-[480px]' 
+                    : 'h-[280px] md:h-[380px]'
+                }`}
+                style={{
+                  maxWidth: i < 2 ? '75%' : '35%'
+                }}
+              />
+            ))}
+          </div>
+        ) : slide.image ? (
+          // New banner format with single image
+          <div className="w-full h-full flex items-center justify-center">
+            <img
+              src={slide.image}
+              alt={slide.title || 'banner'}
+              className="w-full h-full object-cover transition-all duration-500"
+              onError={(e) => {
+                console.error('Image failed to load:', slide.image);
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          </div>
+        ) : (
+          // Fallback - show title if no image
+          <div className="w-full h-full flex items-center justify-center">
+            <h1 className="text-4xl font-bold text-gray-700">{slide.title}</h1>
+          </div>
+        )}
       </div>
 
-      {/* Nút điều khiển */}
-      <button
-        onClick={prev}
-        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 transition z-10"
-      >
-        <ChevronLeft size={24} />
-      </button>
-      <button
-        onClick={next}
-        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 transition z-10"
-      >
-        <ChevronRight size={24} />
-      </button>
-
-      {/* Indicator dots */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
-        {slides.map((_, index) => (
+      {/* Nút điều khiển - chỉ hiển thị khi có nhiều hơn 1 banner */}
+      {activeSlides.length > 1 && (
+        <>
           <button
-            key={index}
-            onClick={() => goToSlide(index)}
-            className={`w-3 h-3 rounded-full transition-all duration-300 ${
-              index === current 
-                ? 'bg-white scale-110' 
-                : 'bg-white bg-opacity-50 hover:bg-opacity-75'
-            }`}
-          />
-        ))}
-      </div>
+            onClick={prev}
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-90 rounded-full p-3 hover:scale-110 transition-all duration-200 z-10 shadow-lg"
+          >
+            <ChevronLeft size={20} className="text-gray-700" />
+          </button>
+          <button
+            onClick={next}
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-90 rounded-full p-3 hover:scale-110 transition-all duration-200 z-10 shadow-lg"
+          >
+            <ChevronRight size={20} className="text-gray-700" />
+          </button>
+        </>
+      )}
+
+      {/* Indicator dots - chỉ hiển thị khi có nhiều hơn 1 banner */}
+      {activeSlides.length > 1 && (
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-3 z-10">
+          {activeSlides.map((_: any, index: number) => (
+            <button
+              key={index}
+              onClick={() => goToSlide(index)}
+              className={`w-4 h-4 rounded-full transition-all duration-300 shadow-lg ${
+                index === current 
+                  ? 'bg-white scale-125 shadow-xl' 
+                  : 'bg-white bg-opacity-50 hover:bg-opacity-75 hover:scale-110'
+              }`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Overlay gradient for better text readability (optional) */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent pointer-events-none"></div>
     </div>
   );
 };

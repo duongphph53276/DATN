@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { FaEnvelope, FaSpinner, FaExclamationTriangle, FaCheckCircle, FaArrowLeft } from 'react-icons/fa';
-import api from '../../middleware/axios';
+
 
 const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');

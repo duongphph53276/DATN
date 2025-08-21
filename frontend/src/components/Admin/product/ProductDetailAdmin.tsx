@@ -23,7 +23,7 @@ const ProductDetailAdmin = () => {
 
         setProduct(res.data.data.product);
         setVariants(variantRes.data.data);
-      } catch (err) {
+      } catch {
         ToastError("Không tìm thấy sản phẩm");
       }
     };

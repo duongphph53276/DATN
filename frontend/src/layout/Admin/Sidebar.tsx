@@ -12,12 +12,13 @@ import {
   Key,
   Tag,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Cog
 } from 'lucide-react'
 import { usePermissions } from '../../hooks/usePermissions'
 
 const Sidebar = () => {
-  const { hasPermission, loading } = usePermissions();
+  const { hasPermission, isAdmin, loading } = usePermissions();
   const [isCollapsed, setIsCollapsed] = useState(() => {
     // Lấy trạng thái từ localStorage
     const saved = localStorage.getItem('sidebar-collapsed');
@@ -120,6 +121,17 @@ const Sidebar = () => {
           permission: 'view_vouchers'
         }
       ]
+    },
+    {
+      title: 'Hệ thống',
+      items: [
+        { 
+          name: 'Cài đặt hệ thống', 
+          path: '/admin/system-settings', 
+          icon: <Cog size={20} />,
+          permission: 'admin' // Chỉ admin mới có quyền
+        }
+      ]
     }
   ]
 
@@ -129,6 +141,7 @@ const Sidebar = () => {
     items: section.items.filter(item => {
       if (loading) return false;
       if (item.permission === null) return true;
+      if (item.permission === 'admin') return isAdmin();
       return hasPermission(item.permission);
     })
   })).filter(section => section.items.length > 0);
@@ -188,7 +201,7 @@ const Sidebar = () => {
       </button>
 
       {/* Navigation */}
-      <nav className="p-4 space-y-6 overflow-y-auto h-[calc(100vh-80px)]">
+      <nav className="p-4 space-y-6 overflow-y-auto h-[calc(100vh-120px)]">
         {filteredMenuItems.map((section, sectionIndex) => (
           <div key={sectionIndex} className="space-y-2">
             {!isCollapsed && (
@@ -240,20 +253,7 @@ const Sidebar = () => {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200/50 bg-white/50 backdrop-blur-sm">
-        {!isCollapsed ? (
-          <div className="text-xs text-gray-500 text-center">
-            © Admin Panel
-          </div>
-        ) : (
-          <div className="flex items-center justify-center">
-            <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-md flex items-center justify-center" title="Admin Panel">
-              <BarChart3 className="text-white" size={12} />
-            </div>
-          </div>
-        )}
-      </div>
+
     </aside>
   )
 }

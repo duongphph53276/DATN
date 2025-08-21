@@ -14,20 +14,20 @@ interface Banner {
 }
 
 const services: Service[] = [
-  { icon: 'public/icons/Asset-2.png', title: 'GIAO HÀNG TẬN NHÀ', href: '/shipping' },
-  { icon: 'public/icons/Asset-3.png', title: 'BỌC QUÀ GIÁ RẺ', href: '/gift-wrap' },
-  { icon: 'public/icons/Asset-4.png', title: 'TẶNG THIỆP MIỄN PHÍ', href: '/free-card' },
-  { icon: 'public/icons/Asset-5.png', title: 'GIẶT GẤU BÔNG', href: '/wash' },
-  { icon: 'public/icons/Asset-1.png', title: 'NÉN NHỜ GẤU', href: '/bear-compress' },
+  { icon: 'public/icons/Asset-2.png', title: 'GIAO HÀNG TẬN NHÀ', href: '/#'},
+  { icon: 'public/icons/Asset-3.png', title: 'BỌC QUÀ GIÁ RẺ', href: '/#' },
+  { icon: 'public/icons/Asset-4.png', title: 'TẶNG THIỆP MIỄN PHÍ', href: '/#' },
+  { icon: 'public/icons/Asset-5.png', title: 'GIẶT GẤU BÔNG', href: '/#' },
+  { icon: 'public/icons/Asset-1.png', title: 'NÉN NHỜ GẤU', href: '/#' },
 ];
 
 const banners: Banner[] = [
-  { image: '  public/banner/gaubong5.png', href: '/gau-tang-ban-gai' },
-  { image: 'public/banner/gaubong1.png', href: '/gau-tang-be-yeu' },
-  { image: 'public/banner/thu-bong-cute--jpg.webp', href: '/thu-bong-cute' },
-  { image: 'public/banner/thu-bong-theo-mau-sac-1.png', href: '/thu-bong-mau-sac' },
-  { image: 'public/banner/gaubong4.png', href: '/gau-bong-event' },
-  { image: 'public/banner/gaubong3.png', href: '/gau-bong-si-le' },
+  { image: '  public/banner/gaubong5.png', href: '/#' },
+  { image: 'public/banner/gaubong1.png', href: '/#' },
+  { image: 'public/banner/thu-bong-cute--jpg.webp', href: '/#' },
+  { image: 'public/banner/thu-bong-theo-mau-sac-1.png', href: '/#' },
+  { image: 'public/banner/gaubong4.png', href: '/#' },
+  { image: 'public/banner/gaubong3.png', href: '/#' },
 ];
 
 const CategorySection: React.FC = () => {
@@ -52,13 +52,13 @@ const CategorySection: React.FC = () => {
       </div>
 
       {/* Banner grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 px-4 md:px-10">
+      <div className="grid grid-cols-3 gap-6 px-4 md:px-10 max-w-6xl mx-auto">
         {banners.map((banner, idx) => (
-          <a key={idx} href={banner.href} className="block overflow-hidden rounded-xl">
+          <a key={idx} href={banner.href} className="block overflow-hidden rounded-lg hover:shadow-lg transition-all duration-300">
             <img
               src={banner.image}
               alt={`banner-${idx}`}
-              className="w-full h-auto rounded-xl transition-transform duration-300 hover:scale-105"
+              className="w-full h-32 sm:h-40 md:h-48 object-cover rounded-lg transition-transform duration-300 hover:scale-105"
             />
           </a>
         ))}

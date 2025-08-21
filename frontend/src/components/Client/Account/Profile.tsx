@@ -29,7 +29,7 @@ const Profile: React.FC = () => {
         } else {
           setError(data.message);
         }
-      } catch (err) {
+      } catch {
         setError('Lỗi khi tải thông tin hồ sơ');
       } finally {
         setLoading(false);

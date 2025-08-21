@@ -12,7 +12,7 @@ const parsePrice = (value: string | number | undefined | null): number => {
 };
 
 const OtherProduct: React.FC = () => {
-  const navigate = useNavigate();
+  
   const [products, setProducts] = useState<any[]>([]);
   const [attributes, setAttributes] = useState<any[]>([]);
   const [attributeValues, setAttributeValues] = useState<any[]>([]);

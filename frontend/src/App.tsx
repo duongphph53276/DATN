@@ -16,6 +16,7 @@ import EditAttribute from './components/Admin/attribute/EditAttribute';
 import ProductDetailAdmin from './components/Admin/product/ProductDetailAdmin';
 import AdminLayout from './layout/Admin/Admin.layout';
 import ProtectedRoute from './components/Admin/ProtectedRoute';
+import SystemSettings from './components/Admin/SystemSettings';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import RegisterAdmin from './components/Auth/RegisterAdmin';
@@ -37,6 +38,7 @@ import Cart from './components/Client/Account/Cart';
 import Checkout from './components/Client/Account/Checkout';
 import AllProducts from './components/Client/HomePage/AllProduct';
 import ScrollToTop from './components/ScrollToTop';
+import { useFavicon } from './hooks/useFavicon';
 import Profile from './components/Client/Account/Profile';
 import UpdateProfile from './components/Client/Account/UpdateProfile';
 import ChangePassword from './components/Client/Account/ChangePassword';
@@ -80,6 +82,9 @@ const AuthGuard = ({ children }: { children: JSX.Element }) => {
 };
 
 function App() {
+  // Initialize favicon management
+  useFavicon();
+  
   const routes = useRoutes([
     {
       path: "/login",
@@ -150,6 +155,7 @@ function App() {
         { path: "permissions", element: <ProtectedRoute requiredPermission="view_permissions"><PermissionManagement /></ProtectedRoute> },
         { path: "order-list", element: <ProtectedRoute requiredPermission="view_orders"><ListOrderModule /></ProtectedRoute> },
         { path: "order-detail/:id", element: <ProtectedRoute requiredPermission="view_orders"><OrderDetail /></ProtectedRoute> },
+        { path: "system-settings", element: <ProtectedRoute requiredPermission="admin"><SystemSettings /></ProtectedRoute> },
       ],
     },
     {
