@@ -54,6 +54,9 @@ import ShippingOrders from './components/Shipper/ShippingOrders';
 import DeliveredOrders from './components/Shipper/DeliveredOrders';
 import CancelledOrders from './components/Shipper/CancelledOrders';
 import SearchResults from './components/Client/HomePage/SearchResults';
+import ChinhSachChung from './components/Client/Policy/ChinhSachChung';
+import ChinhSachBaoMat from './components/Client/Policy/ChinhSachBaoMat';
+import BaoHanhDoiTra from './components/Client/Policy/BaoHanhDoiTra';
 
 const SimpleProtectedRoute = ({ children, requiresAdmin = false }: { children: JSX.Element; requiresAdmin?: boolean }) => {
   const token = localStorage.getItem("token");
@@ -114,6 +117,9 @@ function App() {
         { path: "payment-return", element: <SimpleProtectedRoute><PaymentReturn /></SimpleProtectedRoute> },
         { path: "order-success", element: <SimpleProtectedRoute><OrderSuccess /></SimpleProtectedRoute> },
         { path: "order-detail/:id", element: <OrderDetailPage /> },
+        { path: "chinh-sach-chung", element: <ChinhSachChung /> },
+        { path: "chinh-sach-bao-mat", element: <ChinhSachBaoMat /> },
+        { path: "bao-hanh-doi-tra", element: <BaoHanhDoiTra /> },
 
       ],
     },

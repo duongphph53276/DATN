@@ -1,6 +1,6 @@
 // src/layout/Client/Banner.tsx
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface Slide {
   bgGradient: string;
@@ -31,17 +31,48 @@ const slides: Slide[] = [
   },
 ];
 
-
-
 const Banner: React.FC = () => {
   const [current, setCurrent] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const slide = slides[current];
 
   const prev = () => setCurrent((i) => (i === 0 ? slides.length - 1 : i - 1));
   const next = () => setCurrent((i) => (i === slides.length - 1 ? 0 : i + 1));
 
+  const goToSlide = (index: number) => {
+    setCurrent(index);
+  };
+
+  // Auto-slide effect
+  useEffect(() => {
+    if (!isPaused) {
+      intervalRef.current = setInterval(() => {
+        next();
+      }, 5000); // 5 seconds
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isPaused]);
+
+  const handleMouseEnter = () => {
+    setIsPaused(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsPaused(false);
+  };
+
   return (
-    <div className={`relative overflow-hidden h-[400px] md:h-[500px] ${slide.bgGradient}`}>
+    <div 
+      className={`relative overflow-hidden h-[400px] md:h-[500px] ${slide.bgGradient}`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       {/* Nội dung text */}
       {/* <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         <h2 className="text-3xl md:text-5xl font-extrabold text-center text-purple-700 drop-shadow-lg">
@@ -50,7 +81,7 @@ const Banner: React.FC = () => {
       </div> */}
 
       {/* Ảnh */}
-      <div className="absolute inset-0 flex items-center justify-center gap-4  pointer-events-none">
+      <div className="absolute inset-0 flex items-center justify-center gap-4 pointer-events-none">
         {slide.images.map((src, i) => (
           <img
             key={i}
@@ -76,6 +107,21 @@ const Banner: React.FC = () => {
       >
         <ChevronRight size={24} />
       </button>
+
+      {/* Indicator dots */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
+        {slides.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => goToSlide(index)}
+            className={`w-3 h-3 rounded-full transition-all duration-300 ${
+              index === current 
+                ? 'bg-white scale-110' 
+                : 'bg-white bg-opacity-50 hover:bg-opacity-75'
+            }`}
+          />
+        ))}
+      </div>
     </div>
   );
 };
