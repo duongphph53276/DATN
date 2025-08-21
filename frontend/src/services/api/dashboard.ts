@@ -123,10 +123,7 @@ export const getDashboardData = async (): Promise<DashboardStats> => {
       getCategoryDistribution().catch(() => ({ data: [] }))
     ]);
 
-    // Debug logging
-    console.log('Recent Orders Response:', recentOrders);
-    console.log('Recent Orders Data:', recentOrders.data);
-    console.log('Recent Orders Array:', recentOrders.data?.data?.orders);
+
 
     return {
       totalOrders: orderStats.data.overall_stats.total_orders || 0,
@@ -134,7 +131,7 @@ export const getDashboardData = async (): Promise<DashboardStats> => {
       totalUsers: userStats.data?.total_users || 0,
       totalProducts: productStats.data?.total_products || 0,
       orderStatusBreakdown: orderStats.data.status_breakdown || [],
-      recentOrders: recentOrders.data?.data?.orders || [],
+      recentOrders: recentOrders.data?.orders || [],
       monthlyRevenue: monthlyRevenue.data || [],
       categoryDistribution: categoryDistribution.data || [],
       totalProfit: orderStats.data.overall_stats.total_profit || 0,

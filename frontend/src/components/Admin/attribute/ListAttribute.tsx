@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { FaFilter, FaSearch, FaUndo, FaEdit, FaTrash, FaPlus, FaEye, FaFolder } from "react-icons/fa";
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import { ToastSucess, ToastError, ToastWarning } from "../../../utils/toast";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 interface AttributeValue {
   _id: string;
@@ -27,6 +28,7 @@ interface Attribute {
 
 const AttributeList: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission, isAdmin } = usePermissions();
   const [attributes, setAttributes] = useState<Attribute[]>([]);
   const [filteredAttributes, setFilteredAttributes] = useState<Attribute[]>([]);
   const [openModalId, setOpenModalId] = useState<string | null>(null);
@@ -372,13 +374,15 @@ const AttributeList: React.FC = () => {
                           >
                             <FaEdit size={14} />
                           </button>
-                          <button
-                            className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 shadow-sm hover:shadow-md"
-                            onClick={() => handleDeleteClick(attr)}
-                            title="Xóa"
-                          >
-                            <FaTrash size={14} />
-                          </button>
+                          {(isAdmin() || hasPermission('delete_attribute')) && (
+                            <button
+                              className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                              onClick={() => handleDeleteClick(attr)}
+                              title="Xóa"
+                            >
+                              <FaTrash size={14} />
+                            </button>
+                          )}
                         </div>
 
                         {openModalId === attr._id && (

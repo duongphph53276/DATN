@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import { usePermissions } from '../../../hooks/usePermissions';
 
 interface ICartItem {
   product_id: {
@@ -22,6 +23,7 @@ interface ICart {
 }
 
 const ListCart: React.FC = () => {
+  const { hasPermission, isAdmin } = usePermissions();
   const [carts, setCarts] = useState<ICart[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -99,12 +101,14 @@ const ListCart: React.FC = () => {
                 >
                   Sửa
                 </Link>
-                <button
-                  onClick={() => handleDelete(cart._id)}
-                  className="text-red-500 hover:underline"
-                >
-                  Xoá
-                </button>
+                {(isAdmin() || hasPermission('delete_cart')) && (
+                  <button
+                    onClick={() => handleDelete(cart._id)}
+                    className="text-red-500 hover:underline"
+                  >
+                    Xoá
+                  </button>
+                )}
               </td>
             </tr>
           ))}
