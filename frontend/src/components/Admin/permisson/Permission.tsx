@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../../middleware/axios';
+import { usePermissions } from '../../../hooks/usePermissions';
 
 interface Role {
   _id: string;
@@ -20,6 +21,7 @@ interface RolePermission {
 }
 
 const PermissionManagement: React.FC = () => {
+  const { hasPermission, isAdmin } = usePermissions();
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState<string>('');
@@ -323,12 +325,14 @@ const PermissionManagement: React.FC = () => {
                   >
                     Sửa
                   </button>
-                  <button
-                    onClick={() => handleDelete(perm._id)}
-                    className="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
-                  >
-                    Xóa
-                  </button>
+                  {(isAdmin() || hasPermission('delete_permission')) && (
+                    <button
+                      onClick={() => handleDelete(perm._id)}
+                      className="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
+                    >
+                      Xóa
+                    </button>
+                  )}
                 </div>
               </div>
               <p className="text-sm text-gray-600">{perm.description}</p>

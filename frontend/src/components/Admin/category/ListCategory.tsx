@@ -6,9 +6,11 @@ import { ICategory, ICategoryResponse } from '../../../interfaces/category';
 import { FaFilter, FaSearch, FaUndo, FaEdit, FaTrash, FaPlus, FaFolder, FaGripVertical } from 'react-icons/fa';
 import { ToastSucess } from '../../../utils/toast';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
+import { usePermissions } from '../../../hooks/usePermissions';
 
 const ListCategory: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission, isAdmin } = usePermissions();
   const [categories, setCategories] = useState<ICategory[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<ICategory[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -236,13 +238,15 @@ const ListCategory: React.FC = () => {
               >
                 <FaEdit size={14} />
               </button>
-              <button
-                onClick={() => handleDelete(item._id!)}
-                className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 shadow-sm hover:shadow-md"
-                title="Xóa"
-              >
-                <FaTrash size={14} />
-              </button>
+              {(isAdmin() || hasPermission('delete_category')) && (
+                <button
+                  onClick={() => handleDelete(item._id!)}
+                  className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                  title="Xóa"
+                >
+                  <FaTrash size={14} />
+                </button>
+              )}
             </div>
           </div>
           {buildCategoryTree(items, item._id!, level + 1)}

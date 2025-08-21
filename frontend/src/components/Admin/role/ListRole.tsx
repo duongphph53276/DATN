@@ -3,9 +3,11 @@ import api from '../../../middleware/axios';
 import { FaFilter, FaSearch, FaUndo, FaEdit, FaPlus, FaTrash } from 'react-icons/fa';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { usePermissions } from '../../../hooks/usePermissions';
 
 const ListRole: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission, isAdmin } = usePermissions();
   const [roles, setRoles] = useState<any[]>([]);
   const [filteredRoles, setFilteredRoles] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -239,13 +241,15 @@ const ListRole: React.FC = () => {
                          >
                            <FaEdit size={14} />
                          </button>
-                         <button
-                           className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 shadow-sm hover:shadow-md"
-                           onClick={() => handleDeleteRole(role._id)}
-                           title="Xóa"
-                         >
-                           <FaTrash size={14} />
-                         </button>
+                         {(isAdmin() || hasPermission('delete_role')) && (
+                           <button
+                             className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                             onClick={() => handleDeleteRole(role._id)}
+                             title="Xóa"
+                           >
+                             <FaTrash size={14} />
+                           </button>
+                         )}
                        </div>
                      </td>
                   </tr>
