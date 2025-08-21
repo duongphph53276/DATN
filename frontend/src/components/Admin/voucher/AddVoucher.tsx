@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IAddVoucherRequest, IErrorResponse } from '../../../interfaces/voucher';
 import { useNavigate } from 'react-router-dom';
+import api from '../../../middleware/axios';
 import axios from 'axios';
 import { IExtendedAddVoucherRequest } from '../../../interfaces/voucher';
 import { IProduct } from '../../../interfaces/product';
@@ -34,7 +35,7 @@ const AddVoucher = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/product');
+        const res = await api.get('/product');
         if (res.data.status) {
           const productList = res.data.data.map((p: any) => ({
             ...p,
@@ -212,7 +213,7 @@ const AddVoucher = () => {
         usage_limit_per_user: 1, // Mặc định 1 lần sử dụng mỗi user
       };
 
-      const response = await axios.post('http://localhost:5000/vouchers', payload);
+      const response = await api.post('/vouchers', payload);
       if (response.data.status) {
         alert('Thêm voucher thành công');
         navigate('/admin/voucher');

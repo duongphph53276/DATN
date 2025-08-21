@@ -17,7 +17,7 @@ const MyOrders: React.FC = () => {
   const { client, status } = useAppSelector((state) => state.order);
   const dispatch = useAppDispatch();
 
-  const itemsPerPage = 50; // Tăng limit để xem tất cả đơn hàng
+  const itemsPerPage = 10; // Hiển thị 10 đơn hàng mỗi trang
   useEffect(() => {
     const params: GetOrderParams = {
       page: currentPage,
@@ -74,7 +74,14 @@ const MyOrders: React.FC = () => {
   };
 
   const getPaymentMethodText = (method: string) => {
-    switch (method.toLowerCase()) {
+    // Sử dụng mapping từ constant.ts
+    const vietnameseMethod = paymentMethodVietnamese[method.toLowerCase()];
+    if (vietnameseMethod) {
+      return vietnameseMethod;
+    }
+    
+    // Fallback cho các trường hợp đặc biệt
+    switch (method.toUpperCase()) {
       case 'VNPAY':
         return 'Thanh toán bằng VNPAY';
       case 'COD':
@@ -121,16 +128,20 @@ const MyOrders: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const filteredOrders = client?.orders?.filter(order => {
+  // Sử dụng dữ liệu trực tiếp từ API với phân trang
+  const orders = client?.orders || [];
+  
+  // Filter local chỉ cho search term (vì API không hỗ trợ search)
+  const filteredOrders = orders.filter(order => {
     if (!order._id) return false;
     
-    const matchesSearch = searchTerm == '' ||
+    const matchesSearch = searchTerm === '' ||
       order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (order.order_details && order.order_details.some(detail =>
         detail.name && detail.name.toLowerCase().includes(searchTerm.toLowerCase())
       ));
     return matchesSearch;
-  }) || [];
+  });
 
   if (status === 'loading') {
     return (
@@ -209,8 +220,12 @@ const MyOrders: React.FC = () => {
                 className="w-full px-4 py-2 border border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-300 focus:border-transparent outline-none bg-white"
               >
                 <option value="">Tất cả thanh toán</option>
-                <option value="VNPAY">Thanh toán qua VNPAY</option>
-                <option value="COD">Thanh toán khi nhận hàng</option>
+                <option value="VNPAY">Thanh toán bằng VNPAY</option>
+                <option value="cod">Thanh toán khi nhận hàng</option>
+                <option value="bank_transfer">Chuyển khoản ngân hàng</option>
+                <option value="credit_card">Thẻ tín dụng</option>
+                <option value="debit_card">Thẻ ghi nợ</option>
+                <option value="e_wallet">Ví điện tử</option>
               </select>
 
               <button
@@ -223,7 +238,7 @@ const MyOrders: React.FC = () => {
           </div>
         </div>
 
-        {!filteredOrders || filteredOrders.length === 0 ? (
+        {!orders || orders.length === 0 ? (
           <div className="bg-white shadow-2xl rounded-3xl p-12 text-center">
             <div className="text-8xl mb-6">🐻</div>
             <h3 className="text-2xl font-bold text-gray-800 mb-3">Chưa có đơn hàng nào</h3>
@@ -233,6 +248,18 @@ const MyOrders: React.FC = () => {
               className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
             >
               Mua sắm ngay 🛍️
+            </button>
+          </div>
+        ) : filteredOrders.length === 0 && searchTerm ? (
+          <div className="bg-white shadow-2xl rounded-3xl p-12 text-center">
+            <div className="text-6xl mb-6">🔍</div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-3">Không tìm thấy đơn hàng</h3>
+            <p className="text-gray-600 mb-8 text-lg">Không có đơn hàng nào phù hợp với từ khóa "{searchTerm}"</p>
+            <button
+              onClick={resetFilters}
+              className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
+            >
+              Xem tất cả đơn hàng 🔄
             </button>
           </div>
         ) : (
@@ -327,12 +354,17 @@ const MyOrders: React.FC = () => {
           </div>
         )}
 
-        {client?.pagination && client.pagination.total_pages > 1 && (
+        {client?.pagination && client.pagination.total_pages > 1 && filteredOrders.length > 0 && (
           <div className="bg-white shadow-xl rounded-3xl p-6 mt-8">
             <div className="flex items-center justify-between">
               <div className="text-gray-600">
                 Trang {client.pagination.current_page} / {client.pagination.total_pages}
                 <span className="ml-2">({client.pagination.total_orders} đơn hàng)</span>
+                {searchTerm && (
+                  <span className="ml-2 text-pink-600">
+                    (Hiển thị {filteredOrders.length} kết quả tìm kiếm)
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-2">

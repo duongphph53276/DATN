@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { IErrorResponse, ISingleVoucherResponse, IExtendedEditVoucherRequest } from '../../../interfaces/voucher';
 import { useParams, useNavigate } from 'react-router-dom';
+import api from '../../../middleware/axios';
 import axios from 'axios';
 import { IProduct } from '../../../interfaces/product';
 
@@ -36,7 +37,7 @@ const EditVoucher = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/product');
+        const res = await api.get('/product');
         if (res.data.status) {
           const list = res.data.data.map((p: any) => ({ ...p, _id: p._id.toString() }));
           setProducts(list);
@@ -52,7 +53,7 @@ const EditVoucher = () => {
   useEffect(() => {
     const fetchVoucher = async () => {
       try {
-        const res = await axios.get<ISingleVoucherResponse>(`http://localhost:5000/vouchers/${id}`);
+        const res = await api.get<ISingleVoucherResponse>(`/vouchers/${id}`);
         if (res.data.status) {
           const v = res.data.data;
           setFormData({
@@ -172,7 +173,7 @@ const EditVoucher = () => {
         applicable_products: productSelectionType === 'all' ? [] : selectedProducts,
       };
 
-      const res = await axios.put(`http://localhost:5000/vouchers/${id}`, payload);
+      const res = await api.put(`/vouchers/${id}`, payload);
       if (res.data.status) {
         alert('Cập nhật thành công');
         navigate('/admin/voucher');

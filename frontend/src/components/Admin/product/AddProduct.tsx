@@ -1,14 +1,13 @@
 import { useForm, SubmitHandler, useFieldArray } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { postProduct } from "../../../../api/product.api";
 import { getCategories } from "../../../../api/category.api.ts";
 import { uploadToCloudinary } from "../../../lib/cloudinary.ts";
 import { getAllAttributes, getAttributeValues } from "../../../../api/attribute.api.ts";
 import * as yup from "yup";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
+import QuillEditor from "../../common/QuillEditor";
 import { useDropzone } from "react-dropzone";
 import ImageGallery from "react-image-gallery";
 import "react-image-gallery/styles/css/image-gallery.css";
@@ -41,6 +40,13 @@ const quillModules = {
     ["clean"],
   ],
 };
+
+const quillFormats = [
+  'header',
+  'bold', 'italic', 'underline', 'strike',
+  'list', 'bullet',
+  'link', 'image'
+];
 
 const AddProduct = () => {
   const navigate = useNavigate();
@@ -459,12 +465,14 @@ const AddProduct = () => {
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả (Tùy chọn)</label>
-                <ReactQuill
+                <QuillEditor
                   value={watch("description") || ""}
                   onChange={(value) => setValue("description", value)}
                   className={errors.description ? "border-red-500" : ""}
                   placeholder="Mô tả sản phẩm"
                   modules={quillModules}
+                  formats={quillFormats}
+                  theme="snow"
                 />
                 {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
               </div>

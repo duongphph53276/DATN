@@ -6,6 +6,7 @@ import connectDB from './config/db.js';
 import { CreateVoucher, ListVoucher, UpdateVoucher, DeleteVoucher, ApplyVoucher, GetVoucherById } from './controllers/voucher.js';
 import { AddCategory, DeleteCategory, EditCategory, GetCategoryById, ListCategory, getCategoryDistribution, reorderCategories, updateDisplayLimit } from './controllers/category.js';
 import { createProduct, deleteProduct, getAllProducts, getProductById, updateProduct, getProductStatistics } from './controllers/product.js';
+import ProductModel from './models/product.js';
 import { createAttribute, getAttributeById, deleteAttribute, getAllAttributes, updateAttribute } from "./controllers/attribute.js";
 import { createAttributeValue, deleteAttributeValue, getAttributeValueById, getAttributeValues, updateAttributeValue } from './controllers/attributeValue.js';
 import { createVariant, deleteVariant, getVariantById, getVariantsByProduct, updateVariant, updateVariantQuantity } from './controllers/productVariant.js';
@@ -66,65 +67,62 @@ app.put('/addresses/:id', authMiddleware, updateAddress);
 app.delete('/addresses/:id', authMiddleware, deleteAddress);
 app.put('/addresses/:id/default', authMiddleware, setDefaultAddress);
 
-app.post('/roles/create', createRole);
-app.get('/roles', getRoles);
-app.get('/roles/:id', getRoleById);
-app.put('/roles/:id', updateRole);
-app.delete('/roles/:id', deleteRole);
+app.post('/roles/create', authMiddleware, restrictTo('admin'), createRole);
+app.get('/roles', authMiddleware, restrictTo('admin'), getRoles);
+app.get('/roles/:id', authMiddleware, restrictTo('admin'), getRoleById);
+app.put('/roles/:id', authMiddleware, restrictTo('admin'), updateRole);
+app.delete('/roles/:id', authMiddleware, restrictTo('admin'), deleteRole);
 
 // Role-Permission routes
-app.get('/roles/:roleId/permissions', getRolePermissions);
-app.post('/roles/assign-permission', assignPermissionToRole);
-app.delete('/roles/:role_id/permissions/:permission_id', removePermissionFromRole);
-app.get('/roles/:roleId/available-permissions', getAvailablePermissions);
+app.get('/roles/:roleId/permissions', authMiddleware, restrictTo('admin'), getRolePermissions);
+app.post('/roles/assign-permission', authMiddleware, restrictTo('admin'), assignPermissionToRole);
+app.delete('/roles/:role_id/permissions/:permission_id', authMiddleware, restrictTo('admin'), removePermissionFromRole);
+app.get('/roles/:roleId/available-permissions', authMiddleware, restrictTo('admin'), getAvailablePermissions);
 
 // Permission routes
-app.post('/permissions/create', createPermission);
-app.get('/permissions', getPermissions);
-app.get('/permissions/:id', getPermissionById);
-app.put('/permissions/:id', updatePermission);
-app.delete('/permissions/:id', deletePermission);
+app.post('/permissions/create', authMiddleware, restrictTo('admin'), createPermission);
+app.get('/permissions', authMiddleware, restrictTo('admin'), getPermissions);
+app.get('/permissions/:id', authMiddleware, restrictTo('admin'), getPermissionById);
+app.put('/permissions/:id', authMiddleware, restrictTo('admin'), updatePermission);
+app.delete('/permissions/:id', authMiddleware, restrictTo('admin'), deletePermission);
 
 app.get('/vouchers', ListVoucher);
-app.post('/vouchers', CreateVoucher);
-app.post('/vouchers/apply', ApplyVoucher);
-app.put('/vouchers/:id', UpdateVoucher);
-app.delete('/vouchers/:id', DeleteVoucher);
+app.post('/vouchers', authMiddleware, restrictTo('admin', 'employee'), CreateVoucher);
+app.post('/vouchers/apply', authMiddleware, ApplyVoucher);
+app.put('/vouchers/:id', authMiddleware, restrictTo('admin', 'employee'), UpdateVoucher);
+app.delete('/vouchers/:id', authMiddleware, restrictTo('admin', 'employee'), DeleteVoucher);
 app.get('/vouchers/:id', GetVoucherById); // ✅ Đúng: dùng controller của voucher
 
 // product routes
 // TODO: Update product upload to use Cloudinary instead of local upload
-// app.post('/product/add', upload.fields([
-//   { name: "images", maxCount: 1 },
-//   { name: "album[]", maxCount: 10 }
-// ]), createProduct);
+app.post('/product/add', authMiddleware, restrictTo('admin', 'employee'), createProduct);
 app.get('/category', ListCategory);
 app.get('/categories/distribution', getCategoryDistribution);
 
 app.get('/product', getAllProducts);
 app.get('/product/:id', getProductById);
-app.put('/product/edit/:id', updateProduct);
-app.delete('/product/:id', deleteProduct);
-app.get('/products/statistics', getProductStatistics);
+app.put('/product/edit/:id', authMiddleware, restrictTo('admin', 'employee'), updateProduct);
+app.delete('/product/:id', authMiddleware, restrictTo('admin', 'employee'), deleteProduct);
+app.get('/products/statistics', authMiddleware, restrictTo('admin', 'employee'), getProductStatistics);
 // Attribute routes
-app.post("/attribute/add", createAttribute);
+app.post("/attribute/add", authMiddleware, restrictTo('admin', 'employee'), createAttribute);
 app.get("/attribute", getAllAttributes);
 app.get("/attribute/:id", getAttributeById);
-app.delete('/attribute/:id', deleteAttribute);
-app.put('/attribute/edit/:id', updateAttribute);
+app.delete('/attribute/:id', authMiddleware, restrictTo('admin', 'employee'), deleteAttribute);
+app.put('/attribute/edit/:id', authMiddleware, restrictTo('admin', 'employee'), updateAttribute);
 // AttributeValue routes (gắn theo attributeId)
-app.post("/attribute-value/add", createAttributeValue);
+app.post("/attribute-value/add", authMiddleware, restrictTo('admin', 'employee'), createAttributeValue);
 app.get("/attribute-value/list/:attributeId", getAttributeValues);
 app.get("/attribute-value/:id", getAttributeValueById);
-app.put("/attribute-value/edit/:id", updateAttributeValue);
-app.delete("/attribute-value/:id", deleteAttributeValue)
+app.put("/attribute-value/edit/:id", authMiddleware, restrictTo('admin', 'employee'), updateAttributeValue);
+app.delete("/attribute-value/:id", authMiddleware, restrictTo('admin', 'employee'), deleteAttributeValue)
 // Variant routes
-app.post("/variant/add", createVariant);
+app.post("/variant/add", authMiddleware, restrictTo('admin', 'employee'), createVariant);
 app.get("/variant/:id", getVariantById);
 app.get("/product/:productId/variants", getVariantsByProduct);
-app.delete('/variant/:id', deleteVariant);
-app.put('/variant/edit/:id', updateVariant);
-app.post('/product-variants/update-quantity', updateVariantQuantity);
+app.delete('/variant/:id', authMiddleware, restrictTo('admin', 'employee'), deleteVariant);
+app.put('/variant/edit/:id', authMiddleware, restrictTo('admin', 'employee'), updateVariant);
+app.post('/product-variants/update-quantity', authMiddleware, restrictTo('admin', 'employee'), updateVariantQuantity);
 // oder
 app.use('/orders', orderRoutes);
 //payment
@@ -135,15 +133,15 @@ app.use('/shipping', shippingRoutes);
 app.use('/notifications', notificationRoutes);
 //system config
 app.use('/system-config', systemConfigRoutes);
-app.get('/cart/:userId', GetCartByUser);
-app.post('/cart/add', AddToCart);
-app.put('/cart/remove', RemoveFromCart);
-app.delete('/cart/clear/:userId', ClearCart);
+app.get('/cart/:userId', authMiddleware, GetCartByUser);
+app.post('/cart/add', authMiddleware, AddToCart);
+app.put('/cart/remove', authMiddleware, RemoveFromCart);
+app.delete('/cart/clear/:userId', authMiddleware, ClearCart);
 
 app.get('/category', ListCategory);
-app.post('/category/add', AddCategory);
-app.put('/category/edit/:id', EditCategory);
-app.delete('/category/:id', DeleteCategory);
+app.post('/category/add', authMiddleware, restrictTo('admin', 'employee'), AddCategory);
+app.put('/category/edit/:id', authMiddleware, restrictTo('admin', 'employee'), EditCategory);
+app.delete('/category/:id', authMiddleware, restrictTo('admin', 'employee'), DeleteCategory);
 app.get('/category/:id', GetCategoryById);
 
 // Review routes
