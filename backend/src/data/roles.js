@@ -50,12 +50,28 @@ export const createDefaultRoles = async () => {
       }
     }
 
-    // Gán một số permissions cơ bản cho employee
+    // Gán permissions cho employee
     const employeePermissions = [
-      'view_products',
       'view_categories',
+      'create_category',
+      'edit_category',
+      'view_products',
+      'create_product',
+      'edit_product',
+      'view_attributes',
+      'create_attribute',
+      'edit_attribute',
       'view_orders',
-      'view_vouchers'
+      'edit_order',
+      'assign_shipper',
+      'view_vouchers',
+      'create_voucher',
+      'edit_voucher',
+      'view_shipping',
+      'edit_shipping',
+      'view_dashboard',
+      'view_statistics',
+      'view_reports'
     ];
 
     for (const permissionName of employeePermissions) {
@@ -78,7 +94,8 @@ export const createDefaultRoles = async () => {
     // Gán permissions cho shipper
     const shipperPermissions = [
       'view_shipper_orders',
-      'update_delivery_status'
+      'update_delivery_status',
+      'view_orders'
     ];
 
     for (const permissionName of shipperPermissions) {
