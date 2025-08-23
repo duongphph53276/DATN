@@ -59,6 +59,7 @@ import SearchResults from './components/Client/HomePage/SearchResults';
 import ChinhSachChung from './components/Client/Policy/ChinhSachChung';
 import ChinhSachBaoMat from './components/Client/Policy/ChinhSachBaoMat';
 import BaoHanhDoiTra from './components/Client/Policy/BaoHanhDoiTra';
+import VerifyEmail from './components/VerifyEmail';
 
 const SimpleProtectedRoute = ({ children, requiresAdmin = false }: { children: JSX.Element; requiresAdmin?: boolean }) => {
   const token = localStorage.getItem("token");
@@ -102,6 +103,10 @@ function App() {
       path: "/forgotpassword",
       element: <AuthGuard><ForgotPassword /></AuthGuard>,
     },
+    {
+    path: "/verify-email",
+    element: <VerifyEmail />,
+  },
     {
       path: "/",
       element: <ClientLayout />,

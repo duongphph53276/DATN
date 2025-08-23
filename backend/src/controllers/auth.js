@@ -143,15 +143,22 @@ export const checkEmail = async (req, res) => {
 
 export const verifyEmail = async (req, res) => {
   const { token } = req.query;
-  if (!token) return res.status(400).send("Thiếu token xác thực.");
+  
+  if (!token) {
+    return res.redirect(`http://localhost:5173/verify-email?error=missing_token`);
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await UserModel.findById(decoded.id);
 
-    if (!user) return res.status(404).send("Người dùng không tồn tại.");
-    if (user.isVerified)
-      return res.send("Email của bạn đã được xác thực trước đó.");
+    if (!user) {
+      return res.redirect(`http://localhost:5173/verify-email?error=user_not_found`);
+    }
+
+    if (user.isVerified) {
+      return res.redirect(`http://localhost:5173/verify-email?success=already_verified`);
+    }
 
     user.isVerified = true;
 
@@ -162,9 +169,12 @@ export const verifyEmail = async (req, res) => {
 
     await user.save();
 
-    res.send("Xác thực email thành công!");
+    // Redirect về frontend với thông báo thành công
+    return res.redirect(`http://localhost:5173/verify-email?success=verified`);
+
   } catch (error) {
-    res.status(400).send("Token không hợp lệ hoặc đã hết hạn.");
+    console.error("Verify email error:", error);
+    return res.redirect(`http://localhost:5173/verify-email?error=invalid_token`);
   }
 };
 

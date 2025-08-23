@@ -52,6 +52,7 @@ app.use(express.json());
 app.post('/register', register);
 app.post('/login', login);
 app.get('/check-email', checkEmail);
+app.get('/verify-email', verifyEmail);
 app.get('/user', authMiddleware, getUserById);
 app.get('/user/permissions', authMiddleware, getUserWithPermissions);
 app.get('/user/check-permission/:permissionName', authMiddleware, checkUserPermission);
@@ -186,7 +187,7 @@ shipperRouter.use(authMiddleware, restrictTo('shipper'));
 
 app.use('/shipper', shipperRouter);
 
-app.get('/verify-email', verifyEmail);
+
 
 
 
