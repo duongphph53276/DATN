@@ -657,12 +657,20 @@ const DetailsPage = () => {
           </div>
         </div>
         <div className="col-span-1 md:col-span-2">
-          <div className="mt-12 p-12 bg-white border-2 border-gray-300 rounded-3xl shadow-2xl hover:shadow-3xl transition-shadow duration-300">
-            <h3 className="text-xl font-extrabold text-gray-800 mb-8 text-center border-b-4 border-pink-600 pb-6">Mô tả sản phẩm</h3>
-            <p className="text-xl text-gray-700 leading-relaxed text-center max-w-5xl mx-auto">
-              {product.description && product.description.trim() ? product.description : "Sản phẩm không có mô tả"}
-            </p>
-          </div>
+         <div className="mt-12 p-12 bg-white border-2 border-gray-300 rounded-3xl shadow-2xl hover:shadow-3xl transition-shadow duration-300">
+    <h3 className="text-xl font-extrabold text-gray-800 mb-8 text-center border-b-4 border-pink-600 pb-6">
+      Mô tả sản phẩm
+    </h3>
+    <div
+      className="text-xl text-gray-700 leading-relaxed text-center max-w-5xl mx-auto"
+      dangerouslySetInnerHTML={{
+        __html:
+          product.description && product.description.trim()
+            ? product.description
+            : "Sản phẩm không có mô tả",
+      }}
+    />
+  </div>
 
           <div className="mt-16 p-12 bg-gradient-to-br from-pink-50 to-white border-2 border-pink-300 rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300">
             <h3 className="text-xl font-extrabold text-gray-800 mb-8 text-center border-b-4 border-pink-300 pb-6">Đánh giá sản phẩm</h3>
