@@ -1381,8 +1381,7 @@ class OrderController {
           message: 'Order not found'
         });
       }
-
-      if (order.user_id != userId) {
+      if (order.user_id.toString() !== userId.toString()) {
         return res.status(403).json({
           success: false,
           message: 'You can only cancel your own orders',
@@ -1390,6 +1389,14 @@ class OrderController {
           userId: userId
         });
       }
+      // if (order.user_id != userId) {
+      //   return res.status(403).json({
+      //     success: false,
+      //     message: 'You can only cancel your own orders',
+      //     data: order.user_id,
+      //     userId: userId
+      //   });
+      // }
 
       if (!['pending', 'preparing'].includes(order.status)) {
         return res.status(400).json({
@@ -1592,13 +1599,19 @@ class OrderController {
           message: 'Order not found'
         });
       }
-
-      if (order.user_id != userId) {
+      
+      if (order.user_id.toString() !== userId.toString()) {
         return res.status(403).json({
           success: false,
           message: 'You can only return your own orders'
         });
       }
+      // if (order.user_id != userId) {
+      //   return res.status(403).json({
+      //     success: false,
+      //     message: 'You can only return your own orders'
+      //   });
+      // }
 
       if (order.status !== 'delivered') {
         return res.status(400).json({

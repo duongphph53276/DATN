@@ -331,7 +331,7 @@ const DetailsPage = () => {
       const allAttributesSelected = requiredAttributes.every(
         (attr: any) => selectedAttributes[attr._id]
       );
-      if (!selectedVariant || !allAttributesSelected) {
+      if (product.variants?.length && !selectedVariant) {
         ToastError("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
         return;
       }
@@ -374,15 +374,15 @@ const DetailsPage = () => {
         price: selectedVariant ? parsePrice(selectedVariant.price) : getDefaultPrice(product),
         variant: selectedVariant
           ? {
-              _id: selectedVariant._id,
-              product_id: selectedVariant.product_id,
-              price: selectedVariant.price,
-              quantity: selectedVariant.quantity,
-              attributes: selectedVariant.attributes.map((attr: any) => ({
-                attribute_id: attr.attribute_id,
-                value_id: attr.value_id,
-              })),
-            }
+            _id: selectedVariant._id,
+            product_id: selectedVariant.product_id,
+            price: selectedVariant.price,
+            quantity: selectedVariant.quantity,
+            attributes: selectedVariant.attributes.map((attr: any) => ({
+              attribute_id: attr.attribute_id,
+              value_id: attr.value_id,
+            })),
+          }
           : undefined,
         variantAttributes,
         quantity,
@@ -484,193 +484,195 @@ const DetailsPage = () => {
             </span>
           </div>
         )}
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           <div className="relative rounded-2xl overflow-hidden shadow-xl border border-gray-100 bg-white">
-          {/* Ảnh chính */}
-          <div className="relative w-full h-[420px] bg-gray-100">
-            {product.images || selectedVariant?.image || product.image ? (
-              <img
-                src={selectedVariant?.image || product.images || product.image || "https://via.placeholder.com/420"}
-                alt={product.name || "Sản phẩm không tên"}
-                className="w-full h-full object-cover rounded-2xl transition-transform duration-500 ease-in-out hover:scale-110"
-                onError={(e) => {
-                  e.currentTarget.src = "https://via.placeholder.com/420";
-                }}
-                loading="lazy"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-500 bg-gray-200 rounded-2xl">
-                Không có ảnh
+            {/* Ảnh chính */}
+            <div className="relative w-full h-[420px] bg-gray-100">
+              {product.images || selectedVariant?.image || product.image ? (
+                <img
+                  src={selectedVariant?.image || product.images || product.image || "https://via.placeholder.com/420"}
+                  alt={product.name || "Sản phẩm không tên"}
+                  className="w-full h-full object-cover rounded-2xl transition-transform duration-500 ease-in-out hover:scale-110"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://via.placeholder.com/420";
+                  }}
+                  loading="lazy"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-500 bg-gray-200 rounded-2xl">
+                  Không có ảnh
+                </div>
+              )}
+            </div>
+            {/* Album ảnh phụ */}
+            {product.album && product.album.length > 0 && (
+              <div className="flex justify-center gap-3 mt-4 px-4 pb-4">
+                {product.album.slice(0, 5).map((image: string, index: number) => (
+                  <div
+                    key={index}
+                    className={`relative w-32 h-24 rounded-lg overflow-hidden border-2 cursor-pointer transition-all duration-300 ${(selectedVariant?.image || product.images) === image
+                      ? "border-pink-500 shadow-lg scale-105"
+                      : "border-gray-200 hover:border-pink-300 hover:shadow-md"
+                      }`}
+                    onClick={() => {
+                      setProduct((prev: any) => ({ ...prev, images: image }));
+                    }}
+                  >
+                    <img
+                      src={image || "https://via.placeholder.com/100"}
+                      alt={`Ảnh phụ ${index + 1} của ${product.name || "sản phẩm"}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = "https://via.placeholder.com/100";
+                      }}
+                      loading="lazy"
+                    />
+                  </div>
+                ))}
               </div>
             )}
           </div>
-          {/* Album ảnh phụ */}
-          {product.album && product.album.length > 0 && (
-            <div className="flex justify-center gap-3 mt-4 px-4 pb-4">
-              {product.album.slice(0, 5).map((image: string, index: number) => (
-                <div
-                  key={index}
-                  className={`relative w-16 h-16 rounded-lg overflow-hidden border-2 cursor-pointer transition-all duration-300 ${(selectedVariant?.image || product.images) === image
-                    ? "border-pink-500 shadow-lg scale-105"
-                    : "border-gray-200 hover:border-pink-300 hover:shadow-md"
-                    }`}
-                  onClick={() => {
-                    setProduct((prev: any) => ({ ...prev, images: image }));
-                  }}
+
+          <div className="flex flex-col justify-center gap-6 text-center md:text-left">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-800">{product.name && product.name.trim() ? product.name : "Sản phẩm không tên"}</h1>
+
+            <div className="flex justify-center md:justify-start items-center gap-4">
+              <span className="text-3xl text-pink-500 font-semibold">{displayedPrice.toLocaleString()}₫</span>
+              {product.oldPrice && <span className="line-through text-gray-400 text-lg">{parsePrice(product.oldPrice).toLocaleString()}₫</span>}
+            </div>
+            <div className="text-sm text-gray-600">Tổng đã bán: {Array.isArray(product.variants) && product.variants.length > 0
+              ? product.variants.reduce((sum: number, v: any) => sum + (v.sold_quantity || 0), 0)
+              : (product.total_sold || 0)} sản phẩm
+              <span className="text-gray-600 text-sm ml-5 ">Đánh giá trung bình:{product.average_rating}/5</span>
+              <span className="text-gray-600 text-sm ml-5 ">Mã sản phẩm:  {product.sku}</span>
+            </div>
+
+            {product.variants?.length > 0 && (
+              <div className="mb-1">
+                {attributes.map((attr: any) => {
+                  const valueIds = getValidAttributeValues(product, attr._id, selectedAttributes);
+                  if (valueIds.length === 0) return null;
+                  return (
+                    <div key={attr._id} className="mb-1">
+                      <h4 className="font-semibold mb-1 capitalize">{getAttributeName(attr._id)}</h4>
+                      <div className="flex flex-wrap justify-center md:justify-start gap-2">
+                        {valueIds.map((valueId: string) => (
+                          <button
+                            key={valueId}
+                            onClick={() => handleSelectAttribute(attr._id, valueId)}
+                            className={`px-4 py-1 text-sm rounded-full border transition ${selectedAttributes[attr._id] === valueId
+                              ? "bg-pink-500 text-white border-pink-500"
+                              : "bg-pink-100 text-pink-600 border-pink-300 hover:bg-pink-200"
+                              }`}
+                          >
+                            {getAttributeValue(valueId)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="mb-2">
+              <h4 className="font-medium mb-2">Số lượng:</h4>
+              <div className="flex justify-center md:justify-start items-center gap-3">
+                <button
+                  onClick={decreaseQty}
+                  className="w-8 h-8 rounded-full bg-gray-100 text-xl text-gray-600 hover:bg-gray-200 transition"
                 >
-                  <img
-                    src={image || "https://via.placeholder.com/100"}
-                    alt={`Ảnh phụ ${index + 1} của ${product.name || "sản phẩm"}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = "https://via.placeholder.com/100";
-                    }}
-                    loading="lazy"
-                  />
+                  –
+                </button>
+                <input
+                  type="number"
+                  min="1"
+                  max={maxAdd}
+                  value={tempQuantity}
+                  onChange={(e) => setTempQuantity(e.target.value)}
+                  onBlur={() => handleQuantityChange(tempQuantity)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
+                  className="w-16 text-center border rounded-lg text-base font-medium focus:outline-none focus:ring-2 focus:ring-pink-400"
+                />
+                <button
+                  onClick={increaseQty}
+                  className="w-8 h-8 rounded-full bg-gray-100 text-xl text-gray-600 hover:bg-gray-200 transition"
+                >
+                  +
+                </button>
+              </div>
+
+              {/* Hiển thị số lượng tồn kho */}
+              <div className="mt-2 text-sm text-gray-600">
+                {existingQuantity > 0 && (
+                  <div>
+                    <span className="font-medium text-blue-600 mr-2 ">
+                      Đã có trong giỏ: {existingQuantity} sản phẩm
+                    </span>
+                  </div>
+                )}
+                {product.variants?.length > 0 ? (
+                  selectedVariant ? (
+                    <span className={`font-medium ${selectedVariant.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      Còn lại: {selectedVariant.quantity} sản phẩm trong kho
+                    </span>
+                  ) : (
+                    <span className="text-gray-500">
+                      Vui lòng chọn thuộc tính để xem số lượng tồn kho
+                    </span>
+                  )
+                ) : (
+                  <span className={`font-medium ${product.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    Còn lại: {product.quantity || 0} sản phẩm trong kho
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4">
+              <button
+                onClick={handleAddToCart}
+                className="group relative inline-flex items-center justify-center overflow-hidden rounded-2xl border border-pink-400 px-6 py-3 text-pink-500 font-semibold hover:bg-pink-50 transition"
+              >
+                ➕ Thêm vào giỏ hàng
+              </button>
+              {selectedVariant && selectedVariant.quantity === 0 && (
+                <p className="text-red-500 text-sm mt-2">Sản phẩm này đã hết hàng!</p>
+              )}
+              {!selectedVariant && product.quantity === 0 && (
+                <p className="text-red-500 text-sm mt-2">Sản phẩm này đã hết hàng!</p>
+              )}
+            </div>
+            <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm shadow-inner border">
+              {benefits.map((item, i) => (
+                <div key={i} className="flex items-start gap-2 text-gray-700">
+                  <span className="text-green-500">✔</span>
+                  <span>{item}</span>
                 </div>
               ))}
             </div>
-          )}
-        </div>
-
-        <div className="flex flex-col justify-center gap-6 text-center md:text-left">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800">{product.name && product.name.trim() ? product.name : "Sản phẩm không tên"}</h1>
-
-          <div className="flex justify-center md:justify-start items-center gap-4">
-            <span className="text-3xl text-pink-500 font-semibold">{displayedPrice.toLocaleString()}₫</span>
-            {product.oldPrice && <span className="line-through text-gray-400 text-lg">{parsePrice(product.oldPrice).toLocaleString()}₫</span>}
-          </div>
-          <div className="text-sm text-gray-600">Tổng đã bán: {Array.isArray(product.variants) && product.variants.length > 0
-            ? product.variants.reduce((sum: number, v: any) => sum + (v.sold_quantity || 0), 0)
-            : (product.total_sold || 0)} sản phẩm
-          </div>
-
-          {product.variants?.length > 0 && (
-            <div className="mb-1">
-              {attributes.map((attr: any) => {
-                const valueIds = getValidAttributeValues(product, attr._id, selectedAttributes);
-                if (valueIds.length === 0) return null;
-                return (
-                  <div key={attr._id} className="mb-4">
-                    <h4 className="font-semibold mb-2 capitalize">{getAttributeName(attr._id)}</h4>
-                    <div className="flex flex-wrap justify-center md:justify-start gap-2">
-                      {valueIds.map((valueId: string) => (
-                        <button
-                          key={valueId}
-                          onClick={() => handleSelectAttribute(attr._id, valueId)}
-                          className={`px-4 py-1 text-sm rounded-full border transition ${selectedAttributes[attr._id] === valueId
-                            ? "bg-pink-500 text-white border-pink-500"
-                            : "bg-pink-100 text-pink-600 border-pink-300 hover:bg-pink-200"
-                            }`}
-                        >
-                          {getAttributeValue(valueId)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <div className="mb-6">
-            <h4 className="font-medium mb-2">Số lượng:</h4>
-            <div className="flex justify-center md:justify-start items-center gap-3">
-              <button
-                onClick={decreaseQty}
-                className="w-8 h-8 rounded-full bg-gray-100 text-xl text-gray-600 hover:bg-gray-200 transition"
-              >
-                –
-              </button>
-              <input
-                type="number"
-                min="1"
-                max={maxAdd}
-                value={tempQuantity}
-                onChange={(e) => setTempQuantity(e.target.value)}
-                onBlur={() => handleQuantityChange(tempQuantity)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    (e.target as HTMLInputElement).blur();
-                  }
-                }}
-                className="w-16 text-center border rounded-lg text-base font-medium focus:outline-none focus:ring-2 focus:ring-pink-400"
-              />
-              <button
-                onClick={increaseQty}
-                className="w-8 h-8 rounded-full bg-gray-100 text-xl text-gray-600 hover:bg-gray-200 transition"
-              >
-                +
-              </button>
-            </div>
-            
-            {/* Hiển thị số lượng tồn kho */}
-            <div className="mt-2 text-sm text-gray-600">
-              {existingQuantity > 0 && (
-                <div>
-                  <span className="font-medium text-blue-600 mr-2 ">
-                  Đã có trong giỏ: {existingQuantity} sản phẩm
-                </span>
-                </div>
-              )}
-              {product.variants?.length > 0 ? (
-                selectedVariant ? (
-                  <span className={`font-medium ${selectedVariant.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    Còn lại: {selectedVariant.quantity} sản phẩm trong kho
-                  </span>
-                ) : (
-                  <span className="text-gray-500">
-                    Vui lòng chọn thuộc tính để xem số lượng tồn kho
-                  </span>
-                )
-              ) : (
-                <span className={`font-medium ${product.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  Còn lại: {product.quantity || 0} sản phẩm trong kho
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4">
-            <button
-              onClick={handleAddToCart}
-              className="group relative inline-flex items-center justify-center overflow-hidden rounded-2xl border border-pink-400 px-6 py-3 text-pink-500 font-semibold hover:bg-pink-50 transition"
-            >
-              ➕ Thêm vào giỏ hàng
-            </button>
-            {selectedVariant && selectedVariant.quantity === 0 && (
-              <p className="text-red-500 text-sm mt-2">Sản phẩm này đã hết hàng!</p>
-            )}
-            {!selectedVariant && product.quantity === 0 && (
-              <p className="text-red-500 text-sm mt-2">Sản phẩm này đã hết hàng!</p>
-            )}            
-          </div>
-          <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm shadow-inner border">
-            {benefits.map((item, i) => (
-              <div key={i} className="flex items-start gap-2 text-gray-700">
-                <span className="text-green-500">✔</span>
-                <span>{item}</span>
-              </div>
-            ))}
-          </div>
           </div>
         </div>
         <div className="col-span-1 md:col-span-2">
-         <div className="mt-12 p-12 bg-white border-2 border-gray-300 rounded-3xl shadow-2xl hover:shadow-3xl transition-shadow duration-300">
-    <h3 className="text-xl font-extrabold text-gray-800 mb-8 text-center border-b-4 border-pink-600 pb-6">
-      Mô tả sản phẩm
-    </h3>
-    <div
-      className="text-xl text-gray-700 leading-relaxed text-center max-w-5xl mx-auto"
-      dangerouslySetInnerHTML={{
-        __html:
-          product.description && product.description.trim()
-            ? product.description
-            : "Sản phẩm không có mô tả",
-      }}
-    />
-  </div>
+          <div className="mt-12 p-12 bg-white border-2 border-gray-300 rounded-3xl shadow-2xl hover:shadow-3xl transition-shadow duration-300">
+            <h3 className="text-xl font-extrabold text-gray-800 mb-8 text-center border-b-4 border-pink-600 pb-6">
+              Mô tả sản phẩm
+            </h3>
+            <div
+              className="text-xl text-gray-700 leading-relaxed text-center max-w-5xl mx-auto"
+              dangerouslySetInnerHTML={{
+                __html:
+                  product.description && product.description.trim()
+                    ? product.description
+                    : "Sản phẩm không có mô tả",
+              }}
+            />
+          </div>
 
           <div className="mt-16 p-12 bg-gradient-to-br from-pink-50 to-white border-2 border-pink-300 rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300">
             <h3 className="text-xl font-extrabold text-gray-800 mb-8 text-center border-b-4 border-pink-300 pb-6">Đánh giá sản phẩm</h3>

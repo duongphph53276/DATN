@@ -35,7 +35,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 }
 
 const BestSelling: React.FC = () => {
-  
+
   const [products, setProducts] = useState<any[]>([]);
   const [attributes, setAttributes] = useState<any[]>([]);
   const [attributeValues, setAttributeValues] = useState<any[]>([]);
@@ -52,8 +52,13 @@ const BestSelling: React.FC = () => {
         const productRes = await getAllProducts();
         const allProducts = productRes.data?.data || [];
 
+        // Lọc bỏ sản phẩm disabled
+        const activeProducts = allProducts.filter(
+          (p: any) => p.status !== "disabled"
+        );
+
         // Sort giảm dần theo total_sold
-        const sortedProducts = [...allProducts].sort(
+        const sortedProducts = [...activeProducts].sort(
           (a, b) => (b.total_sold || 0) - (a.total_sold || 0)
         );
 
@@ -95,7 +100,7 @@ const BestSelling: React.FC = () => {
 
   const getDefaultPrice = (product: any): number => {
     if (product.variants?.length) {
-      const prices = product.variants.map((v:any) => parsePrice(v.price)).filter((p:any) => !isNaN(p));
+      const prices = product.variants.map((v: any) => parsePrice(v.price)).filter((p: any) => !isNaN(p));
       return prices.length ? Math.min(...prices) : 0;
     }
     return parsePrice(product.price);
@@ -131,7 +136,7 @@ const BestSelling: React.FC = () => {
   const handleAddToCart = (product: any) => {
     const selectedVariant = selectedVariants[product._id];
     const productAttributes = selectedAttributes[product._id] || {};
-  
+
     // Kiểm tra bắt buộc variant (đã có, giữ nguyên)
     const requiredAttributes = attributes.filter((attr: any) =>
       product.variants.some((variant: any) =>
@@ -141,15 +146,15 @@ const BestSelling: React.FC = () => {
     const allAttributesSelected = requiredAttributes.every(
       (attr: any) => productAttributes[attr._id]
     );
-  
-    if (product.variants?.length && (!selectedVariant || !allAttributesSelected)) {
+
+    if (product.variants?.length && !selectedVariant) {
       ToastError("Vui lòng chọn đầy đủ các thuộc tính của sản phẩm!");
       return;
     }
-  
+
     // Lấy giỏ hàng
     const cart = loadUserCart();
-  
+
     // Tìm item tồn tại (đúng variant)
     const existingCartItem = cart.find((item: any) => {
       if (selectedVariant) {
@@ -157,26 +162,26 @@ const BestSelling: React.FC = () => {
       }
       return item._id === product._id && !item.variant;
     });
-  
+
     const existingQuantity = existingCartItem ? existingCartItem.quantity : 0;
-  
+
     // Tính tồn kho từ API (hợp lý để check trước add)
     const stockQuantity = selectedVariant
       ? selectedVariant.quantity ?? selectedVariant.stock_quantity ?? 0  // Map nếu API dùng stock_quantity
       : product.quantity ?? product.stock_quantity ?? 0;
-  
+
     if (existingQuantity + 1 > stockQuantity) {
       ToastError("Số lượng trong kho không đủ để thêm sản phẩm này!");
       return;
     }
-  
+
     // Tạo variantAttributes (đã có)
     const variantAttributes = selectedVariant
       ? Object.entries(productAttributes)
-          .map(([attrId, valueId]) => `${getAttributeName(attrId)}: ${getAttributeValue(valueId)}`)
-          .join(", ")
+        .map(([attrId, valueId]) => `${getAttributeName(attrId)}: ${getAttributeValue(valueId)}`)
+        .join(", ")
       : "Không có thuộc tính";
-  
+
     // Tạo cartItem với quantity thống nhất
     const cartItem = {
       ...product,
@@ -186,18 +191,18 @@ const BestSelling: React.FC = () => {
       image: selectedVariant ? selectedVariant.image || product.image : product.image,
       variant: selectedVariant
         ? {
-            _id: selectedVariant._id,
-            product_id: selectedVariant.product_id,
-            price: selectedVariant.price,
-            attributes: selectedVariant.attributes,  // Giữ nguyên từ API
-            quantity: stockQuantity,  // Set quantity làm chuẩn tồn kho
-          }
+          _id: selectedVariant._id,
+          product_id: selectedVariant.product_id,
+          price: selectedVariant.price,
+          attributes: selectedVariant.attributes,  // Giữ nguyên từ API
+          quantity: stockQuantity,  // Set quantity làm chuẩn tồn kho
+        }
         : undefined,
       variantAttributes,
       quantity: 1,
       quantityInStock: stockQuantity,  // Dự phòng cho không variant
     };
-  
+
     addToUserCart(cartItem);
     ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
   };
@@ -205,7 +210,7 @@ const BestSelling: React.FC = () => {
   const getValidAttributeValues = (product: any, attributeId: string, selectedAttributes: { [key: string]: string }) => {
     const validValueIds = new Set<string>();
 
-    product.variants.forEach((variant:any) => {
+    product.variants.forEach((variant: any) => {
       const variantAttributes = variant.attributes;
       const isValidVariant = Object.entries(selectedAttributes)
         .filter(([key]) => key !== attributeId)
@@ -237,12 +242,12 @@ const BestSelling: React.FC = () => {
     <ErrorBoundary>
       <section className="py-10 bg-white">
         <h2 className="text-center text-rose-500 font-bold text-3xl mb-6">SẢN PHẨM BÁN CHẠY</h2>
-                 <div className="flex flex-wrap justify-center gap-6 px-4">
-           {bestSellingProducts.length === 0 ? (
-             <p className="text-center text-gray-500" aria-live="polite">
-               Không tìm thấy sản phẩm bán chạy.
-             </p>
-           ) : (
+        <div className="flex flex-wrap justify-center gap-6 px-4">
+          {bestSellingProducts.length === 0 ? (
+            <p className="text-center text-gray-500" aria-live="polite">
+              Không tìm thấy sản phẩm bán chạy.
+            </p>
+          ) : (
             bestSellingProducts.map((product) => {
               const defaultPrice = getDefaultPrice(product);
               const selectedVariant = selectedVariants[product._id];
@@ -265,48 +270,48 @@ const BestSelling: React.FC = () => {
                     )}
                     <h3 className="text-base font-semibold">{product.name || "Sản phẩm không tên"}</h3>
                   </Link>
-                  
-                    <div className="text-rose-500 font-bold mt-2">{displayedPrice.toLocaleString()}₫</div>
-                    {product.variants?.length > 0 && (
-                      <div className="mt-1 space-y-3">
-                        {attributes.map((attr) => {
-                          const valueIds = getValidAttributeValues(product, attr._id, selectedAttributes[product._id] || {});
-                          if (valueIds.length === 0) return null;
 
-                          return (
-                            <div key={attr._id}>
-                              <div className="flex flex-wrap justify-center gap-2 my-2">
-                                {valueIds.map((valueId) => (
-                                  <button
-                                    key={valueId}
-                                    onClick={() => handleSelectAttribute(product._id, attr._id, valueId)}
-                                    className={`text-sm px-3 py-1 rounded-full border transition ${selectedAttributes[product._id]?.[attr._id] === valueId
-                                      ? "bg-rose-500 text-white border-rose-500"
-                                      : "bg-pink-100 text-rose-500 hover:bg-rose-200"
-                                      }`}
-                                    aria-label={`Select ${getAttributeName(attr._id)}: ${getAttributeValue(valueId)}`}
-                                  >
-                                    {getAttributeValue(valueId)}
-                                  </button>
-                                ))}
-                              </div>
+                  <div className="text-rose-500 font-bold mt-2">{displayedPrice.toLocaleString()}₫</div>
+                  {product.variants?.length > 0 && (
+                    <div className="mt-1 space-y-3">
+                      {attributes.map((attr) => {
+                        const valueIds = getValidAttributeValues(product, attr._id, selectedAttributes[product._id] || {});
+                        if (valueIds.length === 0) return null;
+
+                        return (
+                          <div key={attr._id}>
+                            <div className="flex flex-wrap justify-center gap-2 my-2">
+                              {valueIds.map((valueId) => (
+                                <button
+                                  key={valueId}
+                                  onClick={() => handleSelectAttribute(product._id, attr._id, valueId)}
+                                  className={`text-sm px-3 py-1 rounded-full border transition ${selectedAttributes[product._id]?.[attr._id] === valueId
+                                    ? "bg-rose-500 text-white border-rose-500"
+                                    : "bg-pink-100 text-rose-500 hover:bg-rose-200"
+                                    }`}
+                                  aria-label={`Select ${getAttributeName(attr._id)}: ${getAttributeValue(valueId)}`}
+                                >
+                                  {getAttributeValue(valueId)}
+                                </button>
+                              ))}
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
 
-                    {/* Spacer để đẩy nút xuống đáy */}
-                    <div className="flex-grow" />
+                  {/* Spacer để đẩy nút xuống đáy */}
+                  <div className="flex-grow" />
 
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      className="mt-4 w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-medium py-2 px-4 rounded-xl hover:brightness-110 transition"
-                      aria-label={`Add ${product.name} to cart`}
-                    >
-                      Thêm vào giỏ hàng
-                    </button>
-                  
+                  <button
+                    onClick={() => handleAddToCart(product)}
+                    className="mt-4 w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-medium py-2 px-4 rounded-xl hover:brightness-110 transition"
+                    aria-label={`Add ${product.name} to cart`}
+                  >
+                    Thêm vào giỏ hàng
+                  </button>
+
                 </div>
               );
             })
