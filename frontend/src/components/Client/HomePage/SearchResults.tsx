@@ -52,7 +52,13 @@ const SearchResults: React.FC = () => {
 
         // Gọi API search
         const res = await api.get(`/product?search=${encodeURIComponent(query)}`);
-        setProducts(res.data?.data || []);
+         const allProducts = res.data?.data || [];
+
+        // Lọc bỏ sản phẩm disabled
+        const activeProducts = allProducts.filter(
+          (p: any) => p.status !== "disabled"
+        );
+        setProducts(activeProducts);
 
         // Load attribute + attribute values
         const attrRes = await getAllAttributes();

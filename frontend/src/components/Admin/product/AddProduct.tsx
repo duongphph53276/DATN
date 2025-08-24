@@ -103,15 +103,18 @@ const AddProduct = () => {
           )
           .min(1, "Phải có ít nhất một thuộc tính")
           .test(
-            "unique-attributes-in-variant",
-            "Các thuộc tính trong cùng một biến thể không được trùng lặp",
+            "one-value-per-attribute",
+            "Mỗi thuộc tính chỉ được chọn 1 giá trị trong một biến thể",
             (attributes) => {
               if (!attributes) return true;
-              const attributeKeys = attributes.map(
-                (attr) => `${attr.attribute_id}-${attr.value_id}`
-              );
-              const uniqueKeys = new Set(attributeKeys);
-              return uniqueKeys.size === attributeKeys.length;
+              const seenAttr = new Set();
+              for (const attr of attributes) {
+                if (seenAttr.has(attr.attribute_id)) {
+                  return false; // Đã có attribute_id này rồi → lỗi
+                }
+                seenAttr.add(attr.attribute_id);
+              }
+              return true;
             }
           )
           .test(
@@ -561,8 +564,8 @@ const AddProduct = () => {
                             variantImages[index]
                               ? URL.createObjectURL(variantImages[index])
                               : typeof getValues(`variants.${index}.image`) === "string"
-                              ? getValues(`variants.${index}.image`)
-                              : ""
+                                ? getValues(`variants.${index}.image`)
+                                : ""
                           }
                           className="h-20 object-cover border rounded-lg"
                         />
@@ -679,10 +682,10 @@ const AddProduct = () => {
                   className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.status ? "border-red-500" : "border-gray-300"}`}
                   id="status-org"
                 >
-                  <option value="active">Đang bán</option>
-                  <option value="disabled">Tạm tắt</option>
                   <option value="new">Mới</option>
                   <option value="bestseller">Bán chạy</option>
+                  <option value="active">Đang bán</option>
+                  <option value="disabled">Tạm tắt</option>
                 </select>
                 {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
               </div>
