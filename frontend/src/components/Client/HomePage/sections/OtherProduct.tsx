@@ -51,10 +51,10 @@ const OtherProduct: React.FC = () => {
     fetchData();
   }, []);
 
-  // Lấy ngẫu nhiên 8 sản phẩm
+  // Lấy ngẫu nhiên 16 sản phẩm
   const randomProducts = useMemo(() => {
     const shuffled = [...products].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 4);
+    return shuffled.slice(0, 16);
   }, [products]);
 
   const getAttributeName = (attributeId: string) => {
@@ -210,75 +210,83 @@ const OtherProduct: React.FC = () => {
   return (
     <section className="py-10 bg-white">
       <h2 className="text-center text-rose-500 font-bold text-3xl mb-6">SẢN PHẨM KHÁC</h2>
-      <div className="flex flex-wrap justify-center gap-6 px-4">
+      <div className="max-w-7xl mx-auto px-4">
         {randomProducts.length === 0 ? (
           <p className="text-center text-gray-500" aria-live="polite">
             Không tìm thấy sản phẩm khác.
           </p>
         ) : (
-          randomProducts.map((product) => {
-            const defaultPrice = getDefaultPrice(product);
-            const selectedVariant = selectedVariants[product._id];
-            const displayedPrice = selectedVariant ? parsePrice(selectedVariant.price) : defaultPrice;
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {randomProducts.map((product) => {
+              const defaultPrice = getDefaultPrice(product);
+              const selectedVariant = selectedVariants[product._id];
+              const displayedPrice = selectedVariant ? parsePrice(selectedVariant.price) : defaultPrice;
 
-            return (
-              <div
-                key={product._id}
-                className="w-[250px] bg-white p-4 rounded-xl shadow hover:shadow-lg text-center flex flex-col"
-              >
-                <Link to={`/product/${product._id}`}>
-                  {product.images || selectedVariant?.image ? (
-                    <img
-                      src={selectedVariant?.image || product.images}
-                      alt={product.name}
-                      className="w-full h-[220px] object-cover rounded-lg mb-4"
-                    />
-                  ) : (
-                    <span className="text-gray-400 italic">Không có ảnh</span>
-                  )}
-                  <h3 className="text-base font-semibold">{product.name || "Sản phẩm không tên"}</h3>
-                </Link>
-
-                <div className="text-rose-500 font-bold mt-2">{displayedPrice.toLocaleString()}₫</div>
-                {product.variants?.length > 0 && (
-                  <div className="mt-1 space-y-3">
-                    {attributes.map((attr) => {
-                      const valueIds = getValidAttributeValues(product, attr._id, selectedAttributes[product._id] || {});
-                      if (valueIds.length === 0) return null;
-
-                      return (
-                        <div key={attr._id}>
-                          <div className="flex flex-wrap justify-center gap-2 my-2">
-                            {valueIds.map((valueId) => (
-                              <button
-                                key={valueId}
-                                onClick={() => handleSelectAttribute(product._id, attr._id, valueId)}
-                                className={`text-sm px-3 py-1 rounded-full border transition ${selectedAttributes[product._id]?.[attr._id] === valueId
-                                  ? "bg-rose-500 text-white border-rose-500"
-                                  : "bg-pink-100 text-rose-500 hover:bg-rose-200"
-                                  }`}
-                              >
-                                {getAttributeValue(valueId)}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <div className="flex-grow" />
-
-                <button
-                  onClick={() => handleAddToCart(product)}
-                  className="mt-4 w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-medium py-2 px-4 rounded-xl hover:brightness-110 transition"
+              return (
+                <div
+                  key={product._id}
+                  className="bg-white p-4 rounded-xl shadow hover:shadow-lg text-center flex flex-col"
                 >
-                  Thêm vào giỏ hàng
-                </button>
-              </div>
-            );
-          })
+                  <Link to={`/product/${product._id}`}>
+                    {product.images || selectedVariant?.image ? (
+                      <img
+                        src={selectedVariant?.image || product.images}
+                        alt={product.name}
+                        className="w-full h-[200px] object-cover rounded-lg mb-4"
+                      />
+                    ) : (
+                      <div className="w-full h-[200px] bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
+                        <span className="text-gray-400 text-sm">Không có ảnh</span>
+                      </div>
+                    )}
+                    <h3 className="text-base font-semibold truncate">{product.name || "Sản phẩm không tên"}</h3>
+                  </Link>
+
+                  <div className="text-rose-500 font-bold mt-2">{displayedPrice.toLocaleString()}₫</div>
+                  
+                  {product.variants?.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {attributes.map((attr) => {
+                        const valueIds = getValidAttributeValues(product, attr._id, selectedAttributes[product._id] || {});
+                        if (valueIds.length === 0) return null;
+
+                        return (
+                          <div key={attr._id}>
+                            <div className="flex flex-wrap justify-center gap-1">
+                              {valueIds.slice(0, 3).map((valueId) => (
+                                <button
+                                  key={valueId}
+                                  onClick={() => handleSelectAttribute(product._id, attr._id, valueId)}
+                                  className={`text-xs px-2 py-1 rounded-full border transition ${selectedAttributes[product._id]?.[attr._id] === valueId
+                                    ? "bg-rose-500 text-white border-rose-500"
+                                    : "bg-pink-100 text-rose-500 hover:bg-rose-200"
+                                    }`}
+                                >
+                                  {getAttributeValue(valueId)}
+                                </button>
+                              ))}
+                              {valueIds.length > 3 && (
+                                <span className="text-xs text-gray-500 px-2 py-1">+{valueIds.length - 3}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <div className="flex-grow" />
+
+                  <button
+                    onClick={() => handleAddToCart(product)}
+                    className="mt-3 w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-medium py-2 px-4 rounded-xl hover:brightness-110 transition text-sm"
+                  >
+                    Thêm vào giỏ hàng
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </section>

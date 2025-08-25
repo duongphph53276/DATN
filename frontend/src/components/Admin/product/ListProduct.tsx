@@ -472,7 +472,6 @@ const ListProduct: React.FC = () => {
                         {product.status === "active" && "Đang bán"}
                         {product.status === "disabled" && "Tạm tắt"}
                         {product.status === "new" && "Mới"}
-                        {product.status === "bestseller" && "Bán chạy"}
                       </span>
                     </td>
                     <td className="p-3">
