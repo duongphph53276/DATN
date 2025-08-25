@@ -185,7 +185,7 @@ const EditUser: React.FC = () => {
           <FaUserShield className="text-blue-500" />
           Chỉnh sửa người dùng
         </h1>
-        <p className="text-gray-500 mt-1">Chỉ có thể thay đổi vai trò và trạng thái tài khoản</p>
+        <p className="text-gray-500 mt-1">Chỉ có thể thay đổi vai trò (trừ Admin) và trạng thái tài khoản</p>
       </div>
 
       {error && (
@@ -265,12 +265,17 @@ const EditUser: React.FC = () => {
               required
             >
               <option value="">Chọn vai trò</option>
-              {roles.map((role: any) => (
-                <option key={role._id} value={role._id}>
-                  {role.name}
-                </option>
-              ))}
+              {roles
+                .filter((role: any) => role.name !== 'admin') // Lọc bỏ role admin
+                .map((role: any) => (
+                  <option key={role._id} value={role._id}>
+                    {role.name}
+                  </option>
+                ))}
             </select>
+            <p className="text-xs text-gray-500 mt-1">
+              <strong>Lưu ý:</strong> Không thể thay đổi vai trò thành Admin thông qua form này
+            </p>
           </div>
         </div>
 

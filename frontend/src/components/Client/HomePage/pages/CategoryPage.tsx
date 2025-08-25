@@ -32,7 +32,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
 const CategoryPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  
+
 
   const [categoryName, setCategoryName] = useState<string>("");
   const [products, setProducts] = useState<any[]>([]);
@@ -76,7 +76,10 @@ const CategoryPage: React.FC = () => {
           if (res.data.status && res.data.data) return [...acc, ...res.data.data];
           return acc;
         }, []);
-        setProducts(allProducts);
+        // Lọc bỏ sản phẩm có status = "disabled"
+        const activeProducts = allProducts.filter((p: any) => p.status !== "disabled");
+
+        setProducts(activeProducts);
 
         // Lấy thuộc tính
         const attrRes = await getAllAttributes();
@@ -196,8 +199,8 @@ const CategoryPage: React.FC = () => {
 
     const variantAttributes = selectedVariant
       ? Object.entries(productAttributes)
-          .map(([attrId, valueId]) => `${getAttributeName(attrId)}: ${getAttributeValue(valueId)}`)
-          .join(", ")
+        .map(([attrId, valueId]) => `${getAttributeName(attrId)}: ${getAttributeValue(valueId)}`)
+        .join(", ")
       : "Không có thuộc tính";
 
     const cartItem = {
@@ -208,12 +211,12 @@ const CategoryPage: React.FC = () => {
       image: selectedVariant ? selectedVariant.image || product.images : product.images,
       variant: selectedVariant
         ? {
-            _id: selectedVariant._id,
-            product_id: selectedVariant.product_id,
-            price: selectedVariant.price,
-            attributes: selectedVariant.attributes,
-            stock_quantity: stockQuantity,
-          }
+          _id: selectedVariant._id,
+          product_id: selectedVariant.product_id,
+          price: selectedVariant.price,
+          attributes: selectedVariant.attributes,
+          stock_quantity: stockQuantity,
+        }
         : undefined,
       variantAttributes,
       quantity: 1,
@@ -263,7 +266,7 @@ const CategoryPage: React.FC = () => {
                 <div key={product._id} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 border border-gray-100 flex flex-col">
                   <Link to={`/product/${product._id}`}>
                     {product.images ? (
-                      <img src={selectedVariant?.image || product.images} alt={product.name} className="w-full h-52 object-cover rounded-lg mb-4" />
+                      <img src={selectedVariant?.image || product.images} alt={product.name} className="w-full h-52 object-cover rounded-lg" />
                     ) : (
                       <span className="text-gray-400 italic">Không có ảnh</span>
                     )}
@@ -285,11 +288,10 @@ const CategoryPage: React.FC = () => {
                                 <button
                                   key={String(valueId)}
                                   onClick={() => handleSelectAttribute(product._id, attr._id, valueId as string)}
-                                  className={`px-3 py-1 rounded-full text-sm border transition ${
-                                    selectedAttributes[product._id]?.[attr._id] === valueId
+                                  className={`px-3 py-1 rounded-full text-sm border transition ${selectedAttributes[product._id]?.[attr._id] === valueId
                                       ? "bg-rose-500 text-white border-rose-500"
                                       : "bg-pink-100 text-rose-500 hover:bg-rose-200"
-                                  }`}
+                                    }`}
                                 >
                                   {getAttributeValue(valueId as string)}
                                 </button>

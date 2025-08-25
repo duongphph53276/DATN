@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import api from '../../middleware/axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUser, FaSpinner, FaExclamationTriangle, FaCheckCircle, FaShieldAlt } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUser, FaSpinner, FaExclamationTriangle, FaCheckCircle, FaShieldAlt, FaPhone } from 'react-icons/fa';
 
 const RegisterAdmin: React.FC = () => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -31,6 +32,16 @@ const RegisterAdmin: React.FC = () => {
     }
     if (!email.trim()) {
       setError('Vui lòng nhập địa chỉ email');
+      return false;
+    }
+    if (!phone.trim()) {
+      setError('Vui lòng nhập số điện thoại');
+      return false;
+    }
+    // Validate số điện thoại (chỉ 10 số)
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+      setError('Số điện thoại không hợp lệ (phải có đúng 10 số)');
       return false;
     }
     if (!password) {
@@ -58,7 +69,7 @@ const RegisterAdmin: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await api.post('/register/admin', { name, email, password });
+      const response = await api.post('/register/admin', { name, email, phone, password });
       const data = response.data;
       
       if (data.status) {
@@ -155,7 +166,7 @@ const RegisterAdmin: React.FC = () => {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                 <FaUser className="text-purple-500" />
-                Họ và tên Admin
+                Họ và tên Admin <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -172,7 +183,7 @@ const RegisterAdmin: React.FC = () => {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                 <FaEnvelope className="text-purple-500" />
-                Email Admin
+                Email Admin <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
@@ -183,6 +194,25 @@ const RegisterAdmin: React.FC = () => {
                 required
                 disabled={loading}
               />
+            </div>
+
+            {/* Phone Field */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <FaPhone className="text-purple-500" />
+                Số điện thoại Admin <span className="text-red-500">*</span>
+              </label>
+                             <input
+                 type="tel"
+                 className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-200 bg-white/90"
+                 placeholder="Nhập số điện thoại (10 số)"
+                 value={phone}
+                 onChange={(e) => setPhone(e.target.value)}
+                 maxLength={10}
+                 required
+                 disabled={loading}
+               />
+               <p className="text-xs text-gray-500 mt-1">Ví dụ: 0123456789</p>
             </div>
 
             {/* Password Field */}

@@ -308,10 +308,10 @@ const Checkout: React.FC = () => {
       return;
     }
 
-    // Validate số điện thoại (đơn giản)
-    const phoneRegex = /^[0-9]{10,11}$/;
+    // Validate số điện thoại (chính xác 10 số)
+    const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(userPhone.replace(/\s/g, ''))) {
-      setUserInfoError('Số điện thoại không hợp lệ (10-11 số)');
+      setUserInfoError('Số điện thoại không hợp lệ (phải có đúng 10 số)');
       return;
     }
 
@@ -389,8 +389,17 @@ const Checkout: React.FC = () => {
       return;
     }
 
+    // Kiểm tra số điện thoại - bắt buộc phải có
     if (!userPhone.trim()) {
-      setErrorMessage('Vui lòng cập nhật số điện thoại.');
+      setErrorMessage('Vui lòng cập nhật số điện thoại để tiếp tục đặt hàng. Số điện thoại là thông tin bắt buộc.');
+      setLoading(false);
+      return;
+    }
+
+    // Validate format số điện thoại (10 số)
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(userPhone.replace(/\s/g, ''))) {
+      setErrorMessage('Số điện thoại không hợp lệ. Vui lòng nhập đúng 10 số.');
       setLoading(false);
       return;
     }
@@ -942,8 +951,9 @@ const Checkout: React.FC = () => {
                          type="tel"
                          value={userPhone}
                          onChange={(e) => setUserPhone(e.target.value)}
+                         maxLength={10}
                          className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-colors"
-                         placeholder="Nhập số điện thoại"
+                         placeholder="Nhập số điện thoại (10 số)"
                        />
                     </div>
 
@@ -995,12 +1005,12 @@ const Checkout: React.FC = () => {
                               {userName || 'Chưa cập nhật'}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between py-2 border-b border-blue-200">
-                            <span className="text-sm font-medium text-blue-600">SĐT:</span> 
-                            <span className={`text-sm font-medium ${userPhone ? 'text-slate-800' : 'text-red-500'}`}>
-                              {userPhone || 'Chưa cập nhật'}
-                            </span>
-                          </div>
+                                                     <div className="flex items-center justify-between py-2 border-b border-blue-200">
+                             <span className="text-sm font-medium text-blue-600">SĐT: <span className="text-red-500">*</span></span> 
+                             <span className={`text-sm font-medium ${userPhone ? 'text-slate-800' : 'text-red-500'}`}>
+                               {userPhone || 'Chưa cập nhật'}
+                             </span>
+                           </div>
                           <div className="flex items-center justify-between py-2">
                             <span className="text-sm font-medium text-blue-600">Email:</span> 
                             <span className="text-sm font-medium text-slate-800">
@@ -1022,16 +1032,16 @@ const Checkout: React.FC = () => {
                             Thông tin sẽ được sử dụng cho đơn hàng
                           </p>
                         </div>
-                        {(!userName || !userPhone) && (
-                          <div className="flex items-center">
-                            <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center mr-2">
-                              <span className="text-white text-xs">⚠</span>
-                            </div>
-                            <p className="text-xs text-orange-600 font-medium">
-                              Vui lòng cập nhật thông tin đầy đủ
-                            </p>
-                          </div>
-                        )}
+                                                 {(!userName || !userPhone) && (
+                           <div className="flex items-center">
+                             <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center mr-2">
+                               <span className="text-white text-xs">⚠</span>
+                             </div>
+                             <p className="text-xs text-orange-600 font-medium">
+                               {!userPhone ? 'Số điện thoại là bắt buộc để đặt hàng' : 'Vui lòng cập nhật thông tin đầy đủ'}
+                             </p>
+                           </div>
+                         )}
                       </div>
                     </div>
                   </div>
@@ -1220,25 +1230,25 @@ const Checkout: React.FC = () => {
                   )}
                 </button>
 
-                {/* Requirements Notice */}
-                {(cartItems.length === 0 || !addressId || !userName.trim() || !userPhone.trim()) && (
-                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-                    <div className="flex items-start">
-                      <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center mr-3 mt-0.5">
-                        <span className="text-white text-xs">⚠</span>
-                      </div>
-                      <div>
-                        <p className="font-semibold text-yellow-800 mb-2 text-sm">Để đặt hàng, bạn cần:</p>
-                        <ul className="space-y-1 text-xs text-yellow-700">
-                          {cartItems.length === 0 && <li className="flex items-center">• Có sản phẩm trong giỏ hàng</li>}
-                          {!addressId && <li className="flex items-center">• Chọn địa chỉ giao hàng</li>}
-                          {!userName.trim() && <li className="flex items-center">• Cập nhật tên người dùng</li>}
-                          {!userPhone.trim() && <li className="flex items-center">• Cập nhật số điện thoại</li>}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                                 {/* Requirements Notice */}
+                 {(cartItems.length === 0 || !addressId || !userName.trim() || !userPhone.trim()) && (
+                   <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+                     <div className="flex items-start">
+                       <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center mr-3 mt-0.5">
+                         <span className="text-white text-xs">⚠</span>
+                       </div>
+                       <div>
+                         <p className="font-semibold text-yellow-800 mb-2 text-sm">Để đặt hàng, bạn cần:</p>
+                         <ul className="space-y-1 text-xs text-yellow-700">
+                           {cartItems.length === 0 && <li className="flex items-center">• Có sản phẩm trong giỏ hàng</li>}
+                           {!addressId && <li className="flex items-center">• Chọn địa chỉ giao hàng</li>}
+                           {!userName.trim() && <li className="flex items-center">• Cập nhật tên người dùng</li>}
+                           {!userPhone.trim() && <li className="flex items-center">• <strong>Cập nhật số điện thoại (bắt buộc)</strong></li>}
+                         </ul>
+                       </div>
+                     </div>
+                   </div>
+                 )}
               </form>
 
               {/* Security Notice */}

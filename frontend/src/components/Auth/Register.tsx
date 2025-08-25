@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import api from '../../middleware/axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUser, FaSpinner, FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUser, FaSpinner, FaExclamationTriangle, FaCheckCircle, FaPhone } from 'react-icons/fa';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -31,6 +32,16 @@ const Register: React.FC = () => {
     }
     if (!email.trim()) {
       setError('Vui lòng nhập địa chỉ email');
+      return false;
+    }
+    if (!phone.trim()) {
+      setError('Vui lòng nhập số điện thoại');
+      return false;
+    }
+    // Validate số điện thoại (chỉ 10 số)
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+      setError('Số điện thoại không hợp lệ (phải có đúng 10 số)');
       return false;
     }
     if (!password) {
@@ -58,7 +69,7 @@ const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await api.post('/register', { name, email, password });
+      const response = await api.post('/register', { name, email, phone, password });
       const data = response.data;
       
       if (data.token) {
@@ -145,7 +156,7 @@ const Register: React.FC = () => {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                 <FaUser className="text-rose-500" />
-                Họ và tên
+                Họ và tên <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -162,7 +173,7 @@ const Register: React.FC = () => {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                 <FaEnvelope className="text-rose-500" />
-                Địa chỉ email
+                Địa chỉ email <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
@@ -175,11 +186,30 @@ const Register: React.FC = () => {
               />
             </div>
 
+            {/* Phone Field */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <FaPhone className="text-rose-500" />
+                Số điện thoại <span className="text-red-500">*</span>
+              </label>
+                             <input
+                 type="tel"
+                 className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent transition-all duration-200 bg-white/80"
+                 placeholder="Nhập số điện thoại (10 số)"
+                 value={phone}
+                 onChange={(e) => setPhone(e.target.value)}
+                 maxLength={10}
+                 required
+                 disabled={loading}
+               />
+               <p className="text-xs text-gray-500 mt-1">Ví dụ: 0123456789</p>
+            </div>
+
             {/* Password Field */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                 <FaLock className="text-rose-500" />
-                Mật khẩu
+                Mật khẩu <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -207,7 +237,7 @@ const Register: React.FC = () => {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                 <FaLock className="text-rose-500" />
-                Xác nhận mật khẩu
+                Xác nhận mật khẩu <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input

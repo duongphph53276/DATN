@@ -32,11 +32,21 @@ export default function OrderInfoGrid({ order }: Props) {
       </div>
       <div>
         <p className={cx('label')}>Hoá Đơn Cho:</p>
-        <p>{order.user.name}</p>
-        <p>{order.user.email}</p>
-        <p>Address: {order.address.street}, {order.address.city}, {order.address.country}</p>
-        <p>{order.user.phone}</p>
+        <p>{order.user_info?.name || order.user.name}</p>
+        <p>{order.user_info?.email || order.user.email}</p>
+        <p>Address: {order.address_info ? `${order.address_info.street}, ${order.address_info.city}, ${order.address_info.country}` : 
+           order.address ? `${order.address.street}, ${order.address.city}, ${order.address.country}` : 'Không có thông tin địa chỉ'}</p>
+        <p>{order.user_info?.phone || order.user.phone}</p>
       </div>
+      {order.shipper_id && (
+        <div>
+          <p className={cx('label')}>Shipper giao hàng:</p>
+          <p className="text-blue-600 font-semibold">
+            {order.shipper_info ? `${order.shipper_info.name} - ${order.shipper_info.phone}` : 
+             order.shipper ? `${order.shipper.name} - ${order.shipper.phone}` : 'Shipper đã bị xóa'}
+          </p>
+        </div>
+      )}
       {order.delivered_at && (
         <div>
           <p className={cx('label')}>Thời gian giao hàng:</p>

@@ -21,6 +21,7 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import RegisterAdmin from './components/Auth/RegisterAdmin';
 import ForgotPassword from './components/Auth/ForgotPassword';
+import VerifyEmail from './components/VerifyEmail';
 import ListUser from './components/Admin/user/ListUser';
 import UserDetail from './components/Admin/user/UserDetail';
 import EditUser from './components/Admin/user/EditUser';
@@ -101,6 +102,10 @@ function App() {
     {
       path: "/forgotpassword",
       element: <AuthGuard><ForgotPassword /></AuthGuard>,
+    },
+    {
+      path: "/verify-email",
+      element: <VerifyEmail />,
     },
     {
       path: "/",

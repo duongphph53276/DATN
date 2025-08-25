@@ -23,7 +23,7 @@ const Header = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  
+
   // Load system config for logo
   const [systemConfig, setSystemConfig] = useState({ logo: '', favicon: '' });
 
@@ -37,19 +37,19 @@ const Header = () => {
         console.error('Error loading system config:', error);
       }
     };
-    
+
     loadSystemConfig();
-    
+
     // Poll for updates every 30 seconds
     const interval = setInterval(loadSystemConfig, 30000);
-    
+
     // Listen for logo updates
     const handleLogoUpdate = (event: CustomEvent) => {
       setSystemConfig(prev => ({ ...prev, logo: event.detail }));
     };
-    
+
     window.addEventListener('logoUpdated', handleLogoUpdate as EventListener);
-    
+
     return () => {
       clearInterval(interval);
       window.removeEventListener('logoUpdated', handleLogoUpdate as EventListener);
@@ -68,25 +68,28 @@ const Header = () => {
     try {
       const response = await api.get(`/product?search=${encodeURIComponent(query)}`);
       if (response.data.status) {
+        const filteredResults = response.data.data.filter(
+          (p: IProduct) => p.status !== "disabled"
+        );
         // Sắp xếp kết quả theo độ phù hợp
-        const sortedResults = response.data.data
+        const sortedResults = filteredResults
           .sort((a: IProduct, b: IProduct) => {
             const aName = a.name.toLowerCase();
             const bName = b.name.toLowerCase();
             const queryLower = query.toLowerCase();
-            
+
             // Ưu tiên kết quả bắt đầu bằng query
             const aStartsWith = aName.startsWith(queryLower);
             const bStartsWith = bName.startsWith(queryLower);
-            
+
             if (aStartsWith && !bStartsWith) return -1;
             if (!aStartsWith && bStartsWith) return 1;
-            
+
             // Sau đó ưu tiên theo độ dài tên (ngắn hơn = phù hợp hơn)
             return aName.length - bName.length;
           })
           .slice(0, 5); // Limit to 5 results
-        
+
         setSearchResults(sortedResults);
         setShowSearchResults(true);
       }
@@ -101,11 +104,11 @@ const Header = () => {
   // Function để highlight text trong kết quả tìm kiếm
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text;
-    
+
     const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
     const parts = text.split(regex);
-    
-    return parts.map((part, index) => 
+
+    return parts.map((part, index) =>
       regex.test(part) ? (
         <span key={index} className="bg-yellow-200 font-semibold">
           {part}
@@ -121,13 +124,13 @@ const Header = () => {
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex(prev => 
+        setSelectedIndex(prev =>
           prev < searchResults.length - 1 ? prev + 1 : 0
         );
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex(prev => 
+        setSelectedIndex(prev =>
           prev > 0 ? prev - 1 : searchResults.length - 1
         );
         break;
@@ -322,7 +325,7 @@ const Header = () => {
             >
               <FaSearch size={18} />
             </button>
-            
+
             {/* Search Results Dropdown */}
             {showSearchResults && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
@@ -334,17 +337,16 @@ const Header = () => {
                 ) : searchResults.length > 0 ? (
                   <>
                     {searchResults.map((product, index) => (
-                                              <div
-                          key={product._id}
-                          className={`flex items-center p-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors duration-150 ${
-                            selectedIndex === index 
-                              ? 'bg-rose-100 border-rose-200' 
-                              : 'hover:bg-rose-50'
+                      <div
+                        key={product._id}
+                        className={`flex items-center p-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors duration-150 ${selectedIndex === index
+                            ? 'bg-rose-100 border-rose-200'
+                            : 'hover:bg-rose-50'
                           }`}
-                          onClick={() => handleProductSelect(product)}
-                          onMouseEnter={() => setSelectedIndex(index)}
-                          onMouseLeave={() => setSelectedIndex(-1)}
-                        >
+                        onClick={() => handleProductSelect(product)}
+                        onMouseEnter={() => setSelectedIndex(index)}
+                        onMouseLeave={() => setSelectedIndex(-1)}
+                      >
                         <div className="w-12 h-12 rounded-lg overflow-hidden mr-3 flex-shrink-0">
                           {product.images ? (
                             <img
@@ -373,18 +375,18 @@ const Header = () => {
                         </div>
                       </div>
                     ))}
-                                         <div className="p-3 border-t border-gray-100">
-                       <div className="text-xs text-gray-500 mb-2">
-                         Tìm thấy {searchResults.length} kết quả
-                       </div>
-                       <button
-                         type="submit"
-                         className="w-full text-center text-sm text-rose-600 hover:text-rose-700 font-medium"
-                         onClick={handleSearch}
-                       >
-                         Xem tất cả kết quả cho "{searchQuery}"
-                       </button>
-                     </div>
+                    <div className="p-3 border-t border-gray-100">
+                      <div className="text-xs text-gray-500 mb-2">
+                        Tìm thấy {searchResults.length} kết quả
+                      </div>
+                      <button
+                        type="submit"
+                        className="w-full text-center text-sm text-rose-600 hover:text-rose-700 font-medium"
+                        onClick={handleSearch}
+                      >
+                        Xem tất cả kết quả cho "{searchQuery}"
+                      </button>
+                    </div>
                   </>
                 ) : searchQuery.trim() ? (
                   <div className="p-4 text-center text-gray-500">

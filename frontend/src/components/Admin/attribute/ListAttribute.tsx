@@ -147,18 +147,26 @@ const AttributeList: React.FC = () => {
   const handleAddOrUpdateValue = async (attributeId: string, data: { value: string }) => {
     try {
       if (editingValueId) {
-        await updateAttributeValue(editingValueId, data);
+        const res = await updateAttributeValue(editingValueId, data);
+        if (res.data?.status === false) {
+          ToastWarning(res.data.message);
+          return;
+        }
         ToastSucess("Cập nhật thành công");
       } else {
-        await createAttributevalue({ attribute_id: attributeId, value: data.value });
+        const res = await createAttributevalue({ attribute_id: attributeId, value: data.value });
+        if (res.data?.status === false) {
+          ToastWarning(res.data.message);
+          return;
+        }
         ToastSucess("Thêm thành công");
       }
       await fetchAttributeValues(attributeId);
       reset();
       setEditingValueId(null);
-    } catch (err) {
-      console.error(err);
-      ToastError("Thao tác thất bại!");
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Thao tác thất bại!";
+      ToastError(msg);
     }
   };
 
