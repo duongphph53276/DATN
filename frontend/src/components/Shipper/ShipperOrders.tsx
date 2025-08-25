@@ -314,7 +314,12 @@ const ShipperOrders = ({ status }: Props) => {
                       <div className="flex items-start space-x-2">
                         <MapPin size={16} className="text-gray-400 mt-0.5" />
                         <span>
-                          {order.address.street}, {order.address.city}{order.address.postal_code ? `, ${order.address.postal_code}` : ''}, {order.address.country}
+                          {order.address_info ? 
+                            `${order.address_info.street}, ${order.address_info.city}${order.address_info.postal_code ? `, ${order.address_info.postal_code}` : ''}, ${order.address_info.country}` :
+                            order.address ? 
+                              `${order.address.street}, ${order.address.city}${order.address.postal_code ? `, ${order.address.postal_code}` : ''}, ${order.address.country}` :
+                              'Không có thông tin địa chỉ'
+                          }
                         </span>
                       </div>
                     </div>

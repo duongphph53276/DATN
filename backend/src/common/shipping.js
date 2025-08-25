@@ -1,11 +1,11 @@
 // Danh sách tỉnh/thành được miễn phí vận chuyển
 const FREE_SHIPPING_CITIES = [
-  'Hà Nội'
+  // Hiện tại không có thành phố nào được miễn phí ship
 ];
 
 // Danh sách 34 tỉnh thành (28 tỉnh sau sáp nhập + 6 thành phố trực thuộc Trung ương)
 const ALL_PROVINCES = [
-  // 6 thành phố trực thuộc Trung ương (Freeship)
+  // 6 thành phố trực thuộc Trung ương (Phí ship 30k)
   'Hà Nội',
   'Thành phố Hồ Chí Minh',
   'Hải Phòng', 
@@ -13,7 +13,7 @@ const ALL_PROVINCES = [
   'Cần Thơ',
   'Huế',
   
-  // 28 tỉnh (có phí ship 10k)
+  // 28 tỉnh (Phí ship 30k)
   'An Giang',
   'Bắc Ninh',
   'Cà Mau',

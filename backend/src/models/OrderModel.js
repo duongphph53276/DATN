@@ -7,6 +7,13 @@ const OrderSchema = new Schema(
       ref: 'User', // Tham chiếu đến mô hình User
       required: true,
     },
+    // Lưu thông tin user tại thời điểm đặt hàng
+    user_info: {
+      name: { type: String, required: true },
+      email: { type: String, required: true },
+      phone: { type: String, required: true },
+      phoneNumber: { type: String, default: null }
+    },
     status: {
       type: String,
       enum: ['pending', 'preparing', 'shipping', 'delivered', 'cancelled', 'returned'],
@@ -18,7 +25,21 @@ const OrderSchema = new Schema(
     voucher_id: { type: String, default: null },
     payment_method: { type: String, required: true },
     address_id: { type: String, required: true },
+    // Lưu thông tin địa chỉ tại thời điểm đặt hàng
+    address_info: {
+      street: { type: String, required: true },
+      city: { type: String, required: true },
+      postal_code: { type: String, default: null },
+      country: { type: String, required: true }
+    },
     shipper_id: { type: String, default: null }, 
+    // Lưu thông tin shipper tại thời điểm được phân công
+    shipper_info: {
+      name: { type: String, default: null },
+      email: { type: String, default: null },
+      phone: { type: String, default: null },
+      phoneNumber: { type: String, default: null }
+    },
     delivered_at: { type: Date, default: null },
     cancel_reason: { type: String, default: null }, 
     return_reason: { type: String, default: null },

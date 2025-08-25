@@ -69,6 +69,17 @@ const UpdateProfile: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData) return;
+    
+    // Validate số điện thoại nếu có
+    const phoneNumber = formData.phone || formData.phoneNumber;
+    if (phoneNumber && phoneNumber.trim() !== '') {
+      const phoneRegex = /^[0-9]{10}$/;
+      if (!phoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
+        setError('Số điện thoại không hợp lệ (phải có đúng 10 số)');
+        return;
+      }
+    }
+    
     const token = localStorage.getItem('token');
     try {
       const response = await fetch('http://localhost:5000/profile', {
@@ -79,7 +90,7 @@ const UpdateProfile: React.FC = () => {
         },
         body: JSON.stringify({
           name: formData.name,
-          phoneNumber: formData.phone || formData.phoneNumber,
+          phoneNumber: phoneNumber,
           avatar: formData.avatar,
         }),
       });
@@ -204,12 +215,13 @@ const UpdateProfile: React.FC = () => {
               <div className="flex items-center gap-3">
                 <FaPhone className="text-green-500 text-lg" />
                 <input
-                  type="text"
+                  type="tel"
                   name="phone"
                   value={formData.phone || formData.phoneNumber || ''}
                   onChange={handleChange}
                   className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-green-400"
-                  placeholder="Nhập số điện thoại..."
+                  placeholder="Nhập số điện thoại (10 số)..."
+                  maxLength={10}
                 />
               </div>
 

@@ -125,17 +125,17 @@ class OrderController {
             })
           );
 
-          const [voucher, address, user] = await Promise.all([
+          const [voucher, address] = await Promise.all([
             order.voucher_id ? VoucherModel.findById(order.voucher_id).lean() : null,
-            AddressModel.findById(order.address_id).lean(),
-            OrderController.populateUserInfo(order.user_id)
+            AddressModel.findById(order.address_id).lean()
           ]);
 
           return {
             ...order,
-            user: user,
+            user: order.user_info || await OrderController.populateUserInfo(order.user_id),
             voucher: voucher,
-            address: address,
+            address: order.address_info || address,
+            shipper: order.shipper_info || (order.shipper_id ? await OrderController.populateUserInfo(order.shipper_id) : null),
             order_details: orderDetailsWithInfo
           };
         })
@@ -225,17 +225,17 @@ class OrderController {
         })
       );
 
-      const [voucher, address, user] = await Promise.all([
+      const [voucher, address] = await Promise.all([
         order.voucher_id ? VoucherModel.findById(order.voucher_id).lean() : null,
-        AddressModel.findById(order.address_id).lean(),
-        OrderController.populateUserInfo(order.user_id)
+        AddressModel.findById(order.address_id).lean()
       ]);
 
       const orderWithDetails = {
         ...order,
-        user: user,
+        user: order.user_info || await OrderController.populateUserInfo(order.user_id),
         voucher: voucher,
-        address: address,
+        address: order.address_info || address,
+        shipper: order.shipper_info || (order.shipper_id ? await OrderController.populateUserInfo(order.shipper_id) : null),
         order_details: orderDetailsWithInfo
       };
 
@@ -347,15 +347,27 @@ class OrderController {
         }
       }
 
-      // Create new order
+      // Create new order with user info and address info
       const newOrder = new OrderModel({
         user_id,
+        user_info: {
+          name: userExists.name,
+          email: userExists.email,
+          phone: userExists.phone || userExists.phoneNumber,
+          phoneNumber: userExists.phoneNumber
+        },
         quantity,
         total_amount,
         shipping_fee: shippingFee,
         voucher_id,
         payment_method,
-        address_id
+        address_id,
+        address_info: {
+          street: address.street,
+          city: address.city,
+          postal_code: address.postal_code,
+          country: address.country
+        }
       });
 
       const savedOrder = await newOrder.save();
@@ -371,6 +383,30 @@ class OrderController {
       }));
 
       const savedOrderDetails = await OrderDetailModel.insertMany(orderDetailsData);
+
+      // Update product stock - deduct quantities from variants
+      for (const detail of order_details) {
+        const variant = await ProductVariant.findById(detail.variant_id);
+        if (!variant) {
+          throw new Error(`Product variant not found: ${detail.variant_id}`);
+        }
+        
+        if (variant.quantity < detail.quantity) {
+          throw new Error(`Insufficient stock for product variant ${detail.variant_id}. Available: ${variant.quantity}, Requested: ${detail.quantity}`);
+        }
+        
+        // Deduct quantity from variant
+        variant.quantity -= detail.quantity;
+        variant.sold_quantity = (variant.sold_quantity || 0) + detail.quantity;
+        await variant.save();
+        
+        // Update total_sold in Product
+        const product = await Product.findById(detail.product_id);
+        if (product) {
+          product.total_sold = (product.total_sold || 0) + detail.quantity;
+          await product.save();
+        }
+      }
 
       if (voucher_id) {
         await VoucherModel.findByIdAndUpdate(
@@ -414,7 +450,7 @@ class OrderController {
           ...savedOrder.toObject(),
           user: user,
           voucher: voucher,
-          address: addressInfo,
+          address: savedOrder.address_info || addressInfo,
           order_details: orderDetailsWithInfo
         }
       });
@@ -509,6 +545,17 @@ class OrderController {
 
       if (status === 'shipping' && shipper_id) {
         updateData.shipper_id = shipper_id;
+        
+        // Lưu thông tin shipper tại thời điểm phân công
+        const shipperExists = await UserModel.findById(shipper_id).lean();
+        if (shipperExists) {
+          updateData.shipper_info = {
+            name: shipperExists.name,
+            email: shipperExists.email,
+            phone: shipperExists.phone || shipperExists.phoneNumber,
+            phoneNumber: shipperExists.phoneNumber
+          };
+        }
       }
 
       if (status === 'cancelled' && cancel_reason) {
@@ -544,17 +591,17 @@ class OrderController {
         console.error('Error creating status notification:', notificationError);
       }
 
-      const [voucher, address, user] = await Promise.all([
+      const [voucher, address] = await Promise.all([
         updatedOrder.voucher_id ? VoucherModel.findById(updatedOrder.voucher_id).lean() : null,
-        AddressModel.findById(updatedOrder.address_id).lean(),
-        OrderController.populateUserInfo(updatedOrder.user_id)
+        AddressModel.findById(updatedOrder.address_id).lean()
       ]);
 
       const orderWithDetails = {
         ...updatedOrder,
-        user: user,
+        user: updatedOrder.user_info || await OrderController.populateUserInfo(updatedOrder.user_id),
         voucher: voucher,
-        address: address
+        address: updatedOrder.address_info || address,
+        shipper: updatedOrder.shipper_info || (updatedOrder.shipper_id ? await OrderController.populateUserInfo(updatedOrder.shipper_id) : null)
       };
 
       res.status(200).json({
@@ -717,9 +764,10 @@ class OrderController {
 
           return {
             ...order,
-            user: userExists,
+            user: order.user_info || userExists,
             voucher: voucher,
-            address: address,
+            address: order.address_info || address,
+            shipper: order.shipper_info || (order.shipper_id ? await OrderController.populateUserInfo(order.shipper_id) : null),
             order_details: orderDetailsWithInfo
           };
         })
@@ -1216,10 +1264,10 @@ class OrderController {
 
           return {
             ...order,
-            user: user,
+            user: order.user_info || user,
             voucher: voucher,
-            address: address,
-            shipper: shipper,
+            address: order.address_info || address,
+            shipper: order.shipper_info || shipper,
             order_details: orderDetailsWithInfo
           };
         })
@@ -1332,10 +1380,10 @@ class OrderController {
 
       const orderWithDetails = {
         ...updatedOrder,
-        user: user,
+        user: updatedOrder.user_info || user,
         voucher: voucher,
-        address: address,
-        shipper: shipper
+        address: updatedOrder.address_info || address,
+        shipper: updatedOrder.shipper_info || shipper
       };
 
       const message = status === 'delivered'
@@ -1381,22 +1429,13 @@ class OrderController {
           message: 'Order not found'
         });
       }
+
       if (order.user_id.toString() !== userId.toString()) {
         return res.status(403).json({
           success: false,
-          message: 'You can only cancel your own orders',
-          data: order.user_id,
-          userId: userId
+          message: 'You can only cancel your own orders'
         });
       }
-      // if (order.user_id != userId) {
-      //   return res.status(403).json({
-      //     success: false,
-      //     message: 'You can only cancel your own orders',
-      //     data: order.user_id,
-      //     userId: userId
-      //   });
-      // }
 
       if (!['pending', 'preparing'].includes(order.status)) {
         return res.status(400).json({
@@ -1440,17 +1479,19 @@ class OrderController {
         console.error('Error creating cancel request notification:', notificationError);
       }
 
-      const [voucher, address, user] = await Promise.all([
+      const [voucher, address, user, shipper] = await Promise.all([
         updatedOrder.voucher_id ? VoucherModel.findById(updatedOrder.voucher_id).lean() : null,
         AddressModel.findById(updatedOrder.address_id).lean(),
-        OrderController.populateUserInfo(updatedOrder.user_id)
+        OrderController.populateUserInfo(updatedOrder.user_id),
+        updatedOrder.shipper_id ? OrderController.populateUserInfo(updatedOrder.shipper_id) : null
       ]);
 
       const orderWithDetails = {
         ...updatedOrder,
-        user: user,
+        user: updatedOrder.user_info || user,
         voucher: voucher,
-        address: address
+        address: updatedOrder.address_info || address,
+        shipper: updatedOrder.shipper_info || shipper
       };
 
       res.status(200).json({
@@ -1537,6 +1578,28 @@ class OrderController {
         });
       }
 
+      // Restore stock if order is cancelled
+      if (action === 'approve') {
+        const orderDetails = await OrderDetailModel.find({ order_id: id });
+        
+        for (const detail of orderDetails) {
+          const variant = await ProductVariant.findById(detail.variant_id);
+          if (variant) {
+            // Restore quantity to variant
+            variant.quantity += detail.quantity;
+            variant.sold_quantity = Math.max(0, (variant.sold_quantity || 0) - detail.quantity);
+            await variant.save();
+            
+            // Update total_sold in Product
+            const product = await Product.findById(detail.product_id);
+            if (product) {
+              product.total_sold = Math.max(0, (product.total_sold || 0) - detail.quantity);
+              await product.save();
+            }
+          }
+        }
+      }
+
       try {
         if (action === 'approve') {
           await createOrderStatusNotification(updatedOrder.user_id.toString(), updatedOrder._id.toString(), 'cancelled');
@@ -1547,17 +1610,19 @@ class OrderController {
         console.error('Error creating notification:', notificationError);
       }
 
-      const [voucher, address, user] = await Promise.all([
+      const [voucher, address, user, shipper] = await Promise.all([
         updatedOrder.voucher_id ? VoucherModel.findById(updatedOrder.voucher_id).lean() : null,
         AddressModel.findById(updatedOrder.address_id).lean(),
-        OrderController.populateUserInfo(updatedOrder.user_id)
+        OrderController.populateUserInfo(updatedOrder.user_id),
+        updatedOrder.shipper_id ? OrderController.populateUserInfo(updatedOrder.shipper_id) : null
       ]);
 
       const orderWithDetails = {
         ...updatedOrder,
-        user: user,
+        user: updatedOrder.user_info || user,
         voucher: voucher,
-        address: address
+        address: updatedOrder.address_info || address,
+        shipper: updatedOrder.shipper_info || shipper
       };
 
       res.status(200).json({
@@ -1599,19 +1664,13 @@ class OrderController {
           message: 'Order not found'
         });
       }
-      
+
       if (order.user_id.toString() !== userId.toString()) {
         return res.status(403).json({
           success: false,
           message: 'You can only return your own orders'
         });
       }
-      // if (order.user_id != userId) {
-      //   return res.status(403).json({
-      //     success: false,
-      //     message: 'You can only return your own orders'
-      //   });
-      // }
 
       if (order.status !== 'delivered') {
         return res.status(400).json({
@@ -1655,17 +1714,19 @@ class OrderController {
         console.error('Error creating return request notification:', notificationError);
       }
 
-      const [voucher, address, user] = await Promise.all([
+      const [voucher, address, user, shipper] = await Promise.all([
         updatedOrder.voucher_id ? VoucherModel.findById(updatedOrder.voucher_id).lean() : null,
         AddressModel.findById(updatedOrder.address_id).lean(),
-        OrderController.populateUserInfo(updatedOrder.user_id)
+        OrderController.populateUserInfo(updatedOrder.user_id),
+        updatedOrder.shipper_id ? OrderController.populateUserInfo(updatedOrder.shipper_id) : null
       ]);
 
       const orderWithDetails = {
         ...updatedOrder,
-        user: user,
+        user: updatedOrder.user_info || user,
         voucher: voucher,
-        address: address
+        address: updatedOrder.address_info || address,
+        shipper: updatedOrder.shipper_info || shipper
       };
 
       res.status(200).json({
@@ -1752,6 +1813,28 @@ class OrderController {
         });
       }
 
+      // Restore stock if order is returned
+      if (action === 'approve') {
+        const orderDetails = await OrderDetailModel.find({ order_id: id });
+        
+        for (const detail of orderDetails) {
+          const variant = await ProductVariant.findById(detail.variant_id);
+          if (variant) {
+            // Restore quantity to variant
+            variant.quantity += detail.quantity;
+            variant.sold_quantity = Math.max(0, (variant.sold_quantity || 0) - detail.quantity);
+            await variant.save();
+            
+            // Update total_sold in Product
+            const product = await Product.findById(detail.product_id);
+            if (product) {
+              product.total_sold = Math.max(0, (product.total_sold || 0) - detail.quantity);
+              await product.save();
+            }
+          }
+        }
+      }
+
       try {
         if (action === 'approve') {
           await createOrderStatusNotification(updatedOrder.user_id.toString(), updatedOrder._id.toString(), 'returned');
@@ -1762,17 +1845,19 @@ class OrderController {
         console.error('Error creating notification:', notificationError);
       }
 
-      const [voucher, address, user] = await Promise.all([
+      const [voucher, address, user, shipper] = await Promise.all([
         updatedOrder.voucher_id ? VoucherModel.findById(updatedOrder.voucher_id).lean() : null,
         AddressModel.findById(updatedOrder.address_id).lean(),
-        OrderController.populateUserInfo(updatedOrder.user_id)
+        OrderController.populateUserInfo(updatedOrder.user_id),
+        updatedOrder.shipper_id ? OrderController.populateUserInfo(updatedOrder.shipper_id) : null
       ]);
 
       const orderWithDetails = {
         ...updatedOrder,
-        user: user,
+        user: updatedOrder.user_info || user,
         voucher: voucher,
-        address: address
+        address: updatedOrder.address_info || address,
+        shipper: updatedOrder.shipper_info || shipper
       };
 
       res.status(200).json({

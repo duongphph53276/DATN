@@ -21,6 +21,7 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import RegisterAdmin from './components/Auth/RegisterAdmin';
 import ForgotPassword from './components/Auth/ForgotPassword';
+import VerifyEmail from './components/VerifyEmail';
 import ListUser from './components/Admin/user/ListUser';
 import UserDetail from './components/Admin/user/UserDetail';
 import EditUser from './components/Admin/user/EditUser';
@@ -59,7 +60,6 @@ import SearchResults from './components/Client/HomePage/SearchResults';
 import ChinhSachChung from './components/Client/Policy/ChinhSachChung';
 import ChinhSachBaoMat from './components/Client/Policy/ChinhSachBaoMat';
 import BaoHanhDoiTra from './components/Client/Policy/BaoHanhDoiTra';
-import VerifyEmail from './components/VerifyEmail';
 
 const SimpleProtectedRoute = ({ children, requiresAdmin = false }: { children: JSX.Element; requiresAdmin?: boolean }) => {
   const token = localStorage.getItem("token");
@@ -104,9 +104,9 @@ function App() {
       element: <AuthGuard><ForgotPassword /></AuthGuard>,
     },
     {
-    path: "/verify-email",
-    element: <VerifyEmail />,
-  },
+      path: "/verify-email",
+      element: <VerifyEmail />,
+    },
     {
       path: "/",
       element: <ClientLayout />,

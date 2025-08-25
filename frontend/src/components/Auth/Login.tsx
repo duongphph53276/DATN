@@ -197,7 +197,7 @@ const Login: React.FC = () => {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                 <FaEnvelope className="text-rose-500" />
-                Địa chỉ email
+                Địa chỉ email <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
@@ -214,7 +214,7 @@ const Login: React.FC = () => {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                 <FaLock className="text-rose-500" />
-                Mật khẩu
+                Mật khẩu <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input

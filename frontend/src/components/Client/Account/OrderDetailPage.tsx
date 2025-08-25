@@ -329,45 +329,90 @@ const OrderDetailPage = () => {
                                      <p className="font-semibold text-gray-800">{paymentMethodVietnamese[orderData?.payment_method || ''] || orderData?.payment_method}</p>
                                  </div>
                              </div>
-                             <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200/50">
-                                 <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
-                                     <Heart className="w-5 h-5 text-indigo-600" />
-                                 </div>
-                                 <div>
-                                     <p className="text-gray-500 text-sm">Người nhận</p>
-                                     <p className="font-semibold text-gray-800">{orderData?.user?.name}</p>
-                                 </div>
-                             </div>
-                         </div>
-                         <div className="space-y-4">
-                             <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-200/50">
-                                 <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                                     <Package className="w-5 h-5 text-green-600" />
-                                 </div>
-                                 <div>
-                                     <p className="text-gray-500 text-sm">Tổng số lượng</p>
-                                     <p className="font-semibold text-gray-800">{orderData?.quantity} sản phẩm</p>
-                                 </div>
-                             </div>
-                             <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border border-blue-200/50">
-                                 <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                                     <MapPin className="w-5 h-5 text-blue-600" />
-                                 </div>
-                                 <div>
-                                     <p className="text-gray-500 text-sm">Địa chỉ giao hàng</p>
-                                     <p className="font-semibold text-gray-800 text-sm">{orderData?.address?.street}, {orderData?.address?.city}, {orderData?.address?.country}</p>
-                                 </div>
-                             </div>
-                             <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-2xl border border-teal-200/50">
-                                 <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center">
-                                     <Package className="w-5 h-5 text-teal-600" />
-                                 </div>
-                                 <div>
-                                     <p className="text-gray-500 text-sm">Số điện thoại</p>
-                                     <p className="font-semibold text-gray-800">{orderData?.user?.phone || orderData?.user?.phoneNumber}</p>
-                                 </div>
-                             </div>
-                            {orderData?.shipper_id && (orderData?.status === 'shipping' || orderData?.status === 'delivered') && (
+                                                           <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200/50">
+                                  <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+                                      <Heart className="w-5 h-5 text-indigo-600" />
+                                  </div>
+                                  <div>
+                                      <p className="text-gray-500 text-sm">Người nhận</p>
+                                                                             <p className="font-semibold text-gray-800">{orderData?.user_info?.name || orderData?.user?.name}</p>
+                                  </div>
+                              </div>
+                              
+                              {/* Tên shipper - hiển thị dưới người nhận */}
+                              {orderData?.shipper && (orderData?.status === 'shipping' || orderData?.status === 'delivered') && (
+                                  <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl border border-orange-200/50">
+                                      <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                                          <Package className="w-5 h-5 text-orange-600" />
+                                      </div>
+                                      <div className="flex-1">
+                                          <p className="text-gray-500 text-sm">🚚 Shipper giao hàng</p>
+                                                                                     <p className="font-semibold text-gray-800 text-lg">{orderData.shipper_info?.name || orderData.shipper.name}</p>
+                                      </div>
+                                      <div className="text-right">
+                                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                              ✅ Đang giao hàng
+                                          </span>
+                                      </div>
+                                  </div>
+                              )}
+                          </div>
+                          <div className="space-y-4">
+                              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-200/50">
+                                  <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+                                      <Package className="w-5 h-5 text-green-600" />
+                                  </div>
+                                  <div>
+                                      <p className="text-gray-500 text-sm">Tổng số lượng</p>
+                                      <p className="font-semibold text-gray-800">{orderData?.quantity} sản phẩm</p>
+                                  </div>
+                              </div>
+                              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border border-blue-200/50">
+                                  <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                                      <MapPin className="w-5 h-5 text-blue-600" />
+                                  </div>
+                                  <div>
+                                      <p className="text-gray-500 text-sm">Địa chỉ giao hàng</p>
+                                      <p className="font-semibold text-gray-800 text-sm">
+                                        {orderData?.address_info ? 
+                                          `${orderData.address_info.street}, ${orderData.address_info.city}, ${orderData.address_info.country}` :
+                                          orderData?.address ? 
+                                            `${orderData.address.street}, ${orderData.address.city}, ${orderData.address.country}` :
+                                            'Không có thông tin địa chỉ'
+                                        }
+                                      </p>
+                                  </div>
+                              </div>
+                              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-2xl border border-teal-200/50">
+                                  <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center">
+                                      <Package className="w-5 h-5 text-teal-600" />
+                                  </div>
+                                  <div>
+                                      <p className="text-gray-500 text-sm">Số điện thoại</p>
+                                                                             <p className="font-semibold text-gray-800">{orderData?.user_info?.phone || orderData?.user?.phone || orderData?.user?.phoneNumber}</p>
+                                  </div>
+                              </div>
+                              
+                              {/* Thông tin liên hệ shipper - hiển thị dưới số điện thoại */}
+                              {orderData?.shipper && (orderData?.status === 'shipping' || orderData?.status === 'delivered') && (
+                                  <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl border border-orange-200/50">
+                                      <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                                          <span className="text-orange-600 text-lg">📞</span>
+                                      </div>
+                                      <div className="flex-1">
+                                          <p className="text-gray-500 text-sm">Thông tin liên hệ shipper</p>
+                                          <div className="space-y-1">
+                                                                                             <p className="text-sm text-gray-600 flex items-center gap-1">
+                                                   📞 {orderData.shipper_info?.phone || orderData.shipper?.phone || orderData.shipper?.phoneNumber}
+                                               </p>
+                                               <p className="text-sm text-gray-600 flex items-center gap-1">
+                                                   ✉️ {orderData.shipper_info?.email || orderData.shipper?.email}
+                                               </p>
+                                          </div>
+                                      </div>
+                                  </div>
+                              )}
+                            {orderData?.shipper_id && !orderData?.shipper && (orderData?.status === 'shipping' || orderData?.status === 'delivered') && (
                                 <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl border border-orange-200/50">
                                     <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
                                         <Package className="w-5 h-5 text-orange-600" />
@@ -375,6 +420,7 @@ const OrderDetailPage = () => {
                                     <div>
                                         <p className="text-gray-500 text-sm">Shipper giao hàng</p>
                                         <p className="font-semibold text-gray-800">Đã được phân công</p>
+                                        <p className="text-sm text-gray-500">Thông tin shipper đang được cập nhật...</p>
                                     </div>
                                 </div>
                             )}
@@ -468,6 +514,8 @@ const OrderDetailPage = () => {
                     )}
                 </div>
 
+
+
                 {/* Card danh sách sản phẩm */}
                 <div className="bg-white rounded-3xl shadow-xl p-8 mb-8 border border-pink-100/50 backdrop-blur-sm">
                     <div className="flex items-center gap-4 mb-8">
@@ -488,10 +536,9 @@ const OrderDetailPage = () => {
                                     />
                                 </div>
 
-                                <div className="flex-1">
-                                    <h3 className="font-bold text-gray-800 text-lg mb-1">{item.name}</h3>
-                                    <p className="text-gray-500 text-sm mb-2">{item.product.description}</p>
-                                    <VariantAttributesDisplay variant={item.variant} />
+                                                                 <div className="flex-1">
+                                     <h3 className="font-bold text-gray-800 text-lg mb-1">{item.name}</h3>
+                                     <VariantAttributesDisplay variant={item.variant} />
                                     <div className="flex items-center justify-between mt-3">
                                         <div className="flex items-center gap-4">
                                             <span className="text-pink-600 font-semibold">{formatPrice(item.price)}</span>
@@ -519,16 +566,10 @@ const OrderDetailPage = () => {
                     </div>
 
                     <div className="space-y-4">
-                        <div className="flex justify-between items-center py-4 px-6 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border border-blue-200/50">
-                            <span className="text-gray-600 font-medium">Tạm tính:</span>
-                            <span className="font-bold text-lg text-gray-800">{formatPrice(calculateTotal(orderData?.order_details))}</span>
-                        </div>
-                        {/* Debug info */}
-                        <div className="text-xs text-gray-500 mt-2 p-2 bg-gray-100 rounded">
-                            Debug: Tạm tính = {calculateTotal(orderData?.order_details)}, 
-                            Phí ship = {orderData?.shipping_fee}, 
-                            Tổng = {orderData?.total_amount}
-                        </div>
+                                                 <div className="flex justify-between items-center py-4 px-6 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border border-blue-200/50">
+                             <span className="text-gray-600 font-medium">Tạm tính:</span>
+                             <span className="font-bold text-lg text-gray-800">{formatPrice(calculateTotal(orderData?.order_details))}</span>
+                         </div>
                         <div className="flex justify-between items-center py-4 px-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-200/50">
                             <span className="text-gray-600 font-medium">Phí vận chuyển:</span>
                             {orderData?.shipping_fee === 0 ? (

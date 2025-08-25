@@ -17,6 +17,13 @@ export interface OrderDetail {
 export interface stateOrder {
   _id: string;
   user_id: string;
+  // Thông tin user được lưu tại thời điểm đặt hàng
+  user_info?: {
+    name: string;
+    email: string;
+    phone: string;
+    phoneNumber?: string;
+  };
   status: "pending" | "preparing" | "shipping" | "delivered" | "cancelled" | "returned";
   quantity: number;
   total_amount: number;
@@ -24,7 +31,21 @@ export interface stateOrder {
   voucher_id: string | null;
   payment_method: "credit_card" | "paypal" | "cash_on_delivery" | string;
   address_id: string;
+  // Thông tin địa chỉ được lưu tại thời điểm đặt hàng
+  address_info?: {
+    street: string;
+    city: string;
+    postal_code?: string;
+    country: string;
+  };
   shipper_id: string | null;
+  // Thông tin shipper được lưu tại thời điểm phân công
+  shipper_info?: {
+    name: string;
+    email: string;
+    phone: string;
+    phoneNumber?: string;
+  };
   delivered_at: string | null;
   cancel_reason: string | null; 
   return_reason: string | null;
@@ -89,7 +110,14 @@ export interface stateOrder {
     banUntil: string | Date;
     createdAt: string;
     updatedAt: string;
-  }
+  };
+  shipper?: {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+    phoneNumber?: string;
+  };
 }
 
 export interface Pagination {

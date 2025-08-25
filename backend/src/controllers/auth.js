@@ -44,7 +44,7 @@ export const login = async (req, res) => {
   }
 };
 export const register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, phone } = req.body;
   try {
     let clientRole = await RoleModel.findOne({ name: "client" });
     if (!clientRole) {
@@ -60,6 +60,7 @@ export const register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
+      phone,
       role_id: clientRole._id,
       isVerified: false,
     });
@@ -86,7 +87,7 @@ export const register = async (req, res) => {
 };
 
 export const registerAdmin = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, phone } = req.body;
   try {
     // Tìm hoặc tạo role admin
     let adminRole = await RoleModel.findOne({ name: "admin" });
@@ -112,6 +113,7 @@ export const registerAdmin = async (req, res) => {
       name,
       email,
       password: hashedPassword,
+      phone,
       role_id: adminRole._id,
       isVerified: true, // Admin được xác thực ngay
       status: "active"
