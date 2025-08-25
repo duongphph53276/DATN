@@ -6,11 +6,7 @@ export const getAllProducts = () => {
   return instance.get("/product");
 };
 
-// Lấy sản phẩm bán chạy
-export const getBestSellingProducts = (limit?: number) => {
-  const params = limit ? `?limit=${limit}` : '';
-  return instance.get(`/product/best-selling${params}`);
-};
+
 
 // Lấy chi tiết sản phẩm theo ID
 export const getProductById = (id: string | number) => {

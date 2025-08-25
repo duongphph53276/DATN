@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import ProductFilters from "../../../layout/Client/ProductFilters";
+
 import { getAllProducts } from "../../../../api/product.api";
 import { getAllAttributes, getAttributeValues } from "../../../../api/attribute.api";
 import { ToastSucess, ToastError } from "../../../utils/toast";
@@ -85,6 +86,8 @@ const AllProducts: React.FC = () => {
     console.log('Total products:', products.length);
     console.log('Filtered products:', filteredProducts.length);
   }, [filters]);
+
+
 
   // Reset về trang 1 khi thay đổi số lượng hiển thị
   useEffect(() => {
@@ -278,11 +281,11 @@ const AllProducts: React.FC = () => {
   return (
     <ErrorBoundary>
       <div className="max-w-7xl mx-auto px-4 py-10">
-        <h2 className="text-3xl font-bold text-gray-800 mb-10 text-center">🧸 Tất cả sản phẩm</h2>
+                 <h2 className="text-3xl font-bold text-gray-800 mb-10 text-center">🧸 Tất cả sản phẩm</h2>
 
-        <ProductFilters onFilter={setFilters} />
+         <ProductFilters onFilter={setFilters} />
 
-        {/* Thanh điều khiển hiển thị */}
+         {/* Thanh điều khiển hiển thị */}
         <div className="mt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center gap-4">
             <span className="text-gray-600 font-medium">

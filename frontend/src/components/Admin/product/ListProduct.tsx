@@ -84,7 +84,6 @@ const ListProduct: React.FC = () => {
         if (statusFilter === "new") return product.status === "new";
         if (statusFilter === "active") return product.status === "active";
         if (statusFilter === "disabled") return product.status === "disabled";
-        if (statusFilter === "bestseller") return product.status === "bestseller";
         return true;
       });
     }
