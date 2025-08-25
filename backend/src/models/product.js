@@ -18,7 +18,7 @@ const productSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ["active", "disabled", "new", "bestseller"],
+        enum: ["active", "disabled", "new"],
         default: "active",
     },
     album: {

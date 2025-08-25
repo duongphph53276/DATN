@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../../../../middleware/axios";
 import { getAllAttributes, getAttributeValues } from "../../../../../api/attribute.api";
-import ProductFilters from "../../../../layout/Client/ProductFilters";
+
 import { ToastSucess, ToastError } from "../../../../utils/toast";
 import { addToUserCart, loadUserCart } from "../../../../utils/cartUtils";
 
@@ -38,7 +38,7 @@ const CategoryPage: React.FC = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [attributes, setAttributes] = useState<any[]>([]);
   const [attributeValues, setAttributeValues] = useState<any[]>([]);
-  const [filters, setFilters] = useState({ category: "", priceRange: "" });
+
   const [loading, setLoading] = useState(true);
   const [selectedVariants, setSelectedVariants] = useState<{ [key: string]: any }>({});
   const [selectedAttributes, setSelectedAttributes] = useState<{ [productId: string]: { [attributeId: string]: string } }>({});
@@ -103,10 +103,7 @@ const CategoryPage: React.FC = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentPage]);
 
-  // Reset page khi đổi filter
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filters]);
+
 
   const getAttributeName = (attributeId: string) => attributes.find((attr) => attr._id === attributeId)?.name || attributeId;
   const getAttributeValue = (valueId: string) => attributeValues.find((val) => val._id === valueId)?.value || valueId;
@@ -226,19 +223,7 @@ const CategoryPage: React.FC = () => {
     ToastSucess("Đã thêm sản phẩm vào giỏ hàng!");
   };
 
-  const filteredProducts = products.filter((product) => {
-    const price = product.variants?.length
-      ? Math.min(...product.variants.map((v: any) => parsePrice(v.price)))
-      : parsePrice(product.price);
-    const { category, priceRange } = filters;
-    let matchCategory = true;
-    let matchPrice = true;
-    if (category) matchCategory = product.category === category;
-    if (priceRange === "0-100") matchPrice = price < 100000;
-    else if (priceRange === "100-300") matchPrice = price >= 100000 && price <= 300000;
-    else if (priceRange === "300+") matchPrice = price > 300000;
-    return matchCategory && matchPrice;
-  });
+  const filteredProducts = products;
 
   const indexOfLast = currentPage * productsPerPage;
   const indexOfFirst = indexOfLast - productsPerPage;
@@ -252,7 +237,7 @@ const CategoryPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 py-10">
         <h2 className="text-3xl font-bold text-gray-800 mb-10 text-center">🧸 {categoryName} 🧸</h2>
 
-        <ProductFilters onFilter={setFilters} />
+
 
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {currentProducts.length === 0 ? (

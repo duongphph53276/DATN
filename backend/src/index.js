@@ -153,12 +153,7 @@ app.put('/reviews/:id', authMiddleware, updateReview);
 app.delete('/reviews/:id', authMiddleware, deleteReview);
 app.get('/reviews/user/product/:product_id', authMiddleware, getUserReviewByProduct);
 
-app.get('/product/best-selling', async (req, res) => {
-  const limit = req.query.limit || 10;
-  // Logic lấy sản phẩm bán chạy, ví dụ sort theo total_sold DESC và limit
-  const products = await ProductModel.find().sort({ total_sold: -1 }).limit(Number(limit));
-  res.json({ data: products });
-});
+
 
 // Admin routes
 const adminRouter = express.Router();

@@ -8,7 +8,7 @@ export interface IProduct {
   album?: string[];
   category_id: string | { _id: string; name: string }; // là ObjectId, nhưng bạn dùng string ở frontend
   description?: string;
-  status?: 'active' | 'disabled' | 'new' | 'bestseller';
+  status?: 'active' | 'disabled' | 'new';
   attributes?: string[]; // danh sách ObjectId của Attribute
   sku?: string;
   average_rating?: number;

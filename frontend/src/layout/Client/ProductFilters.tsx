@@ -24,7 +24,7 @@ const ProductFilters = ({ onFilter }: { onFilter: (filters: any) => void }) => {
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-white shadow rounded-xl">
+    <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-white shadow rounded-xl mb-6">
       {/* Danh mục */}
       <div>
         <label className="mr-2 font-semibold">Danh mục:</label>
@@ -56,20 +56,6 @@ const ProductFilters = ({ onFilter }: { onFilter: (filters: any) => void }) => {
           <option value="300+">Trên 300k</option>
         </select>
       </div>
-
-      {/* Trạng thái
-      <div>
-        <label className="mr-2 font-semibold">Trạng thái:</label>
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="border rounded px-3 py-2"
-        >
-          <option value="">Tất cả</option>
-          <option value="bestseller">Bán chạy</option>
-          <option value="new">Mới</option>
-        </select>
-      </div> */}
 
       {/* Nút lọc */}
       <button
