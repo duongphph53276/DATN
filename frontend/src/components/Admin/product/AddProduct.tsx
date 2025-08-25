@@ -9,8 +9,6 @@ import { getAllAttributes, getAttributeValues } from "../../../../api/attribute.
 import * as yup from "yup";
 import QuillEditor from "../../common/QuillEditor";
 import { useDropzone } from "react-dropzone";
-import ImageGallery from "react-image-gallery";
-import "react-image-gallery/styles/css/image-gallery.css";
 import { ToastSucess, ToastError } from "../../../utils/toast";
 
 type AddProductForm = {
@@ -55,6 +53,7 @@ const AddProduct = () => {
   const [attributeValues, setAttributeValues] = useState<any[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [albumFiles, setAlbumFiles] = useState<File[]>([]);
+  const [removedAlbumFiles, setRemovedAlbumFiles] = useState<number[]>([]);
   const [variantImages, setVariantImages] = useState<(File | null)[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingVariants, setExistingVariants] = useState<any[]>([]);
@@ -266,7 +265,8 @@ const AddProduct = () => {
     multiple: true,
     onDrop: (acceptedFiles) => {
       if (acceptedFiles.every((file) => ["image/jpeg", "image/png", "image/gif"].includes(file.type))) {
-        setAlbumFiles(acceptedFiles);
+        setAlbumFiles(prev => [...prev, ...acceptedFiles]);
+        setRemovedAlbumFiles([]); // Reset danh sách ảnh đã gỡ khi thêm ảnh mới
       } else {
         ToastError("Tất cả hình ảnh trong album phải có định dạng jpg, png hoặc gif");
       }
@@ -347,7 +347,9 @@ const AddProduct = () => {
       let imageUrl = "";
       if (imageFile) imageUrl = await uploadToCloudinary(imageFile);
 
-      const albumUrls = await Promise.all(albumFiles.map((file) => uploadToCloudinary(file)));
+      // Lọc bỏ các ảnh đã gỡ
+      const filteredAlbumFiles = albumFiles.filter((_, index) => !removedAlbumFiles.includes(index));
+      const albumUrls = await Promise.all(filteredAlbumFiles.map((file) => uploadToCloudinary(file)));
 
       const variantPromises = data.variants.map(async (variant, index) => {
         let variantImage = variant.image;
@@ -407,6 +409,10 @@ const AddProduct = () => {
     currentAttributes.splice(attrIndex, 1);
     setValue(`variants.${variantIndex}.attributes`, currentAttributes);
     trigger(`variants.${variantIndex}.attributes`);
+  };
+
+  const handleRemoveAlbumImage = (index: number) => {
+    setRemovedAlbumFiles(prev => [...prev, index]);
   };
 
   const handleAttributeChange = (variantIndex: number, attrIndex: number, field: string, value: string) => {
@@ -723,16 +729,28 @@ const AddProduct = () => {
                 </div>
                 {albumFiles.length > 0 && (
                   <div className="mt-2">
-                    <ImageGallery
-                      items={albumFiles.map((file) => ({
-                        original: URL.createObjectURL(file),
-                        thumbnail: URL.createObjectURL(file),
-                      }))}
-                      showPlayButton={false}
-                      showFullscreenButton={true}
-                      showThumbnails={true}
-                      thumbnailPosition="bottom"
-                    />
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-4">
+                      {albumFiles.map((file, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`Album ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg border"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAlbumImage(index)}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                            title="Gỡ ảnh"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      Đã chọn {albumFiles.length} ảnh. Hover vào ảnh để gỡ bỏ.
+                    </div>
                   </div>
                 )}
               </div>

@@ -9,8 +9,6 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import QuillEditor from "../../common/QuillEditor";
 import { useDropzone } from "react-dropzone";
-import ImageGallery from "react-image-gallery";
-import "react-image-gallery/styles/css/image-gallery.css";
 import { ToastSucess, ToastError } from "../../../utils/toast";
 
 type EditProductForm = {
@@ -156,6 +154,8 @@ const EditProduct = () => {
   const [attributeValues, setAttributeValues] = useState<any[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [albumFiles, setAlbumFiles] = useState<File[]>([]);
+  const [removedAlbumFiles, setRemovedAlbumFiles] = useState<number[]>([]);
+  const [removedExistingAlbumImages, setRemovedExistingAlbumImages] = useState<number[]>([]);
   const [variantImages, setVariantImages] = useState<(File | null)[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -222,7 +222,8 @@ const EditProduct = () => {
         return;
       }
       if (acceptedFiles.every((file) => ["image/jpeg", "image/png", "image/gif"].includes(file.type))) {
-        setAlbumFiles(acceptedFiles);
+        setAlbumFiles(prev => [...prev, ...acceptedFiles]);
+        setRemovedAlbumFiles([]); // Reset danh sách ảnh đã gỡ khi thêm ảnh mới
       } else {
         ToastError("Tất cả hình ảnh trong album phải có định dạng jpg, png hoặc gif");
       }
@@ -446,9 +447,17 @@ const EditProduct = () => {
 
       let imageUrl = productData.images || "";
       if (imageFile) imageUrl = await uploadToCloudinary(imageFile);
-      const albumUrls = productData.album || [];
+      
+      // Xử lý album ảnh - loại bỏ ảnh đã gỡ
+      let albumUrls = productData.album || [];
+      
+      // Loại bỏ ảnh cũ đã gỡ
+      albumUrls = albumUrls.filter((_, index) => !removedExistingAlbumImages.includes(index));
+      
+      // Thêm ảnh mới (loại bỏ ảnh mới đã gỡ)
       if (albumFiles.length > 0) {
-        const newAlbumUrls = await Promise.all(albumFiles.map((file) => uploadToCloudinary(file)));
+        const filteredAlbumFiles = albumFiles.filter((_, index) => !removedAlbumFiles.includes(index));
+        const newAlbumUrls = await Promise.all(filteredAlbumFiles.map((file) => uploadToCloudinary(file)));
         albumUrls.push(...newAlbumUrls);
       }
       const variantPromises = data.variants.map(async (variant, index) => {
@@ -505,6 +514,14 @@ const EditProduct = () => {
     currentAttributes.splice(attrIndex, 1);
     setValue(`variants.${variantIndex}.attributes`, currentAttributes);
     trigger(`variants.${variantIndex}.attributes`);
+  };
+
+  const handleRemoveAlbumImage = (index: number) => {
+    setRemovedAlbumFiles(prev => [...prev, index]);
+  };
+
+  const handleRemoveExistingAlbumImage = (index: number) => {
+    setRemovedExistingAlbumImages(prev => [...prev, index]);
   };
 
   const handleAttributeChange = (variantIndex: number, attrIndex: number, field: string, value: string) => {
@@ -820,22 +837,75 @@ const EditProduct = () => {
                 </div>
                 {(albumFiles.length > 0 || productData?.album?.length > 0) && (
                   <div className="mt-2">
-                    <ImageGallery
-                      items={[
-                        ...(productData?.album?.map((url: string) => ({
-                          original: url,
-                          thumbnail: url,
-                        })) || []),
-                        ...(albumFiles.map((file) => ({
-                          original: URL.createObjectURL(file),
-                          thumbnail: URL.createObjectURL(file),
-                        }))),
-                      ]}
-                      showPlayButton={false}
-                      showFullscreenButton={true}
-                      showThumbnails={true}
-                      thumbnailPosition="bottom"
-                    />
+                    {/* Hiển thị ảnh cũ */}
+                    {productData?.album && productData.album.length > 0 && (
+                      <div className="mb-4">
+                        <h6 className="text-sm font-medium text-gray-700 mb-2">Ảnh hiện tại:</h6>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                          {productData.album.map((url: string, index: number) => (
+                            <div key={`existing-${index}`} className="relative group">
+                              <img
+                                src={url}
+                                alt={`Album hiện tại ${index + 1}`}
+                                className={`w-full h-24 object-cover rounded-lg border ${
+                                  removedExistingAlbumImages.includes(index) ? 'opacity-50' : ''
+                                }`}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveExistingAlbumImage(index)}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                                title="Gỡ ảnh"
+                              >
+                                ×
+                              </button>
+                              {removedExistingAlbumImages.includes(index) && (
+                                <div className="absolute inset-0 bg-red-100 bg-opacity-50 flex items-center justify-center">
+                                  <span className="text-red-600 text-xs font-medium">Đã gỡ</span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Hiển thị ảnh mới */}
+                    {albumFiles.length > 0 && (
+                      <div className="mb-4">
+                        <h6 className="text-sm font-medium text-gray-700 mb-2">Ảnh mới:</h6>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                          {albumFiles.map((file, index) => (
+                            <div key={`new-${index}`} className="relative group">
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={`Album mới ${index + 1}`}
+                                className={`w-full h-24 object-cover rounded-lg border ${
+                                  removedAlbumFiles.includes(index) ? 'opacity-50' : ''
+                                }`}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveAlbumImage(index)}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                                title="Gỡ ảnh"
+                              >
+                                ×
+                              </button>
+                              {removedAlbumFiles.includes(index) && (
+                                <div className="absolute inset-0 bg-red-100 bg-opacity-50 flex items-center justify-center">
+                                  <span className="text-red-600 text-xs font-medium">Đã gỡ</span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="text-sm text-gray-500">
+                      Hover vào ảnh để gỡ bỏ. Ảnh đã gỡ sẽ không được lưu.
+                    </div>
                   </div>
                 )}
               </div>
