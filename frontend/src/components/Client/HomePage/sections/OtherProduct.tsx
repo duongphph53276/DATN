@@ -277,12 +277,44 @@ const OtherProduct: React.FC = () => {
 
                   <div className="flex-grow" />
 
-                  <button
-                    onClick={() => handleAddToCart(product)}
-                    className="mt-3 w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-medium py-2 px-4 rounded-xl hover:brightness-110 transition text-sm"
-                  >
-                    Thêm vào giỏ hàng
-                  </button>
+                  {(() => {
+                    const selectedVariant = selectedVariants[product._id];
+                    
+                    // Logic for determining if product is out of stock
+                    let isOutOfStock = false;
+                    
+                    if (product.variants && product.variants.length > 0) {
+                      // Product has variants
+                      if (selectedVariant) {
+                        // A specific variant is selected - check its quantity
+                        isOutOfStock = (selectedVariant.quantity ?? selectedVariant.stock_quantity ?? 0) === 0;
+                      } else {
+                        // No variant selected - check if ALL variants are out of stock
+                        isOutOfStock = product.variants.every((variant: any) => 
+                          (variant.quantity ?? variant.stock_quantity ?? 0) === 0
+                        );
+                      }
+                    } else {
+                      // Product has no variants - check product quantity
+                      isOutOfStock = (product.quantity ?? product.stock_quantity ?? 0) === 0;
+                    }
+                    
+                    return isOutOfStock ? (
+                      <button
+                        disabled
+                        className="mt-3 w-full bg-gray-400 text-white font-medium py-2 px-4 rounded-xl cursor-not-allowed text-sm"
+                      >
+                        🚫 Hết hàng
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleAddToCart(product)}
+                        className="mt-3 w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-medium py-2 px-4 rounded-xl hover:brightness-110 transition text-sm"
+                      >
+                        Thêm vào giỏ hàng
+                      </button>
+                    );
+                  })()}
                 </div>
               );
             })}
