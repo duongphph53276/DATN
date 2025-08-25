@@ -635,18 +635,40 @@ const DetailsPage = () => {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4">
-              <button
-                onClick={handleAddToCart}
-                className="group relative inline-flex items-center justify-center overflow-hidden rounded-2xl border border-pink-400 px-6 py-3 text-pink-500 font-semibold hover:bg-pink-50 transition"
-              >
-                ➕ Thêm vào giỏ hàng
-              </button>
-              {selectedVariant && selectedVariant.quantity === 0 && (
-                <p className="text-red-500 text-sm mt-2">Sản phẩm này đã hết hàng!</p>
-              )}
-              {!selectedVariant && product.quantity === 0 && (
-                <p className="text-red-500 text-sm mt-2">Sản phẩm này đã hết hàng!</p>
-              )}
+              {(() => {
+                // Logic for determining if product is out of stock
+                let isOutOfStock = false;
+                
+                if (product.variants && product.variants.length > 0) {
+                  // Product has variants
+                  if (selectedVariant) {
+                    // A specific variant is selected - check its quantity
+                    isOutOfStock = selectedVariant.quantity === 0;
+                  } else {
+                    // No variant selected - check if ALL variants are out of stock
+                    isOutOfStock = product.variants.every((variant: any) => variant.quantity === 0);
+                  }
+                } else {
+                  // Product has no variants - check product quantity
+                  isOutOfStock = product.quantity === 0;
+                }
+                
+                return isOutOfStock ? (
+                  <button
+                    disabled
+                    className="group relative inline-flex items-center justify-center overflow-hidden rounded-2xl border border-gray-400 px-6 py-3 text-gray-500 font-semibold bg-gray-100 cursor-not-allowed"
+                  >
+                    🚫 Hết hàng
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleAddToCart}
+                    className="group relative inline-flex items-center justify-center overflow-hidden rounded-2xl border border-pink-400 px-6 py-3 text-pink-500 font-semibold hover:bg-pink-50 transition"
+                  >
+                    ➕ Thêm vào giỏ hàng
+                  </button>
+                );
+              })()}
             </div>
             <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm shadow-inner border">
               {benefits.map((item, i) => (
