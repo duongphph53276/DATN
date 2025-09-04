@@ -14,8 +14,17 @@ const UserDetail: React.FC = () => {
     const fetchUser = async () => {
       try {
         setLoading(true);
+        if (!id) {
+          setError('ID người dùng không hợp lệ');
+          return;
+        }
         const response = await api.get(`/admin/users/${id}`);
-        setUser(response.data);
+        console.log('User response:', response.data);
+        if (response.data && response.data.data) {
+          setUser(response.data.data);
+        } else {
+          setError('Dữ liệu người dùng không hợp lệ');
+        }
       } catch (err: any) {
         setError('Failed to fetch user: ' + (err.response?.data?.message || err.message));
       } finally {
@@ -23,9 +32,7 @@ const UserDetail: React.FC = () => {
       }
     };
 
-    if (id) {
-      fetchUser();
-    }
+    fetchUser();
   }, [id]);
 
   if (loading) {

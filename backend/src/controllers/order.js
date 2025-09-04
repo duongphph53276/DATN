@@ -38,6 +38,34 @@ class OrderController {
   }
 
   /**
+   * Helper function to restore stock when order is cancelled
+   */
+  static async restoreStockForCancelledOrder(orderId) {
+    try {
+      const orderDetails = await OrderDetailModel.find({ order_id: orderId });
+      
+      for (const detail of orderDetails) {
+        const variant = await ProductVariant.findById(detail.variant_id);
+        if (variant) {
+          // Restore quantity to variant
+          variant.quantity += detail.quantity;
+          variant.sold_quantity = Math.max(0, (variant.sold_quantity || 0) - detail.quantity);
+          await variant.save();
+          
+          // Update total_sold in Product
+          const product = await Product.findById(detail.product_id);
+          if (product) {
+            product.total_sold = Math.max(0, (product.total_sold || 0) - detail.quantity);
+            await product.save();
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error restoring stock for cancelled order:', error);
+    }
+  }
+
+  /**
    * Helper function to add user info to orders
    */
   static async addUserInfoToOrders(orders) {
@@ -577,6 +605,9 @@ class OrderController {
 
       if (status === 'cancelled') {
         await cancelledAdminNotification(updatedOrder._id.toString());
+        
+        // Restore stock if order is cancelled by admin
+        await OrderController.restoreStockForCancelledOrder(id);
       }
 
       try {
@@ -1357,6 +1388,11 @@ class OrderController {
         updateData,
         { new: true, runValidators: true }
       ).lean();
+
+      // Restore stock if order is cancelled by shipper
+      if (status === 'cancelled') {
+        await OrderController.restoreStockForCancelledOrder(order_id);
+      }
 
       if (!updatedOrder) {
         return res.status(404).json({

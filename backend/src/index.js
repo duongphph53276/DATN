@@ -16,6 +16,7 @@ import shippingRoutes from './routes/shipping.routes.js';
 import { checkEmail, login, Profile, register, UpdateProfile, verifyEmail } from './controllers/auth.js';
 import { getUserAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from './controllers/address/address.js';
 import { authMiddleware, restrictTo } from './middleware/auth.js';
+import { preventAdminSelfModification } from './middleware/adminProtection.js';
 import { getUserById, getUsers, updateUser, getUserWithPermissions, checkUserPermission, changePassword, getUserStatistics, getShippers } from './controllers/user/user.js';
 import { createRole, getRoleById, getRoles, updateRole, deleteRole, getRolePermissions, assignPermissionToRole, removePermissionFromRole, getAvailablePermissions } from './controllers/user/role.js';
 import path from "path";
@@ -58,7 +59,7 @@ app.get('/user/permissions', authMiddleware, getUserWithPermissions);
 app.get('/user/check-permission/:permissionName', authMiddleware, checkUserPermission);
 
 app.get('/profile', authMiddleware, Profile);
-app.put('/profile', authMiddleware, UpdateProfile);
+app.put('/profile', authMiddleware, preventAdminSelfModification, UpdateProfile);
 app.put('/profile/change-password', authMiddleware, changePassword);
 
 // Address routes
@@ -162,7 +163,7 @@ adminRouter.get('/users', getUsers);
 adminRouter.get('/users/statistics', getUserStatistics);
 adminRouter.get('/users/shippers', getShippers);
 adminRouter.get('/users/:id', getUserById);
-adminRouter.put('/users/:id', updateUser);
+adminRouter.put('/users/:id', preventAdminSelfModification, updateUser);
 
 adminRouter.get('/category', ListCategory);
 adminRouter.post('/category/add', AddCategory);

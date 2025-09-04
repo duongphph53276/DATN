@@ -3,6 +3,7 @@ import { RoleModel } from '../../models/User/role.js';
 import { RolePermissionModel } from '../../models/User/role_permission.js';
 import { PermissionModel } from '../../models/User/permission.js';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 export const getUsers = async (req, res) => {
   try {
@@ -85,12 +86,31 @@ export const updateUser = async (req, res) => {
     console.log('Update user request:', { id, ...req.body });
 
     // Kiểm tra xem user có tồn tại không
-    const existingUser = await UserModel.findById(id);
+    const existingUser = await UserModel.findById(id).populate('role_id');
     if (!existingUser) {
       return res.status(404).json({ 
         status: false,
         message: 'User not found' 
       });
+    }
+
+    // Ngăn admin tự thay đổi role và status của mình
+    if (req.user && req.user.id === id) {
+      const currentUserRole = existingUser.role_id?.name;
+      if (currentUserRole === 'admin') {
+        if (role_id !== undefined) {
+          return res.status(403).json({
+            status: false,
+            message: 'Admin không thể tự thay đổi role của mình'
+          });
+        }
+        if (status !== undefined && status === 'block') {
+          return res.status(403).json({
+            status: false,
+            message: 'Admin không thể tự khóa tài khoản của mình'
+          });
+        }
+      }
     }
 
     // Chuẩn bị dữ liệu cập nhật - chỉ cập nhật các field được gửi lên

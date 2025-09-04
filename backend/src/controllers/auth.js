@@ -200,18 +200,35 @@ export const Profile = async (req, res) => {
 
 export const UpdateProfile = async (req, res) => {
   try {
-    const { name, phoneNumber, avatar } = req.body;
+    const { name, phoneNumber, avatar, role_id, status } = req.body;
     const userId = req.user.id;
 
-    const user = await UserModel.findById(userId);
+    const user = await UserModel.findById(userId).populate('role_id');
     if (!user)
       return res
         .status(404)
         .send({ message: "Người dùng không tồn tại", status: false });
 
+    // Ngăn admin tự thay đổi role và status của mình
+    if (user.role_id?.name === 'admin') {
+      if (role_id !== undefined) {
+        return res.status(403).json({
+          status: false,
+          message: 'Admin không thể tự thay đổi role của mình'
+        });
+      }
+      if (status !== undefined && status === 'block') {
+        return res.status(403).json({
+          status: false,
+          message: 'Admin không thể tự khóa tài khoản của mình'
+        });
+      }
+    }
+
     if (name) user.name = name;
     if (phoneNumber) user.phone = phoneNumber;
     if (avatar) user.avatar = avatar;
+    // Không cho phép user tự thay đổi role_id qua profile update
 
     await user.save();
     const updatedUser = await UserModel.findById(userId).select("-password");
